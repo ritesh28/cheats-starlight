@@ -1,9 +1,9 @@
 // @ts-check
-import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
-import { pluginCollapsibleCode } from "./src/plugins/collapsible-code.ts";
-
+import vercelServerless from "@astrojs/vercel/serverless";
 import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "astro/config";
+import { pluginCollapsibleCode } from "./src/plugins/collapsible-code.ts";
 
 // https://astro.build/config
 export default defineConfig({
@@ -24,8 +24,9 @@ export default defineConfig({
       },
     }),
   ],
-
   vite: {
     plugins: [tailwindcss()],
   },
+  output: "server",
+  adapter: vercelServerless({}),
 });
