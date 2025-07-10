@@ -1,0 +1,22 @@
+strong,
+summary.my-code {
+  background-color: var(--color-accent-100);
+  color: var(--color-accent-800);
+  font-weight: 500;
+  margin-inline-end: calc(var(--spacing) * 2);
+  padding-inline: calc(var(--spacing) * 1.5);
+  padding-block: calc(var(--spacing) * 0.5);
+  border-radius: var(--radius-sm);
+}
+
+summary.my-code {
+  cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+  strong,
+  summary.my-code {
+    background-color: var(--color-accent-900);
+    color: var(--color-accent-300);
+  }
+}
