@@ -9,14 +9,23 @@ import { pluginCollapsibleCode } from "./src/plugins/collapsible-code.ts";
 export default defineConfig({
   integrations: [
     starlight({
-      title: "My Docs",
+      title: "Cheats",
+      logo: {
+        src: "./src/assets/logo_blue_small.png",
+      },
       social: [
+        {
+          icon: "laptop",
+          label: "Portfolio",
+          href: "https://ritesh-raj-portfolio.vercel.app/",
+        },
         {
           icon: "github",
           label: "GitHub",
-          href: "https://github.com/withastro/starlight",
+          href: "https://github.com/ritesh28",
         },
       ],
+      favicon: "favicon.ico",
       routeMiddleware: "./src/routeData.ts",
       customCss: ["./src/styles/global.css", "./src/styles/local.css"],
       expressiveCode: {

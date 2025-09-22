@@ -16,6 +16,8 @@ function slugify(text: string) {
 
 type TocItem = NonNullable<StarlightRouteData["toc"]>["items"][number];
 
+// todo: check if this function can be part of the plugins
+// hint: there's already toc generation plugin in the market
 function createToc(docNode: DefaultTreeAdapterTypes.Document): TocItem[] {
   const tocList: TocItem[] = [
     {
