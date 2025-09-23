@@ -1,0 +1,83 @@
+@layer base, starlight, theme, components, utilities;
+
+@import "@astrojs/starlight-tailwind";
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --color-primary-50: var(--color-blue-50);
+  --color-primary-100: var(--color-blue-100);
+  --color-primary-200: var(--color-blue-200);
+  --color-primary-300: var(--color-blue-300);
+  --color-primary-400: var(--color-blue-400);
+  --color-primary-500: var(--color-blue-500);
+  --color-primary-600: var(--color-blue-600);
+  --color-primary-700: var(--color-blue-700);
+  --color-primary-800: var(--color-blue-800);
+  --color-primary-900: var(--color-blue-900);
+  --color-primary-950: var(--color-blue-950);
+
+  --color-accent-50: var(--color-indigo-50);
+  --color-accent-100: var(--color-indigo-100);
+  --color-accent-200: var(--color-indigo-200);
+  --color-accent-300: var(--color-indigo-300);
+  --color-accent-400: var(--color-indigo-400);
+  --color-accent-500: var(--color-indigo-500);
+  --color-accent-600: var(--color-indigo-600);
+  --color-accent-700: var(--color-indigo-700);
+  --color-accent-800: var(--color-indigo-800);
+  --color-accent-900: var(--color-indigo-900);
+  --color-accent-950: var(--color-indigo-950);
+
+  --color-gray-50: var(--color-zinc-50);
+  --color-gray-100: var(--color-zinc-100);
+  --color-gray-200: var(--color-zinc-200);
+  --color-gray-300: var(--color-zinc-300);
+  --color-gray-400: var(--color-zinc-400);
+  --color-gray-500: var(--color-zinc-500);
+  --color-gray-600: var(--color-zinc-600);
+  --color-gray-700: var(--color-zinc-700);
+  --color-gray-800: var(--color-zinc-800);
+  --color-gray-900: var(--color-zinc-900);
+  --color-gray-950: var(--color-zinc-950);
+}
+
+@layer components {
+  .zoom-overlay {
+    @apply fixed inset-0 bg-black/80 flex justify-center items-center opacity-0 pointer-events-none transition-opacity duration-300 ease-in z-50;
+  }
+  .zoom-overlay img {
+    @apply max-w-[90%] max-h-[90%] shadow;
+  }
+  .zoom-overlay.active {
+    @apply opacity-100 pointer-events-auto;
+  }
+  .zoom-overlay.active img {
+    @apply cursor-zoom-out;
+  }
+  .zoomable-img {
+    @apply cursor-zoom-in transition-transform duration-300 ease-in-out;
+  }
+  /*
+  Not working https://tailwindcss.com/docs/detecting-classes-in-source-files#safelisting-specific-utilities
+  workaround for safe-listing 
+  */
+  .accordion-active {
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+  }
+  .accordion-inactive {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+  .accordion-heading-button {
+    @apply flex items-center justify-between w-full py-5 font-medium text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400 gap-3;
+  }
+  .accordion-heading-svg {
+    @apply w-3 h-3 rotate-180 shrink-0;
+  }
+  .accordion-body-container {
+    @apply hidden;
+  }
+  .accordion-body {
+    @apply py-5 border-b border-gray-200 dark:border-gray-700;
+  }
+}
