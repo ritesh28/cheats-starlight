@@ -29,6 +29,10 @@ export default defineConfig({
       customCss: ["./src/global.css"],
       expressiveCode: {
         plugins: [pluginAccordionCode()],
+        defaultProps: {
+          wrap: true,
+          title: "my-code.ext",
+        },
       },
       prerender: false,
     }),

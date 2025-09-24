@@ -8,7 +8,7 @@ export function pluginAccordionCode() {
     hooks: {
       // Add hooks to perform actions during the plugin's lifecycle
       postprocessRenderedBlock: ({ codeBlock, renderData }) => {
-        const { title = "my-code.ext" } = codeBlock.props;
+        const title = codeBlock.props.title as string; // default title is set in astro.config.ts [expressiveCode]
 
         const codeDOM = toHtml(renderData.blockAst);
         const accordionDOM = getAccordionDOM(title, codeDOM);
@@ -21,9 +21,9 @@ export function pluginAccordionCode() {
 
 function getAccordionDOM(title: string, bodyDOM: string) {
   return `
-  <button class="accordion">
-    <h3>${title}</h3>
-  </button>
+  <div class="accordion">
+    <h3 class="inline text-lg dark:text-white">${title}</h3>
+  </div>
   <div class="panel">
     ${bodyDOM}
   </div>`;
