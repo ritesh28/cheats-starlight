@@ -43,6 +43,12 @@
             required=""
           />
         </div>
+        <div
+          id="login-error-msg"
+          class="p-2 mb-2 text-sm font-medium text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 hidden"
+          role="alert"
+        >
+        </div>
         <button
           type="submit"
           class="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
@@ -60,9 +66,15 @@
   const form = document.querySelector("form");
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const loginErrorEle = document.getElementById("login-error-msg");
+    loginErrorEle?.classList.add("hidden");
     const formData = new FormData(form);
     const { data, error } = await actions.auth(formData);
     if (data) return navigate("/enabler/semver/");
-    console.log(error.message);
+    // encountered error
+    if (loginErrorEle) {
+      loginErrorEle.classList.remove("hidden");
+      loginErrorEle.innerText = error.message;
+    }
   });
 </script>

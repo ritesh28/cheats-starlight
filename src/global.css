@@ -58,26 +58,43 @@
   .zoomable-img {
     @apply cursor-zoom-in transition-transform duration-300 ease-in-out;
   }
-  /*
-  Not working https://tailwindcss.com/docs/detecting-classes-in-source-files#safelisting-specific-utilities
-  workaround for safe-listing 
-  */
-  .accordion-active {
-    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+
+  /* accordion */
+  .accordion {
+    background-color: #eee;
+    color: #444;
+    cursor: pointer;
+    padding: 18px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 15px;
+    transition: 0.4s;
   }
-  .accordion-inactive {
-    @apply text-gray-500 dark:text-gray-400;
+
+  .active,
+  .accordion:hover {
+    background-color: #ccc;
   }
-  .accordion-heading-button {
-    @apply flex items-center justify-between w-full py-5 font-medium text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400 gap-3;
+
+  .accordion:after {
+    content: "\002B";
+    color: #777;
+    font-weight: bold;
+    float: right;
+    margin-left: 5px;
   }
-  .accordion-heading-svg {
-    @apply w-3 h-3 rotate-180 shrink-0;
+
+  .active:after {
+    content: "\2212";
   }
-  .accordion-body-container {
-    @apply hidden;
-  }
-  .accordion-body {
-    @apply py-5 border-b border-gray-200 dark:border-gray-700;
+
+  .panel {
+    padding: 0 18px;
+    background-color: white;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.2s ease-out;
   }
 }

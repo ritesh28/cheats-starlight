@@ -2,7 +2,7 @@
 title: Semantic Versioning
 ---
 
-![Astro Image](/src/content/docs/enabler/astro_image.webp)
+![Astro Image](./astro_image.webp)
 
 Given a version number **MAJOR.MINOR.PATCH**, increment the:
 

@@ -1,9 +1,9 @@
 import starlight from "@astrojs/starlight";
-import vercelServerless from "@astrojs/vercel/serverless";
+import vercel from "@astrojs/vercel";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 import rehypeDocument from "rehype-document";
-import { pluginCollapsibleCode } from "./src/plugin-collapsible-code";
+import { pluginAccordionCode } from "./src/plugin-accordion-code";
 import rehypeImageZoom from "./src/rehype-image-zoom";
 
 export default defineConfig({
@@ -28,7 +28,7 @@ export default defineConfig({
       favicon: "favicon.ico",
       customCss: ["./src/global.css"],
       expressiveCode: {
-        plugins: [pluginCollapsibleCode()],
+        plugins: [pluginAccordionCode()],
       },
       prerender: false,
     }),
@@ -36,11 +36,10 @@ export default defineConfig({
   markdown: {
     rehypePlugins: [
       rehypeImageZoom,
-      [rehypeDocument, { js: "/image-zoom.js" }],
       [
         rehypeDocument,
         {
-          js: "https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js",
+          js: ["/image-zoom.js", "/accordion.js"],
         },
       ],
     ],
@@ -49,7 +48,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
   output: "server",
-  adapter: vercelServerless({}),
+  adapter: vercel({}),
   session: {
     driver: "lru-cache",
   },
