@@ -13,5 +13,5 @@ A comprehensive collection of easy-to-navigate cheat-sheets covering a wide rang
 > Please reach out to <a href="https://ritesh-raj-portfolio.vercel.app/#contact" target="_blank">me via the form</a> for credentials.
 
 <h3 align="center">
-  <a href="https://cheats-starlight-dun.vercel.app/" target="_blank">View Demo</a>
+  <a href="https://cheats-starlight.vercel.app/" target="_blank">View Demo</a>
 </h3>
