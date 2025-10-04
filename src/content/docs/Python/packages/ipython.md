@@ -3,7 +3,7 @@ title: IPython
 description: Interactive Python - Its an enhanced python interpreter
 ---
 
-![ipython Image](./ipython.drawio.svg)
+![ipython Image](/src/content/docs/Python/Packages/ipython.drawio.svg)
 
 ## Shortcuts
 

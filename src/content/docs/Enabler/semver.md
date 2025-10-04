@@ -1,8 +1,7 @@
 ---
 title: Semantic Versioning
+description: Semantic Versioning
 ---
-
-![Astro Image](./astro_image.webp)
 
 Given a version number **MAJOR.MINOR.PATCH**, increment the:
 
