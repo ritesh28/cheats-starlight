@@ -44,5 +44,3 @@ Notebook maintains list of input (code which you enter in the cell) and output (
 | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | It repeats the tests many times                                                                                         | Runs only one time                                                                                  |
 | Useful when you want to eliminate the influence of other tasks on your machine, such as disk flushing and OS scheduling | Useful when running task multiple time results in different result every time like sorting an array |
-
-## Profiling & Timing code
