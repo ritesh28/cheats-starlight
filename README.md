@@ -15,3 +15,7 @@ A comprehensive collection of easy-to-navigate cheat-sheets covering a wide rang
 <h3 align="center">
   <a href="https://cheats-starlight.vercel.app/" target="_blank">View Demo</a>
 </h3>
+
+## Bugs and workaround
+
+- https://github.com/withastro/astro/issues/13006

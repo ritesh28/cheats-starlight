@@ -2,7 +2,7 @@
 title: Astro.js
 ---
 
-![Astro Image](/src/content/docs/Front-End/astro.drawio.svg)
+![Astro Image](./astro.drawio.svg)
 
 ## RESPONSIBLE FOR CODES & TABLES ONLY
 
