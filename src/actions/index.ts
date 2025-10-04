@@ -5,12 +5,12 @@ export const server = {
   auth: defineAction({
     accept: "form",
     input: z.object({
-      phone: z.number(),
+      phone: z.string(),
       password: z.string(),
     }),
     handler: async ({ phone, password }, context) => {
       if (
-        phone === parseInt(import.meta.env.AUTH_CREDENTIALS_PHONE, 10) &&
+        phone === import.meta.env.AUTH_CREDENTIALS_PHONE &&
         password === import.meta.env.AUTH_CREDENTIALS_PASSWORD
       ) {
         const user = { userName: "Ritesh" };
