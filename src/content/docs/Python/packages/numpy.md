@@ -2,6 +2,8 @@
 title: NumPy
 ---
 
+![NumPy Image](./numpy.drawio.svg)
+
 ## Create Array
 
 | Task to perform                                                          | Syntax                                                |
