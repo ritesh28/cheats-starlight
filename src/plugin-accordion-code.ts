@@ -21,7 +21,7 @@ export function pluginAccordionCode() {
 
 function getAccordionDOM(title: string, bodyDOM: string) {
   return `
-  <div class="accordion active">
+  <div class="accordion">
     <h3 class="inline text-lg dark:text-white">${title}</h3>
   </div>
   <div class="panel">
