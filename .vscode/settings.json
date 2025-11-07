@@ -1,11 +1,17 @@
 {
   "cSpell.words": [
+    "arange",
+    "Autograd",
+    "CUDA",
+    "dtype",
     "isort",
     "kwargs",
     "Matplotlib",
+    "ndarray",
     "numpy",
     "pyproject",
     "uuidv",
     "venv"
-  ]
+  ],
+  "cSpell.ignorePaths": ["**/*.drawio.svg"]
 }
