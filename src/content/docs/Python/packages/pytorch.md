@@ -252,3 +252,7 @@ for epoch in range(n_iters):
 
 print(f"Prediction after training: f(5) = {model(X_test).item():.3f}")
 ```
+
+## Todo
+
+https://www.youtube.com/watch?v=YAJ5XBwlN4o&list=PLqnslRFeH2UrcDBWF5mfPGpqQDSta6VK4&index=7

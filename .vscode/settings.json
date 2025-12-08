@@ -9,6 +9,7 @@
     "Matplotlib",
     "ndarray",
     "numpy",
+    "plotly",
     "pyproject",
     "uuidv",
     "venv"
