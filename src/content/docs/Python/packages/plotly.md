@@ -259,11 +259,148 @@ fig.add_annotation(
     showarrow=False,
     font=go.layout.annotation.Font(size=16),
 )
-
-
 fig.show()
 ```
 
 ### Scatter Plot
 
 Scatter plots are used to plot data points on a horizontal and a vertical axis to show how one variable affects another.
+
+```py title="scatter mode"
+import plotly.graph_objects as go
+import numpy as np
+
+N = 100
+x_vals = np.linspace(0, 1, N)
+y1 = np.random.randn(N) + 5
+y2 = np.random.randn(N)
+y3 = np.random.randn(N) - 5
+
+trace0 = go.Scatter(x=x_vals, y=y1, mode="markers", name="markers")
+trace1 = go.Scatter(x=x_vals, y=y2, mode="lines+markers", name="line+markers")
+trace2 = go.Scatter(x=x_vals, y=y3, mode="lines", name="line")
+data = [trace0, trace1, trace2]
+fig = go.Figure(data=data)
+fig.show()
+```
+
+```py title="scatterGL"
+import plotly.graph_objects as go
+import numpy as np
+
+# Implement WebGL with Scattergl() in place of Scatter() for increased speed, improved interactivity, and the ability to plot even more data.
+# WebGL (Web Graphics Library) is a NATIVE JavaScript API for rendering interactive 2D and 3D graphics within any compatible web browser
+
+N = 100000
+x = np.random.randn(N)
+y = np.random.randn(N)
+trace0 = go.Scattergl(x=x, y=y, mode="markers")
+data = [trace0]
+layout = go.Layout(title="scattergl plot")
+fig = go.Figure(data=data, layout=layout)
+fig.show()
+```
+
+### Bubble Chart
+
+A bubble chart displays three dimensions of data - x, y, size. Bubble chart is a variation of the scatter plot, in which the data points are replaced with bubbles.
+
+```py title="bubble basic"
+import plotly.graph_objects as go
+
+company = ["A", "B", "C"]
+products = [13, 6, 23]
+sale = [2354, 5423, 4251]
+share = [23, 47, 30]
+fig = go.Figure(
+    data=[
+        go.Scatter(
+            x=products,
+            y=sale,
+            hovertext=[
+                "company:" + c + "share:" + str(s) + "%"
+                for c in company
+                for s in share
+                if company.index(c) == share.index(s)
+            ],
+            mode="markers",
+            marker=go.scatter.Marker(size=share, color=["blue", "red", "yellow"]),
+        )
+    ]
+)
+fig.show()
+```
+
+### Table Plot
+
+Useful for detailed data viewing in a grid of rows and columns.
+
+```py title="table basic"
+import plotly.graph_objects as go
+
+# Important parameters: header (first row), cells (list of columns)
+
+headers = ["Teams", "Mat", "Won", "Lost", "Tied", "NR", "Pts", "NRR"]
+teams = ["Ind", "Aus", "Eng", "Nz", "Pak", "Sri", "Sa", "Ban", "Wi", "Afg"]
+matches = [9, 9, 9, 9, 9, 9, 9, 9, 9, 9]
+wins = [7, 7, 6, 5, 5, 3, 3, 3, 2, 0]
+losses = [1, 2, 3, 3, 3, 4, 5, 5, 6, 9]
+ties = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+nrs = [1, 0, 0, 1, 1, 2, 1, 1, 1, 0]
+pts = [15, 14, 12, 11, 11, 8, 7, 7, 5, 0]
+nrr = [0.809, 0.868, 1.152, 0.175, -0.43, -0.919, -0.03, -0.41, -0.225, -1.322]
+
+trace = go.Table(
+    header=go.table.Header(
+        values=headers,
+        line=go.table.header.Line(color="gray"),
+        fill=go.table.header.Fill(color="lightskyblue"),
+        align="left",
+    ),
+    cells=go.table.Cells(
+        values=[teams, matches, wins, losses, ties, nrs, pts, nrr],
+        line=go.table.cells.Line(color="gray"),
+        fill=go.table.cells.Fill(color="lightcyan"),
+        align="left",
+    ),
+)
+data = [trace]
+fig = go.Figure(data=data)
+fig.show()
+```
+
+### Histogram
+
+Histogram is an accurate representation of the distribution of numerical data. It appears similar to bar graph, but, a bar graph relates two variables, whereas a histogram relates only one.
+
+| parameter                          | usage                                                                                                                                     |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Bins (or bucket)                   | It divides the entire range of values into a series of intervals and then count how many values fall into each interval                   |
+| normalization - default            | Span of each bar corresponds to the number of occurrences (i.e. the number of data points lying inside the bins)                          |
+| normalization - percentage         | Span of each bar corresponds to the percentage of occurrences w.r.t the total number of sample points. Sum of all bin HEIGHTS equals 100% |
+| normalization - probability        | Span of each bar corresponds to the fraction of occurrences w.r.t the total number of sample points. Sum of all bin HEIGHTS equals 1      |
+| normalization - density            | `=(number_of_occurrences / size_of_bin_interval)`. Sum of all bin AREAS equals the total number of sample points                          |
+| normalization- probability density | Area of each bar corresponds to the probability that an event will fall into the corresponding bin. Sum of all bin AREAS equals 1         |
+| hist function                      | count (default), sum, avg, min, or max                                                                                                    |
+| norm + func                        | Histogram is calculated in two sequential steps: data counting (binning) and then scaling (normalization)                                 |
+| cumulative                         | Histogram can be set to display cumulative distribution of values in successive bins                                                      |
+
+```py title="histogram ex"
+import plotly.graph_objects as go
+import numpy as np
+
+x1 = np.array([22, 87, 5, 43, 56, 73, 55, 54, 11, 20, 51, 5, 79, 31, 27])
+data = [
+    go.Histogram(
+        x=x1,
+        y=x1,
+        histfunc="sum",
+        histnorm="probability",
+        cumulative=go.histogram.Cumulative(enabled=True),
+    )
+]  # 'y' is important for binning function
+fig = go.Figure(data)
+fig.show()
+```
+
+### Box Plot
