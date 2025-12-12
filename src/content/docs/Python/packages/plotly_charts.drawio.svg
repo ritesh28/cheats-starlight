@@ -1,0 +1,37 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent;" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="197px" height="396px" viewBox="-0.5 -0.5 197 396" content="&lt;mxfile&gt;&lt;diagram id=&quot;A8qiz5cnjDglPvgR4cZh&quot; name=&quot;Page-1&quot;&gt;rZRNb6MwEIZ/DcdUfDRtegxJ2R66UqUe9uxgA1aNxzJDIf31OwYTwtJIu9KeMO98eGaegSA51P0Py0z1E7hQQRzyPkiOQRxH4e6BHk45j8oujEehtJJ7p1l4l19iivRqK7loFo4IoFCapZiD1iLHhcashW7pVoBa3mpYKVbCe87UWv0lOVa+i/hx1l+ELKvp5ujhabTUbHL2nTQV49BdSclzkBwsAI6nuj8I5YY3zWWMy25YL4VZofGvAu59zZ9Mtb47Xxmep3apSOOOsh7mkn4Ki5Km8cpOQr1BI1GCJvsJEKEmB+UMKcs/Sgut5gdQYMnORcFahVcZ9kqWLhLBkMoaM9IqZC+owHS4cD+p4aTQuUJ0rPeuszgrFHRSl5whu8upgjjrzIbgo5tCnLVGAeMNneIw3NHDrVt2gn5DBtyI3igmteB3pSzoDj8QKlH0N8caXWDRlguoBdozufiAe4/X7/fWv3bzskRPfvDV1aIkW/9hML+g5SXzzJAOHuMtpLsV0hR6Et6o2xVcatIRqbCmhMfIYfBQcmpW2G9o1ZJzF55a0cgvdhpSOToGpMah9G0abI8uV4u0H8P361I3aOFDTPugQbsshVTqD+n/I4jWCB7DbwiE/wyAXufvdbBd/fWS598=&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs/>
+    <g>
+        <g>
+            <image x="-0.5" y="39.5" width="197" height="356" xlink:href="vscode-webview://0kjkea1o8uf1eqmdaahuqil1l5647c1gfba9qbkejkhm6rk3j18m/proxy?url=https%3A%2F%2Fflowingdata.com%2Fwp-content%2Fuploads%2F2008%2F02%2Fbox-plot-explained.gif" preserveAspectRatio="none"/>
+        </g>
+        <g>
+            <rect x="0" y="0" width="70" height="30" fill="none" stroke="none" pointer-events="all"/>
+        </g>
+        <g>
+            <g transform="translate(-0.5 -0.5)">
+                <switch>
+                    <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                        <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 1px; height: 1px; padding-top: 15px; margin-left: 35px;">
+                            <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                <div style="display: inline-block; font-size: 12px; font-family: &quot;Helvetica&quot;; color: light-dark(#000000, #ffffff); line-height: 1.2; pointer-events: all; white-space: nowrap; ">
+                                    Box Plot
+                                </div>
+                            </div>
+                        </div>
+                    </foreignObject>
+                    <text x="35" y="19" fill="light-dark(#000000, #ffffff)" font-family="&quot;Helvetica&quot;" font-size="12px" text-anchor="middle">
+                        Box Plot
+                    </text>
+                </switch>
+            </g>
+        </g>
+    </g>
+    <switch>
+        <g requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"/>
+        <a transform="translate(0,-5)" xlink:href="https://www.drawio.com/doc/faq/svg-export-text-problems" target="_blank">
+            <text text-anchor="middle" font-size="10px" x="50%" y="100%">
+                Text is not SVG - cannot display
+            </text>
+        </a>
+    </switch>
+</svg>

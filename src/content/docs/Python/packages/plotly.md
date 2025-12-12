@@ -1,5 +1,5 @@
 ---
-title: PyTorch v5.9.0
+title: Plotly v5.9.0
 ---
 
 ## Migrate Version 3 to 4 (DELETE LATER)
@@ -187,12 +187,11 @@ for i in range(1, 4):
 fig.show()
 ```
 
-````py title="subplot type"
+## Charts
 
+![Plotly charts](./plotly_charts.drawio.svg)
 
-## Different charts
-
-### Bar Chart
+## Chart - Bar
 
 A bar chart presents categorical data with rectangular bars
 
@@ -214,9 +213,9 @@ data = [trace1, trace2, trace3]
 layout = go.Layout(barmode="group")
 fig = go.Figure(data=data, layout=layout)
 fig.show()
-````
+```
 
-### Pie Chart
+## Chart - Pie
 
 A Pie Chart displays only one series of data. Data points are shown as a percentage of the whole pie.
 
@@ -262,7 +261,7 @@ fig.add_annotation(
 fig.show()
 ```
 
-### Scatter Plot
+## Chart - Scatter Plot
 
 Scatter plots are used to plot data points on a horizontal and a vertical axis to show how one variable affects another.
 
@@ -301,7 +300,7 @@ fig = go.Figure(data=data, layout=layout)
 fig.show()
 ```
 
-### Bubble Chart
+## Chart - Bubble
 
 A bubble chart displays three dimensions of data - x, y, size. Bubble chart is a variation of the scatter plot, in which the data points are replaced with bubbles.
 
@@ -331,7 +330,7 @@ fig = go.Figure(
 fig.show()
 ```
 
-### Table Plot
+## Chart - Table
 
 Useful for detailed data viewing in a grid of rows and columns.
 
@@ -369,9 +368,9 @@ fig = go.Figure(data=data)
 fig.show()
 ```
 
-### Histogram
+## Chart - Histogram
 
-Histogram is an accurate representation of the distribution of numerical data. It appears similar to bar graph, but, a bar graph relates two variables, whereas a histogram relates only one.
+Histogram is a graphical tool that visualizes the distribution of numerical data. It appears similar to bar graph, but, a bar graph relates two variables, whereas a histogram relates only one.
 
 | parameter                          | usage                                                                                                                                     |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -385,7 +384,7 @@ Histogram is an accurate representation of the distribution of numerical data. I
 | norm + func                        | Histogram is calculated in two sequential steps: data counting (binning) and then scaling (normalization)                                 |
 | cumulative                         | Histogram can be set to display cumulative distribution of values in successive bins                                                      |
 
-```py title="histogram ex"
+```py title="histogram example"
 import plotly.graph_objects as go
 import numpy as np
 
@@ -403,4 +402,148 @@ fig = go.Figure(data)
 fig.show()
 ```
 
-### Box Plot
+## Chart - Box Plot
+
+Box plot is a graphical tool that visualizes the distribution of numerical data **through its quartiles**.
+
+- It displays "five-number summary": minimum, first quartile (Q1), median (Q2), third quartile (Q3), and maximum.
+- "Box" represents the inter-quartile range
+- Horizontal (w.r.t box) line inside mark the median.
+- "Whiskers" extend from the box to the minimum and maximum values.
+- Individual points are plotted to show outliers.
+
+```py title="box basic"
+import plotly.graph_objects as go
+
+# boxmean:  If True, the mean is drawn as a dashed line. If "sd" the standard deviation is also drawn
+# boxpoints:
+#   If "all", all data points are shown.
+#   If "outliers", only the outliers are shown.
+#   If "suspectedoutliers", the outlier points are shown and points either less than 4"Q1-3"Q3 or greater than 4"Q3-3"Q1 are highlighted.
+#   If False, no data points are shown.
+
+trace1 = go.Box(
+    y=[1140, 1460, 489, 594, 502, 508, 370, 200, -400],
+    # boxpoints="suspectedoutliers",
+    # boxmean="sd",
+)
+data = [trace1]
+fig = go.Figure(data)
+fig.show()
+```
+
+## Chart - Violin Plot
+
+Violin plots are similar to box plots, except that they also show the probability density (Kernel Density Estimate (KDE)) of the data at different values.
+
+```py title="violin example"
+import plotly.graph_objects as go
+import numpy as np
+
+np.random.seed(10)
+c1 = np.random.normal(100, 10, 200)
+c2 = np.random.normal(80, 30, 200)
+trace1 = go.Violin(y=c1, meanline=go.violin.Meanline(visible=True))  # mean line
+trace2 = go.Violin(y=c2, box=go.violin.Box(visible=True))  # box plot inside violin
+data = [trace1, trace2]
+fig = go.Figure(data=data)
+fig.show()
+```
+
+## Chart - Heatmap
+
+A heatmap is a graphical representation of data where the individual values contained in a matrix are represented as colors. The darker the shade, the higher the value
+
+```py title="heatmap example"
+import plotly.express as px
+import plotly.graph_objects as go
+import numpy as np
+
+vegetables = ["cucumber", "tomato", "lettuce", "asparagus", "potato", "wheat", "barley"]
+farmers = ["Joe", "Bros", "Smith", "Tom", "Rob", "Ryan", "Park"]
+harvest = np.array(  # row x column
+    [
+        [0.8, 2.4, 2.5, 3.9, 0.0, 4.0, 0.0],  # Joe vegetables
+        [2.4, 0.0, 4.0, 1.0, 2.7, 0.0, 0.0],
+        [1.1, 2.4, 0.8, 4.3, 1.9, 4.4, 0.0],
+        [0.6, 0.0, 0.3, 0.0, 3.1, 0.0, 0.0],
+        [0.7, 1.7, 0.6, 2.6, 2.2, 6.2, 0.0],
+        [1.3, 1.2, 0.0, 0.0, 0.0, 3.2, 5.1],
+        [0.1, 2.0, 0.0, 1.4, 0.0, 1.9, 6.3],
+    ]
+)
+trace = go.Heatmap(
+    x=vegetables, y=farmers, z=harvest, colorscale=px.colors.sequential.Viridis
+)
+data = [trace]
+fig = go.Figure(data=data)
+fig.show()
+```
+
+## Chart - Polar
+
+Polar charts are useful when relationships between data points can be visualized in terms of radiuses and angles. Theta is numerical data points.
+
+```py title="Polar example"
+import plotly.graph_objects as go
+
+trace = go.Scatterpolar(
+    r=[0.5, 1, 2, 2.5, 3, 4],
+    theta=[35, 70, 120, 155, 205, 240], # numerical data points
+    mode="lines",
+)
+data = [trace]
+fig = go.Figure(data=data)
+fig.show()
+```
+
+## Chart - Radar
+
+Similar to Polar, but has categorical values for theta. Radar is useful for displaying multivariate data.
+
+Multivariate data refers to datasets with multiple variables/features (more than two) recorded for each observation.
+
+```py title="Radar example"
+import plotly.graph_objects as go
+
+trace1 = go.Scatterpolar(
+    r=[0.5, 1, 2, 2.5, 3, 4],  # feature 1
+    theta=["A", "B", "C", "D", "E", "F"],  # categorical data points
+    mode="lines",
+    fill="toself",
+)
+trace2 = go.Scatterpolar(
+    r=[5, 3, 6, 2, 9, 7],  # feature 2
+    theta=["A", "B", "C", "D", "E", "F"],  # categorical data points
+    mode="lines",
+    fill="toself",
+)
+data = [trace1, trace2]
+fig = go.Figure(data=data)
+fig.show()
+```
+
+## Chart - Candlestick
+
+```py title="Candlestick example"
+import plotly.graph_objects as go
+import datetime
+
+open_data = [33.0, 33.3, 33.5, 33.0, 34.1]
+high_data = [33.1, 33.3, 33.6, 33.2, 34.8]
+low_data = [32.7, 32.7, 32.8, 32.6, 32.8]
+close_data = [33.0, 32.9, 33.3, 33.1, 33.1]
+date_data = ["10-10-2013", "11-10-2013", "12-10-2013", "01-10-2014", "02-10-2014"]
+dates = [
+    datetime.datetime.strptime(date_str, "%m-%d-%Y").date() for date_str in date_data
+]
+
+trace = go.Candlestick(
+    x=dates, open=open_data, high=high_data, low=low_data, close=close_data
+)  # always pass datetime object for x
+data = [trace]
+fig = go.Figure(data=data)
+fig.show()
+```
+
+## Adding Buttons Dropdown
