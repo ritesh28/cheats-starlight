@@ -546,4 +546,124 @@ fig = go.Figure(data=data)
 fig.show()
 ```
 
-## Adding Buttons Dropdown
+## Interactivity
+
+Plotly provides interactivity by use of different controls on the plotting area such as buttons, dropdowns and sliders etc.
+
+Use with `graph_objects.layout.Updatemenu`
+
+![Plotly interactive](./plotly_interactive.drawio.svg)
+
+## Adding Buttons/Dropdown
+
+```py title="Method restyle"
+import plotly.graph_objects as go
+
+fig = go.Figure()
+fig.add_trace(go.Box(y=[1140, 1460, 489, 594, 502, 508, 370, 200]))
+fig.layout.update(
+    updatemenus=[
+        go.layout.Updatemenu(
+            type="buttons",  # 'buttons', or 'dropdown'
+            direction="left",  # 'left', 'right', 'up', or 'down'
+            buttons=[
+                go.layout.updatemenu.Button(
+                    args=["type", "box"], label="Box", method="restyle"
+                    # "box": single string value since we have one trace
+                ),
+                go.layout.updatemenu.Button(
+                    args=["type", "violin"], label="Violin", method="restyle"
+                ),
+            ],
+            pad=go.layout.updatemenu.Pad(r=2, t=2),  # padding
+            active=0, # Determines which button (by index starting from 0) is considered active
+            showactive=True,  # highlight active button
+            x=0,
+            xanchor="left",  # "left", "center" or "right"
+            y=1.2,
+            yanchor="top",  # "top", "middle" or "bottom"
+        ),
+    ]
+)
+fig.show()
+```
+
+```py title="Method update"
+import plotly.graph_objects as go
+import numpy as np
+import math
+
+xpoints = np.arange(0, math.pi * 2, 0.05)
+y1 = np.sin(xpoints)
+y2 = np.cos(xpoints)
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=xpoints, y=y1, name="Sine"))
+fig.add_trace(go.Scatter(x=xpoints, y=y2, name="cos", visible=False))
+fig.layout.update(
+    updatemenus=[
+        go.layout.Updatemenu(
+            type="buttons",
+            buttons=[
+                go.layout.updatemenu.Button(
+                    label="first",
+                    method="update",
+                    args=[{"visible": [True, False]}, {"title": "Sine"}],
+                    # [True, False]: array since we have two traces
+                ),
+                go.layout.updatemenu.Button(
+                    label="second",
+                    method="update",
+                    args=[{"visible": [False, True]}, {"title": "Cos"}],
+                ),
+            ],
+        )
+    ]
+)
+fig.show()
+```
+
+```py title="Animation - move point on a curve"
+import plotly.graph_objects as go
+
+# xaxis.autorange=False necessary for consistent axis ranges during animation
+# buttons.args=[None] will animate all frames. Use args=[[frame_name]] to animate specific frames.
+
+N = 20
+x = [i for i in range(N)]
+y = [i**2 for i in x]
+data = [
+    go.Scatter(x=x, y=y, mode="lines", line=dict(width=2, color="blue")),
+    go.Scatter(x=[x[0]], y=[y[0]], mode="markers", marker=dict(color="red", size=10)),
+]
+layout = go.Layout(
+    xaxis=dict(range=[min(x) - 5, max(x) + 5], autorange=False),
+    yaxis=dict(range=[min(y) - 50, max(y) + 50], autorange=False),
+    updatemenus=[
+        go.layout.Updatemenu(
+            type="buttons",
+            buttons=[
+                go.layout.updatemenu.Button(
+                    args=[None],
+                    label="Play",
+                    method="animate",
+                )
+            ],
+        )
+    ],
+)
+frames = [
+    go.Frame(
+        data=[
+            go.Scatter(
+                x=[x[k]], y=[y[k]], mode="markers", marker=dict(color="red", size=10)
+            )
+        ],
+        traces=[1],  # fig.data[1] is updated by each frame
+    )
+    for k in range(N)
+]
+
+fig = go.Figure(data=data, layout=layout, frames=frames)
+fig.show()
+```
