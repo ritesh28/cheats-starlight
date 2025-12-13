@@ -2,10 +2,6 @@
 title: Plotly v5.9.0
 ---
 
-## Migrate Version 3 to 4 (DELETE LATER)
-
-- The legacy online-only `GraphWidget` class has been removed. Please use the `plotly.graph_objects.FigureWidget` class instead
-
 ![Plotly intro](./plotly.drawio.svg)
 
 ```py title="plotly express"
@@ -665,5 +661,42 @@ frames = [
 ]
 
 fig = go.Figure(data=data, layout=layout, frames=frames)
+fig.show()
+```
+
+## Slider Control
+
+```py title="Slider Example"
+import plotly.graph_objects as go
+import numpy as np
+
+fig = go.Figure()
+
+for step in np.arange(0, 5, 0.1):
+    fig.add_trace(
+        go.Scatter(
+            visible=False,
+            line=dict(color="blue", width=2),
+            name=" = " + str(step),
+            x=np.arange(0, 10, 0.01),
+            y=np.sin(step * np.arange(0, 10, 0.01)),
+        )
+    )
+fig.data[10].visible = True  # 10th trace set to visible
+
+# Create and add slider
+steps = []
+for i in range(len(fig.data)):
+    step = go.layout.slider.Step(
+        method="restyle",
+        args=[
+            "visible",
+            [True if i == j else False for j in range(len(fig.data))],
+        ],  # Toggle i'th trace to "visible"
+        label=str(i),
+    )
+    steps.append(step)
+slider = go.layout.Slider(active=10, steps=steps)
+fig.layout.update(sliders=[slider])
 fig.show()
 ```
