@@ -130,6 +130,24 @@ fig.layout = go.Layout(
 fig.show()
 ```
 
+## Fill Area plot
+
+```py title="Fill Example"
+import plotly.graph_objects as go
+
+# fill="tozeroy": fill down to xaxis
+# trace1.fill="tonexty": fill to trace0 y. I.e. fill area between trace0 and trace1
+# "toself" connects the endpoints of the trace into a closed shape
+# "tonext" fills the space between two traces if one completely encloses the other (eg consecutive contour lines), and behaves like "toself" if there is no trace before it
+#        # "tonext" should not be used if one trace does not enclose the other.
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=[1, 2, 3, 4], y=[0, 2, 3, 5], fill="tozeroy"))
+fig.add_trace(go.Scatter(x=[1, 2, 3, 4], y=[3, 5, 1, 7], fill="tonexty"))
+
+fig.show()
+```
+
 ## Subplots
 
 ```py title="subplot"
@@ -180,6 +198,164 @@ x = np.linspace(0, 1, N)
 fig = make_subplots(1, 3, shared_yaxes="all", shared_xaxes="all")
 for i in range(1, 4):
     fig.add_trace(go.Scatter(x=x, y=np.random.random(N)), 1, i)
+fig.show()
+```
+
+## Hover Text
+
+```py title="Hover mode"
+import plotly.graph_objects as go
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(y=[10, 34, 23, 45, 12, 34, 23, 44]))
+fig.add_trace(go.Scatter(y=[16, 24, 33, 21, 32, 13, 44, 32]))
+fig.layout = go.Layout(hovermode="x unified")
+fig.show()
+```
+
+```py title="Hover subplot"
+import plotly.graph_objects as go
+from plotly import data
+
+# New in v5.21
+# layout.hoversubplots define how hover effects expand to additional subplots.
+# With hoversubplots=axis, hover effects are included on stacked subplots using the same axis when hovermode is set to x, x unified, y, or y unified.
+
+layout = dict(
+    hoversubplots="axis",
+    title=dict(text="Stock Price Changes"),
+    hovermode="x",
+    grid=dict(rows=3, columns=1),
+)
+df = data.stocks()
+traces = [
+    go.Scatter(x=df["date"], y=df["AAPL"], xaxis="x", yaxis="y", name="Apple"),
+    go.Scatter(x=df["date"], y=df["GOOG"], xaxis="x", yaxis="y2", name="Google"),
+    go.Scatter(x=df["date"], y=df["AMZN"], xaxis="x", yaxis="y3", name="Amazon"),
+]
+fig = go.Figure(data=traces, layout=layout)
+fig.show()
+```
+
+```py title="Customize hover text"
+import plotly.graph_objects as go
+
+fig = go.Figure(
+    go.Scatter(
+        x=[1, 2, 3, 4, 5],
+        y=[2.02825, 1.63728, 6.83839, 4.8485, 4.73463],
+        hovertemplate="<i>Price</i>: $%{y:.2f}"
+        + "<br><b>X</b>: %{x}<br>"
+        + "<b>%{text}</b>",
+        text=["Custom text {}".format(i + 1) for i in range(5)],
+    )
+)
+fig.add_trace(
+    go.Scatter(
+        x=[1, 2, 3, 4, 5],
+        y=[3.02825, 2.63728, 4.83839, 3.8485, 1.73463],
+        hovertemplate="Price: %{y:$.2f}<extra></extra>",  # removes trace name
+    )
+)
+fig.add_trace(
+    go.Pie(
+        values=[2, 5, 3, 2.5],
+        labels=["R", "Python", "Java Script", "Matlab"],
+        text=["textA", "TextB", "TextC", "TextD"],
+        hovertemplate="%{label}: <br>Popularity: %{percent} </br> %{text}",  # uses built-in 'percent' variable
+    )
+)
+fig.layout = go.Layout(hoverlabel=go.layout.Hoverlabel(align="right"))
+#  align: Sets the horizontal alignment of the text content within hover label box. Has an effect only if the hover label text spans more two or more lines
+fig.show()
+```
+
+```py title="Spike"
+import plotly.graph_objects as go
+
+# showspikes: Determines whether or not spikes (aka droplines) are drawn for this axis. Note: This only takes affect when hovermode = closest
+# spikesnap: Determines whether spikelines are stuck to the cursor or to the closest datapoints.
+# spikemode: "toaxis": line is drawn from the data point to the axis; "across": line is drawn across the entire plot area; "marker": marker dot is drawn on the axis
+
+
+fig = go.Figure(
+    go.Scatter(
+        x=[1, 2, 3, 4, 5],
+        y=[2.02825, 1.63728, 6.83839, 4.8485, 4.73463],
+    )
+)
+fig.layout = go.Layout(
+    xaxis=go.layout.XAxis(showspikes=True, spikesnap="cursor", spikemode="across"),
+    yaxis=go.layout.YAxis(showspikes=True),
+    spikedistance=1000,
+    hoverdistance=100,
+)
+fig.show()
+```
+
+## Shapes
+
+```py title="Using Scatter Plot"
+import plotly.graph_objects as go
+
+# Repeat the initial point to close the shape
+# Can have more shapes either by adding more traces or interrupting the series with 'None'.
+
+fig = go.Figure(
+    go.Scatter(
+        x=[0, 1, 2, 0, None, 3, 3, 5, 5, 3],
+        y=[0, 2, 0, 0, None, 0.5, 1.5, 1.5, 0.5, 0.5],
+        fill="toself",
+    )
+)
+fig.show()
+```
+
+```py title="Add Shape Func"
+import plotly.graph_objects as go
+
+# type: Sets the shape type - line, rect, circle, path
+# shape.xref: Refers to axis id or 'paper' which refer to the entire x axis of the plot
+# shape.layer: 'below' or 'above' the traces. 'between' is present in 5.21
+# LINE: Line is drawn from (x0, y0) to (x1, y1). line.dash: Sets the line style
+# CIRCLE: Circle is drawn within the bounding box defined by (x0, y0) and (x1, y1)
+
+fig = go.Figure()
+fig.layout = go.Layout(xaxis=dict(range=[0, 8]), yaxis=dict(range=[0, 4]))
+fig.add_shape(
+    type="line",
+    x0=2,
+    y0=3,
+    x1=5,
+    y1=3,
+    xref="x",
+    yref="y",
+    line={"color": "LightSeaGreen", "width": 4, "dash": "dashdot"},
+    # label=dict( # LABEL IS SUPPORTED IN PLOTLY 5.14 AND ABOVE
+    #     texttemplate="Slope of %{slope:.3f} and length of %{length:.3f}",
+    #     font=dict(size=20),
+    # ),
+)
+fig.add_shape(
+    type="rect",
+    xref="paper",
+    yref="paper",
+    x0=0.25,
+    y0=0,
+    x1=0.5,
+    y1=0.5,
+    line={"color": "RoyalBlue", "width": 2},
+    fillcolor="LightSkyBlue",
+)
+fig.add_shape(
+    type="circle",
+    fillcolor="PaleTurquoise",
+    x0=5,
+    y0=1,
+    x1=6,
+    y1=2,
+    line_color="LightSeaGreen",
+)
 fig.show()
 ```
 
@@ -276,6 +452,46 @@ trace1 = go.Scatter(x=x_vals, y=y2, mode="lines+markers", name="line+markers")
 trace2 = go.Scatter(x=x_vals, y=y3, mode="lines", name="line")
 data = [trace0, trace1, trace2]
 fig = go.Figure(data=data)
+fig.show()
+```
+
+```py title="Stack Area Chart"
+import plotly.graph_objects as go
+
+# stackgroup: Set several scatter traces (on the same subplot) to the same stackgroup in order to add their y values (or their x values if `orientation` is "h")
+#             It turns `fill` on by default, using "tonexty" ("tonextx") if `orientation` is "h" ("v") and sets the default `mode` to "lines" irrespective of point count
+# groupnorm: Sets the normalization for the sum of the stackgroup - "fraction' & 'percent'.
+#            Should be set on the first trace of the stackgroup.
+
+x = ["Winter", "Spring", "Summer", "Fall"]
+
+fig = go.Figure()
+fig.add_trace(
+    go.Scatter(
+        x=x,
+        y=[40, 60, 40, 10],
+        line=dict(width=0.5, color="rgb(131, 90, 241)"),
+        stackgroup="one",
+    )
+)
+fig.add_trace(
+    go.Scatter(
+        x=x,
+        y=[20, 10, 10, 60],
+        line=dict(width=0.5, color="rgb(111, 231, 219)"),
+        stackgroup="one",
+    )
+)
+fig.add_trace(
+    go.Scatter(
+        x=x,
+        y=[40, 30, 50, 30],
+        line=dict(width=0.5, color="rgb(184, 247, 212)"),
+        stackgroup="one",
+    )
+)
+
+fig.update_layout(yaxis_range=(0, 100))
 fig.show()
 ```
 
