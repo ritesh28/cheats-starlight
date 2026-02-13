@@ -1,5 +1,5 @@
 ---
-title: Streamlit
+title: Streamlit v1.54.0
 ---
 
 ![PyTorch Image](./streamlit.drawio.svg)
