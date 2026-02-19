@@ -1,6 +1,5 @@
 ---
 title: IPython
-description: Interactive Python - Its an enhanced python interpreter
 ---
 
 ![ipython Image](./ipython.drawio.svg)

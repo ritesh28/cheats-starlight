@@ -4,21 +4,21 @@ title: NumPy
 
 ![NumPy Image](./numpy.drawio.svg)
 
-## Create Array
+## Array Basics - Create
 
-| Task to perform                                                          | Syntax                                                |
-| ------------------------------------------------------------------------ | ----------------------------------------------------- |
-| create array from python list                                            | `np.array([1,2,3,4])`                                 |
-| explicitly set data type of items                                        | `np.array([1,2,3,4], dtype=np.float32)`               |
-| array of length 10 filled with 0s                                        | `np.zeros(10, dtype=np.int)`                          |
-| 3x5 floating-point array filled with 1s                                  | `np.ones((3,5), dtype=np.float)`                      |
-| 3x5 array filled with 3.14                                               | `np.full((3,5), 3.14)`                                |
-| linear sequence starting from 0, ending at 20 (excluding), stepping by 2 | `np.arange(0,20,2)` </br> similar to python `range()` |
-| array of 5 values evenly spaced between 0 and 1 (including)              | `np.linspace(0,1,5)`                                  |
-| uniformly distributed 3x3 array with values between 0 & 1                | `np.random.random((3,3))`                             |
-| 3x3 array of integers in 0 (including) & 10 (excluding)                  | `np.random.randint((0,10,(3,3)))`                     |
+| Task to perform                                    | Syntax                                                |
+| -------------------------------------------------- | ----------------------------------------------------- |
+| from list                                          | `np.array([1,2,3,4], dtype=np.float32)`               |
+| filled with 0s                                     | `np.zeros(10)` or `np.zeros((10,))` 1Dimension        |
+| filled with 1s                                     | `np.ones((3,5), dtype=np.float)` 2Dimension           |
+| filled with 3.14                                   | `np.full((3,5), 3.14)`                                |
+| linear sequence                                    | `np.arange(0,20,2)` </br> similar to python `range()` |
+| 5 values evenly spaced between 0 and 1 (including) | `np.linspace(0,1,5)`                                  |
+| uniformly distributed values between 0 & 1         | `np.random.random((3,3))`                             |
+| random integers between 0 & 10 (excluding)         | `np.random.randint((0,10,(3,3)))`                     |
+| generate same random numbers                       | `np.random.seed(0)`                                   |
 
-## Attributes of Arrays
+## Array Basics - Attributes
 
 | Attribute              | Syntax                           |
 | ---------------------- | -------------------------------- |
@@ -27,29 +27,30 @@ title: NumPy
 | total size             | `<obj>.size`                     |
 | data type              | `<obj>.dtype`                    |
 
-## Access Item of Arrays
+## Array Basics - Accessing
 
-| Type of access              | Syntax                                                                                      |
-| --------------------------- | ------------------------------------------------------------------------------------------- |
-| 1D - access single item     | `x1[0]`. Allows negative indices as well                                                    |
-| multi-D - access singe item | `x2[0,0]`                                                                                   |
-| 1D - slicing                | `x[start:stop:step]`. Same like python list                                                 |
-| multi-D - slicing           | Works in the same way, with multiple slices separated by commas. E.x. for 3x3, `x2[:2, :3]` |
-| multi-D - access column     | `x2[:, 0]`: first column                                                                    |
-| multi-D - access row        | `x2[0, :]` or `x2[0]`: first row                                                            |
+| Type of access              | Syntax                                   |
+| --------------------------- | ---------------------------------------- |
+| 1D - access single item     | `x1[0]`. Allows negative indices as well |
+| multi-D - access singe item | `x2[0,0]`                                |
+| 1D - slicing                | `x[start:stop:step]`. SEE INFOGRAPHIC    |
+| multi-D - slicing           | `x2[:2, :3]`. Slice for each dimension   |
+| 2D - access column          | `x2[:, 0]`: first column                 |
+| 2D - access row             | `x2[0, :]` or `x2[0]`: first row         |
 
-## Manipulation of Arrays
+## Array Basics - Manipulation
 
-| Task             | Syntax                                                             |
-| ---------------- | ------------------------------------------------------------------ |
-| Reshaping        | `np.arange(1, 10).reshape((3, 3))`                                 |
-| Concatenation    | `np.concatenation(list_of_arrays, axis=zero_indexed_axis)`         |
-| Vertical stack   | `np.vstack(list_of_arrays)`. Concatenation along first axis        |
-| Horizontal stack | `np.hstack(list_of_arrays)`. Concatenation along second axis       |
-| Depth stack      | `np.dstack(list_of_arrays)`. Concatenation along third axis        |
-| Splitting        | `np.split(array, list_of_split_indices)`. Split along first axis   |
-| Vertical split   | `np.vsplit(array, list_of_split_indices)`. Split along first axis  |
-| Horizontal split | `np.hsplit(array, list_of_split_indices)`. Split along second axis |
+| Task                            | Syntax                                                                      |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| Reshaping                       | `np.arange(1, 10).reshape((3, 3))`                                          |
+| Reshaping via `newaxis` keyword | `<arr>[np.newaxis, :]` or `<arr>.reshape((1, 3))`. Row vector               |
+| Concatenation                   | `np.concatenation(list_of_arrays, axis=zero_indexed_axis)`. SEE INFOGRAPHIC |
+| Vertical stack                  | `np.vstack(list_of_arrays)`. Concatenation along first axis                 |
+| Horizontal stack                | `np.hstack(list_of_arrays)`. Concatenation along second axis                |
+| Depth stack                     | `np.dstack(list_of_arrays)`. Concatenation along third axis                 |
+| Splitting                       | `np.split(array, list_of_split_indices)`. Split along first axis            |
+| Vertical split                  | `np.vsplit(array, list_of_split_indices)`. Split along first axis           |
+| Horizontal split                | `np.hsplit(array, list_of_split_indices)`. Split along second axis          |
 
 ```py title="concatenation.py
 grid = np.array(
@@ -70,20 +71,18 @@ g2 = np.concatenate([grid, grid], axis=1)  # along second axis
 #        [4, 5, 6, 4, 5, 6]])
 ```
 
-## Ufunc
+## Computation on NumPy Arrays: Universal Functions (uFunc)
 
-| task                | Example                                          |
-| ------------------- | ------------------------------------------------ |
-| Aggregation         | `np.sum(x)`, `np.min(x)` OR `x.sum()`, `x.min()` |
-| Multi-D Aggregation | ``                                               |
-
-### Advanced features
-
-| feature           | Example                                                                              |
-| ----------------- | ------------------------------------------------------------------------------------ |
-| Specifying output | `np.multiply(x, 10, out=y[::2])`                                                     |
-| Aggregate         | `np.add.reduce(x)`, `np.sum.accumulate(x)`                                           |
-| Outer product     | `np.multiply.outer(np.arange(1, 6), np.arange(1, 6))`: generate multiplication table |
+| task                   | Example                                                          |
+| ---------------------- | ---------------------------------------------------------------- |
+| unary uFunc            | `x / 2`, `-x`                                                    |
+| binary uFunc           | `x / y`. Both must be of same shape or else broadcasting happens |
+| specifying output      | `np.multiply(x, 10, out=y[::2])`                                 |
+| aggregate - sum        | `x.sum()`(preferred) or `np.add.reduce(x)` or `np.sum(x)`        |
+| aggregate - accumulate | `np.cumsum(x)`(preferred) or `np.add.accumulate(x)`              |
+| aggregate - min        | `x.min()`(preferred) or `np.min(x)`                              |
+| aggregate - ignore NaN | `np.nan*()`. NaN-safe counterpart that ignore missing values     |
+| Multi-D Aggregation    | SEE INFOGRAPHIC                                                  |
 
 ```py title="nan-inf.py"
 print(np.nan)  # not a number
