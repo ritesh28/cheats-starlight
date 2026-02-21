@@ -4,18 +4,38 @@ title: VSCode Agents
 
 ## Context Engineering Primitive
 
+Global Instruction: `.github/copilot-instructions.md`
+
 |                  | custom instructions                           | reusable prompts                        | custom agents                                                          |
 | ---------------- | --------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------- |
 | folder structure | `.github/instructions/*.instructions.md`      | `.github/prompts/*.prompt.md`           | `.github/agents/*.agent.md`                                            |
-| definition       | rules of engagement                           | executable commands                     | personas & workflows                                                   |
+| definition       | rules of engagement                           | executable commands                     | role-based personas & workflows                                        |
 | primary purpose  | guidelines that influence all AL interactions | specific tasks you run when needed      | different working contexts with specialized tools & instructions       |
-| best for         | coding standards, language-specific rules     | generate components, inc. text coverage | API architect, security review                                         |
+| best for         | coding standards, language-specific rules     | generate components, inc. text coverage | API architecture, security reviewer, UI/UX designer                    |
 | usage            | automatically applied to all requests         | user runs slash command                 | user switches agents                                                   |
 | font-matter      | name, description, applyTo (files)            | name, description, agent, model, tools  | name, description, argument-hint (inputs), tools, handoff (next steps) |
+
+| type                    | loading                   | best for              |
+| ----------------------- | ------------------------- | --------------------- |
+| always-on instructions  | every session             | codebase guardrails   |
+| file-based instructions | pattern/description match | area-specific rules   |
+| prompts                 | /commands                 | one-shot workflows    |
+| custom agents           | dropdown or subagents     | constraint workflows  |
+| skills                  | on demand                 | reusable capabilities |
+| hooks                   | on lifecycle trigger      | contextual automation |
+| mcp                     | session start             | external gateways     |
+
+## Rules for Instructions
+
+- Be specific: 'use Vitest' not 'use a testing framework'
+- Include reasoning: 'use date-fns, moment.js is deprecated'
+- Opt for code examples over abstract rules
+- Skip rules that linters/formatters already enforce (to minimize context window size)
 
 ## Custom Instructions vs Skills
 
 - `.github/skills/hello-world/SKILL.md`
+- Add capabilities to the agent
 - example - We can teach new skill (like reading pdf) to agents
 
 ## Structured Autonomy
@@ -41,7 +61,11 @@ title: VSCode Agents
 ## Agent Orchestration
 
 - plan mode
-- sub agents
+- Subagents
+  - Run in its own context window
+  - Receives an input prompt from the orchestrator
+  - Returns just the response
+  - Main agent's context stays clean
 
 ## TODO
 
