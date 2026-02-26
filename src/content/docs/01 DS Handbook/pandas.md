@@ -17,6 +17,7 @@ title: Pandas
 | Data Indexing & Selection - Syntax  | Description                                                                         |
 | ----------------------------------- | ----------------------------------------------------------------------------------- |
 | `data.values`                       | get values. Type: `numpy.ndarray`                                                   |
+| `data.unique()`                     | Return unique values. Type: `numpy.ndarray`                                         |
 | `data.index`                        | get index. Index is an array-like object of type `pd.Index`                         |
 | `data[<index>]`                     | explicit index when indexing. `data[1]` returns value with index (not position) `1` |
 | `data[<index-int>:<index-int>]`     | implicit index when slicing. `data[1:3]` returns values at position `1` & `2`       |
@@ -54,7 +55,7 @@ title: Pandas
 | `A.add(B, fill_value=0)`         | fill missing value. Default: `NaN` (floating type)                                                           |
 | `df - df.iloc[0]`                | Operate row-wise (Default, `axis=1 (columns)`). Operation b/w dataframe & series (with column name as index) |
 | `df.subtract(df['R'], axis=0)`   | Operate column-wise. Operation b/w dataframe & series (with same index of dataframe)                         |
-| `df.<operation>(inplace=)`       | modify the object in place (do not create a new object)                                                      |
+| `df.<operation>(inplace=True)`   | modify the object in place (do not create a new object)                                                      |
 
 ## Null Values
 
@@ -105,3 +106,34 @@ title: Pandas
 | `df.loc[:, ('col_lev_1', 'col_lev_2')]`                             | Returns Series                                               |
 | `df.iloc[:2, :2]`                                                   | Returns first-2-row & first-2-column grid                    |
 | `idx = pd.IndexSlice; df.loc[idx[:, row_lev_2], idx[:, col_lev_2]]` | Use `IndexSlice` when working with slices within tuple index |
+
+## Combining Dataset - Concat & Append
+
+| Syntax                                  | Description                                                                                                   |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `pd.concat([df1, df2])`                 | By default, row-wise concatenation. `axis=0`                                                                  |
+| `pd.concat([df1, df2], axis="columns")` | column-wise concatenation. `axis=1`                                                                           |
+| `pd.concat(..., verify_integrity=True)` | concatenation will raise an exception if there are duplicate indices                                          |
+| `pd.concat(..., ignore_index=True)`     | Original index are ignored. Result index: `range(0, size)`                                                    |
+| `pd.concat(..., keys=['x', 'y'])`       | Construct hierarchical index using the passed keys as the outermost level. `df1` with label `x`               |
+| `pd.concat(..., join='inner')`          | final column set is interaction of input columns. By default, join is a union of input columns `join='outer'` |
+| `df1.append(df2)` (AVOID IT)            | Same as `pd.concat([df1, df2])`. Not an efficient method                                                      |
+
+## Combining Dataset - Merge & Join
+
+| Syntax                                                                     | Explanation                                                                          |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `pd.merge(df1, df2, on='<common-column>')`                                 | explicitly specify the name of the key column. Takes single or list of column names  |
+| `pd.merge(df1, df2, left_on="col_1", right_on="col_2")`                    | merge two datasets with different column names                                       |
+| `pd.merge(df1, df2, left_index=True, right_index=True)` or `df1.join(df2)` | use df1 & df2 indices as the key for merging                                         |
+| `pd.merge(df1a, df3, left_index=True, right_on='name')`                    | mixing indices and columns                                                           |
+| `pd.merge(df1, df2, how='<type_of_merge>')`                                | Similar to SQL joins. Values: left, right, outer, inner, cross. Default: inner       |
+| `pd.merge(df8, df9, on="name", suffixes=["_L", "_R"])`                     | Suffixes for the overlapping column names (other than key column). Default: `_x, _y` |
+
+## Misc
+
+| Syntax          | Usage                  |
+| --------------- | ---------------------- |
+| `pd.read_csv()` | read CSV file          |
+| `df.head()`     | display top entries    |
+| `df.tail()`     | display bottom entries |
