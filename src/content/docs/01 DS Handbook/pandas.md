@@ -34,14 +34,74 @@ title: Pandas
 | list of dicts                            | `pd.DataFrame([{'a': 1, 'b': 2}, {'b': 3, 'c': 4}])`. Missing values are marked `NaN` |
 | 2D NumPy array                           | `pd.DataFrame(np.random.rand(3, 2), columns=['foo', 'bar'], index=['a', 'b', 'c'])`   |
 
-| Syntax                                                | Purpose                                                         |
-| ----------------------------------------------------- | --------------------------------------------------------------- |
-| `df.index`                                            | get row index. Index is an array-like object of type `pd.Index` |
-| `df.columns`                                          | get column names. Type `pd.Index`                               |
-| `df.values`                                           | get values. Type: `numpy.ndarray`                               |
-| `df.T`                                                | Transpose. Swap rows & columns                                  |
-| `df[<column-name>]` (Indexing)                        | Access Series of column data                                    |
-| `df[index-str:index-str]` (Slicing)                   | Return rows. Same as `df[index-str:index-str, :]`               |
-| `data[<index-int>:<index-int>]`                       | implicit index when slicing. `df[1:3]` returns row 1 & 2        |
-| `df.iloc[:3, :2]` or `df.loc[:'Illinois', :'pop']`    | indexer attribute. `(i)loc[row, column]`                        |
-| `data.loc[data["density"] > 100, ["pop", "density"]]` | masking & fancy indexing                                        |
+| Syntax                                                | Purpose                                                                 |
+| ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| `df.index`                                            | get row index. Index is an array-like object of type `pd.Index`         |
+| `df.columns`                                          | get column names. Type `pd.Index`                                       |
+| `df.values`                                           | get values. Type: `numpy.ndarray`                                       |
+| `df.T`                                                | Transpose. Swap rows & columns                                          |
+| `df[<column-name>]` (Indexing)                        | Access Series of column data                                            |
+| `df[index:index]` (Slicing)                           | Return rows. Type: `DataFrame`                                          |
+| `df.iloc[:3, :2]` or `df.loc[:'Illinois', :'pop']`    | indexer attribute. `(i)loc[row, column]`. Type: `Series` or `DataFrame` |
+| `data.loc[data["density"] > 100, ["pop", "density"]]` | masking & fancy indexing                                                |
+
+## Operating on Data
+
+| Syntax                           | Explain                                                                                                      |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `np.square(<ser_or_df>)`         | any NumPy ufunc will work on Pandas Series and DataFrame objects                                             |
+| `pop_ser_or_df / area_ser_or_df` | resulting array contains the union of indices. A missing value is marked with `NaN`                          |
+| `A.add(B, fill_value=0)`         | fill missing value. Default: `NaN` (floating type)                                                           |
+| `df - df.iloc[0]`                | Operate row-wise (Default, `axis=1 (columns)`). Operation b/w dataframe & series (with column name as index) |
+| `df.subtract(df['R'], axis=0)`   | Operate column-wise. Operation b/w dataframe & series (with same index of dataframe)                         |
+| `df.<operation>(inplace=)`       | modify the object in place (do not create a new object)                                                      |
+
+## Null Values
+
+| Syntax           | Description                                       |
+| ---------------- | ------------------------------------------------- |
+| `data.isnull()`  | Generate a Boolean mask indicating missing values |
+| `data.notnull()` | Opposite of `isnull()`                            |
+| `data.dropna()`  | Removes NA values                                 |
+| `data.fillna()`  | Fills in NA values                                |
+
+| DataFrame Scenario - Syntax                        | Explain                                                                                                                |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `df.dropna()`                                      | Drop rows having any `null` value                                                                                      |
+| `df.dropna(axis='columns')` or `df.dropna(axis=1)` | Drop columns having any `null` value. Note: no collapse analogy                                                        |
+| `df.dropna(how='all')`                             | Drop rows having ALL `null` values. Default: `how='any'`                                                               |
+| `df.dropna(thresh=3)`                              | Drop rows having NON-NULL values less than threshold.                                                                  |
+| `data.fillna(5)`                                   | fill NA entries with a single value                                                                                    |
+| `df.fillna(method='ffill', axis=1)`                | forward-fill to propagate previous value forward. Use value of previous column, same index. Skip if no previous column |
+| `df.fillna(method='bfill', axis=1)`                | back-fill to propagate next value backward. Use value of next column, same index. Skip if no next column               |
+
+## Hierarchical/Multi Indexing
+
+| Syntax                                                                    | Description                                                                                 |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `index = pd.MultiIndex.from_tuples([('a',1), ('a',2), ('b',1), ('b',2)])` | multi-index from the tuples                                                                 |
+| `index = pd.MultiIndex.from_arrays([['a', 'a', 'b', 'b'], [1, 2, 1, 2]])` | multi-index from 2 or more index array                                                      |
+| `index = pd.MultiIndex.from_product([['a', 'b'], [1, 2]])` (Preferred)    | multi-index from Cartesian product of single indices                                        |
+| `ser[:, 1]`                                                               | access all data for which the second index is `1`                                           |
+| `ser.unstack(level=-1)`                                                   | Series with MultiIndex produces DataFrame. `level` : int, str, or list. default: last level |
+| `df.stack()`                                                              | opposite of `unstack`. Returns `Series`                                                     |
+| `ser_or_df.index.names = ['state', 'year']` or `pd.MultiIndex.*(names=)`  | multi-index level names                                                                     |
+| `ser_or_df.sort_index()`                                                  | sort object by index labels                                                                 |
+| `ser_or_df.reset_index()`                                                 | turn the index labels into columns. Set `name` param for the original Series values         |
+| `ser_or_df.set_index(['col_1', 'col_2'])`                                 | opposite of `reset_index`. return multi-indexed data                                        |
+
+| Indexing & Slicing - 2 level Series | Description                                      |
+| ----------------------------------- | ------------------------------------------------ |
+| `ser[level_1_index, level_2_index]` | Access single item in 2 level series             |
+| `ser[level_1_index]`                | Partial indexing                                 |
+| `ser[level_1_index:level_1_index]`  | Partial slicing as long as Multi-index is SORTED |
+| `ser[:, level_2_index]`             | Access series with `(*, level_2_index)` key      |
+| `ser[ser > 22000000]`               | masking                                          |
+| `ser[['California', 'Texas']]`      | fancy indexing                                   |
+
+| DataFrame - 2 level col & 2 level index                             | Description                                                  |
+| ------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `df['col_lev_1', 'col_lev_2']`                                      | Returns Series                                               |
+| `df.loc[:, ('col_lev_1', 'col_lev_2')]`                             | Returns Series                                               |
+| `df.iloc[:2, :2]`                                                   | Returns first-2-row & first-2-column grid                    |
+| `idx = pd.IndexSlice; df.loc[idx[:, row_lev_2], idx[:, col_lev_2]]` | Use `IndexSlice` when working with slices within tuple index |
