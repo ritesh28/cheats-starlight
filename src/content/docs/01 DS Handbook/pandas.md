@@ -35,12 +35,18 @@ title: Pandas
 | list of dicts                            | `pd.DataFrame([{'a': 1, 'b': 2}, {'b': 3, 'c': 4}])`. Missing values are marked `NaN` |
 | 2D NumPy array                           | `pd.DataFrame(np.random.rand(3, 2), columns=['foo', 'bar'], index=['a', 'b', 'c'])`   |
 
-| Syntax                                                | Purpose                                                                 |
+| Syntax          | Purpose                                                         |
+| --------------- | --------------------------------------------------------------- |
+| `df.index`      | get row index. Index is an array-like object of type `pd.Index` |
+| `df.columns`    | get column names. Type `pd.Index`                               |
+| `df.values`     | get values. Type: `numpy.ndarray`                               |
+| `df.T`          | Transpose. Swap rows & columns                                  |
+| `df.head()`     | display top entries                                             |
+| `df.tail()`     | display bottom entries                                          |
+| `df.describe()` | computes several common aggregates for each column              |
+
+| Indexing & Slicing - syntax                           | Purpose                                                                 |
 | ----------------------------------------------------- | ----------------------------------------------------------------------- |
-| `df.index`                                            | get row index. Index is an array-like object of type `pd.Index`         |
-| `df.columns`                                          | get column names. Type `pd.Index`                                       |
-| `df.values`                                           | get values. Type: `numpy.ndarray`                                       |
-| `df.T`                                                | Transpose. Swap rows & columns                                          |
 | `df[<column-name>]` (Indexing)                        | Access Series of column data                                            |
 | `df[index:index]` (Slicing)                           | Return rows. Type: `DataFrame`                                          |
 | `df.iloc[:3, :2]` or `df.loc[:'Illinois', :'pop']`    | indexer attribute. `(i)loc[row, column]`. Type: `Series` or `DataFrame` |
@@ -55,6 +61,7 @@ title: Pandas
 | `A.add(B, fill_value=0)`         | fill missing value. Default: `NaN` (floating type)                                                           |
 | `df - df.iloc[0]`                | Operate row-wise (Default, `axis=1 (columns)`). Operation b/w dataframe & series (with column name as index) |
 | `df.subtract(df['R'], axis=0)`   | Operate column-wise. Operation b/w dataframe & series (with same index of dataframe)                         |
+| `df.mean(axis=1)`                | aggregate within each row. Column axis is collapsed                                                          |
 | `df.<operation>(inplace=True)`   | modify the object in place (do not create a new object)                                                      |
 
 ## Null Values
@@ -130,10 +137,46 @@ title: Pandas
 | `pd.merge(df1, df2, how='<type_of_merge>')`                                | Similar to SQL joins. Values: left, right, outer, inner, cross. Default: inner       |
 | `pd.merge(df8, df9, on="name", suffixes=["_L", "_R"])`                     | Suffixes for the overlapping column names (other than key column). Default: `_x, _y` |
 
+## Grouping
+
+| Syntax                                                                  | Description                                                                                    |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `df.groupby("key").sum()`                                               | Aggregation. Returns summation column-wise for each group                                      |
+| `df.groupby('key').aggregate(['min', np.median, max])`                  | Aggregation. Return multi-index column `(col-name, agg-item)` & `group-item` indices DataFrame |
+| `df.groupby("key").aggregate({"col1": "min", "col2": "max"})`           | Aggregation. Different aggregation for different column                                        |
+| `df.groupby("key").filter(lambda grp: grp["col2"].min() > 2)`           | Filter rows based on group properties. `filter(group: DataFrame) -> bool`                      |
+| `df.groupby('key').transform(lambda grp_col: grp_col - grp_col.mean())` | Transform column-wise per group                                                                |
+| `df.groupby("key").apply(lambda grp: grp["data1"] / 2)`                 | Apply any func to grouping df                                                                  |
+
+| Transform                                                                           | Apply                                                                              |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `transform(grp_col: Series) -> Series`                                              | `apply(grp: DataFrame) -> df or series or scalar`                                  |
+| `transform()` passes each column for each group individually as a Series            | `apply()` passes all the columns for each group as a df                            |
+| `transform()` returns a sequence (1D Series, array or list) of same length as group | `apply()` returns a scalar, or a Series or DataFrame (or numpy array or even list) |
+| `df.groupby().transform` returns same shape as the original df                      | `df.groupby().apply` returns df/ser with extra outer multi-index `key`             |
+| Good performance                                                                    | Bad Performance. Last option                                                       |
+
+| Option to specify split key                                                | Syntax                                                            |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Any series or list with a length matching that of df                       | `df.groupby(df['key'])`                                           |
+| A dict that maps index values to the group keys                            | `df2.groupby({'A': 'vowel', 'B': 'consonant', 'C': 'consonant'})` |
+| Similar to mapping, pass func that will input index value and output group | `df2.groupby(str.lower)`                                          |
+| Multi-index grouping                                                       | `df2.groupby([str.lower, mapping])`                               |
+
+## Pivot Tables
+
+| Type           | Syntax                                                                                                                                      |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| basic          | `titanic.pivot_table("survived", index="sex", columns="class")`. Group by class and gender, select survival, apply a mean aggregate         |
+| multilevel     | `titanic.pivot_table('survived', ['sex', age_dis_ctg], [fare_dis_ctg, 'class'])`. Use `pd.cut` or `pd.qcut` for discrete category (dis_ctg) |
+| missing data   | `titanic.pivot_table(..., fill_value=)` or `titanic.pivot_table(..., dropna=True)`                                                          |
+| aggregate      | `titanic.pivot_table(index='sex', columns='class', aggfunc={'survived':sum, 'fare':'mean'})`. Note: No `values` value                       |
+| compute totals | `titanic.pivot_table(..., margins=True, margins_name='All')`                                                                                |
+
 ## Misc
 
-| Syntax          | Usage                  |
-| --------------- | ---------------------- |
-| `pd.read_csv()` | read CSV file          |
-| `df.head()`     | display top entries    |
-| `df.tail()`     | display bottom entries |
+| Syntax                             | Usage                                                                                                                    |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `pd.read_csv()`                    | read CSV file                                                                                                            |
+| `pd.cut(series, bins=[0, 18, 80])` | Create `(0, 18] & (18, 80]` bins. Useful for going from a continuous variable to a categorical variable                  |
+| `pd.qcut(titanic["fare"], q=4)`    | Quantile-based discretization. It divides data into bins that each contain approximately the same number of observations |
