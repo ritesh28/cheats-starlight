@@ -231,3 +231,10 @@ data[0]  # Get first row of data
 data[-1]["name"]  # Get the name from the last row
 data[data["age"] < 30]["name"]  # Get names where age is under 30
 ```
+
+## Misc
+
+| Syntax                                          | Usage                                                     |
+| ----------------------------------------------- | --------------------------------------------------------- |
+| `np.percentile(np.arange(101), q=[25, 50, 75])` | Returns the q-th percentile(s) of the array elements      |
+| `np.where(a < 5, a, 10*a)`                      | Returns array with elements with `a` if `a < 5` or `10*a` |
