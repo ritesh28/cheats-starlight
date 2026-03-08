@@ -23,7 +23,8 @@ plt.show() # needed in .py file and NOT in .ipynb
 | line              | 2 (x,y)              | `.plot()`                              | Plot y versus x as lines and/or markers                                              |
 | scatter           | 4 (x,y,color,size)   | `.scatter()`                           | when you want to control each point props (size,face color, edge color) individually |
 | error             | 1 (d(delta/)y or dx) | `.errorbar()`,`fill_between()`         | display error                                                                        |
-| density & contour |                      | `.contour()`,`.contourf()`,`.imshow()` | display 3D data in 2D using contours or color-coded regions                          |
+| density & contour | 3 (x,y,z)            | `.contour()`,`.contourf()`,`.imshow()` | display 3D data in 2D using contours or color-coded regions                          |
+| histogram         | 1 (x) or 2(x,y)      | `.hist()`, `.hist2d()`, `.hexbin()`    | shows distribution of data                                                           |
 
 ```py title='scatter plot with plt.plot'
 plt.plot(x, y, "o", color="c")  # third argument is the marker style
@@ -78,6 +79,68 @@ plt.plot(x, y, "-", color="gray")
 plt.fill_between(
     x, y - 0.8, y + 0.8, color="gray", alpha=0.2
 )  # we pass x, lower y-bound & upper y-bound. Result is the continuous uncertainty(error) with filled regions
+```
+
+```py title='density & contour plot'
+# TYPES: plt.contour for contour plots, plt.contourf for filled contour plots, and plt.imshow for showing images
+# 3D FUNCTION: z = f(x, y)
+def f(x, y):
+    return np.sin(x) + np.cos(y)
+
+x, y = np.linspace(-5, 5, 50), np.linspace(-5, 5, 40)
+X, Y = np.meshgrid(x, y)
+Z = f(X, Y)
+
+# ==== CONTOUR PLOTS: VISUALIZING THREE-DIMENSIONAL DATA WITH CONTOURS
+# plt.contour() takes three arguments: a grid of x values, a grid of y values, and a grid of z values.
+# The x and y values represent positions on the plot, and the z values will be represented by the contour levels
+
+# SINGLE COLOR: -ve Z values are represented by dashed lines, and +ve Z values by solid lines
+plt.contour(X, Y, Z, colors="black")
+
+# MULTI COLOR
+plt.contour(
+    X,
+    Y,
+    Z,
+    20,  # 20 contour levels
+    cmap="RdGy",  # colormap to color the lines according to their z value
+)
+plt.colorbar()  # shows the mapping between colors and z values
+
+# ==== FILLED CONTOUR PLOTS
+plt.contourf(X, Y, Z, 20, cmap="RdGy")  # uses largely the same syntax as plt.contour()
+plt.colorbar()
+
+# ==== IMAGES
+# problem of filled contour: the color steps are discrete rather than continuous, which is not always what is desired
+# solution: use plt.imshow() which interprets a 2D grid of data as an image
+plt.imshow(
+    Z,
+    extent=[-5, 5, -5, 5],  # doesn’t accept x & y grid, so set [xmin,xmax,ymin,ymax]
+    origin="lower",  # by default, origin is in the upper left (like all images), not in the lower left as in most contour plots
+    cmap="RdGy",
+)
+plt.colorbar()
+plt.axis("image")  # make sure the plot is square
+
+# ==== CONTOUR + IMAGE: LABELED CONTOURS ON TOP OF AN IMAGE
+contours = plt.contour(X, Y, Z, colors="black")
+plt.clabel(contours, inline=True, fontsize=8)  # label on contours
+plt.imshow(Z, extent=[-5, 5, -5, 5], origin="lower", cmap="RdGy", alpha=0.5)
+plt.colorbar()
+```
+
+```py title='histogram'
+data = np.array([1, 2, 2, 3, 3, 3, 4, 4, 4, 4])
+plt.hist(
+    data,
+    bins=4,
+    alpha=0.5,
+    histtype="stepfilled",  # "stepfilled" for filled histogram, "step" for unfilled histogram
+    color="steelblue",
+    edgecolor="none",  # No edge color
+)
 ```
 
 ## Adjusting plot
