@@ -234,7 +234,22 @@ data[data["age"] < 30]["name"]  # Get names where age is under 30
 
 ## Misc
 
-| Syntax                                          | Usage                                                     |
-| ----------------------------------------------- | --------------------------------------------------------- |
-| `np.percentile(np.arange(101), q=[25, 50, 75])` | Returns the q-th percentile(s) of the array elements      |
-| `np.where(a < 5, a, 10*a)`                      | Returns array with elements with `a` if `a < 5` or `10*a` |
+| Syntax                                          | Usage                                                                                       |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `np.percentile(np.arange(101), q=[25, 50, 75])` | Returns the q-th percentile(s) of the array elements                                        |
+| `np.where(a < 5, a, 10*a)`                      | Returns array with elements with `a` if `a < 5` or `10*a`                                   |
+| `X, Y = np.meshgrid(x, y)`                      | Takes 1D array (representing axes) and returns 2 2D array used to create a rectangular grid |
+
+```py title='meshgrid'
+x = np.array([1, 2, 3])
+y = np.array([4, 5])
+
+X, Y = np.meshgrid(x, y)
+# X: [[1 2 3] [1 2 3]] => contains copies of the x-values repeated for each y-value. DUPLICATE ROW
+# Y: [[4 4 4] [5 5 5]] => contains copies of the y-values repeated for each x-value. DUPLICATE COLUMN
+
+# ==== PARAMETER
+# indexing='xy': This decides how the grid is arranged. 'xy': Standard Cartesian coordinate system (DEFAULT)
+# sparse=False: By default, this creates a full grid. If set to True, it’ll generate a compact grid to save memory (helpful for large arrays)
+# copy=True: This ensures that the output is a separate copy of the data, not just a reference
+```

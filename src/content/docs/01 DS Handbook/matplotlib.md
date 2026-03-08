@@ -18,9 +18,67 @@ plt.show() # needed in .py file and NOT in .ipynb
 
 ## Types of plot
 
-| plot type | no. of dimension | syntax                | when to use                             |
-| --------- | ---------------- | --------------------- | --------------------------------------- |
-| line      | 2                | `.plot(x, np.sin(x))` | Plot y versus x as lines and/or markers |
+| plot type         | no. of dimension     | syntax                                 | when to use                                                                          |
+| ----------------- | -------------------- | -------------------------------------- | ------------------------------------------------------------------------------------ |
+| line              | 2 (x,y)              | `.plot()`                              | Plot y versus x as lines and/or markers                                              |
+| scatter           | 4 (x,y,color,size)   | `.scatter()`                           | when you want to control each point props (size,face color, edge color) individually |
+| error             | 1 (d(delta/)y or dx) | `.errorbar()`,`fill_between()`         | display error                                                                        |
+| density & contour |                      | `.contour()`,`.contourf()`,`.imshow()` | display 3D data in 2D using contours or color-coded regions                          |
+
+```py title='scatter plot with plt.plot'
+plt.plot(x, y, "o", color="c")  # third argument is the marker style
+# other markers: ".", ",", "x", "+", "v", "^", "<", ">", "s" (square), "d" (diamond)
+
+# ==== SHORT-HAND
+plt.plot(x, y, "-ok") # line (-), circle marker (o), black (k)
+
+# ==== ADDITIONAL KEYWORD ARGUMENTS FOR LINE AND MARKER PROPERTIES
+plt.plot(
+    x,
+    y,
+    "-p",  # pentagon marker with a line
+    color="gray",
+    linewidth=4,
+    markersize=15,
+    markerfacecolor="white",
+    markeredgecolor="gray",
+    markeredgewidth=2,
+)
+```
+
+```py title='scatter plot with plt.scatter'
+plt.scatter(x, y, marker="o")
+
+# ==== CHANGING SIZE, COLOR IN SCATTER POINTS
+plt.scatter(
+    x,
+    y,
+    c=colors,  # color array-like
+    s=sizes,  # size array-like
+    alpha=0.3,  # transparency
+    cmap="viridis",  # color map
+)
+plt.colorbar()  # show color scale
+```
+
+```py title='visualizing error'
+# ==== BASIC ERROR-BARS
+plt.errorbar(
+    x,
+    y,
+    yerr=0.8,  # vertical error bar sizes (±0.8)
+    fmt=".k",  # format for the appearance of lines and points, and has same syntax as the shorthand used in plt.plot
+    ecolor="lightgray",  # error bar line color
+    elinewidth=3,  # error bar line width
+    capsize=5,  # error bar cap (horizontal line at the end of the error bar) size
+)
+
+# ==== CONTINUOUS ERRORS: Combine primitives like plt.plot and plt.fill_between
+plt.plot(x, y, "-", color="gray")
+plt.fill_between(
+    x, y - 0.8, y + 0.8, color="gray", alpha=0.2
+)  # we pass x, lower y-bound & upper y-bound. Result is the continuous uncertainty(error) with filled regions
+```
 
 ## Adjusting plot
 
