@@ -2,7 +2,7 @@
 title: Pandas
 ---
 
-![Pandas Image](./pandas.drawio.svg)
+![Pandas Image](./03-pandas.drawio.svg)
 
 ## Pandas Object - Series
 

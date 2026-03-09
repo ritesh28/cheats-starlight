@@ -2,7 +2,7 @@
 title: IPython
 ---
 
-![ipython Image](./ipython.drawio.svg)
+![ipython Image](./01-ipython.drawio.svg)
 
 ## Shortcuts
 

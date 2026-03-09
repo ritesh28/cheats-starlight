@@ -2,7 +2,7 @@
 title: Matplotlib
 ---
 
-![Matplotlib Image](./matplotlib.drawio.svg)
+![Matplotlib Image](./04-matplotlib.drawio.svg)
 
 ```py title='general matplotlib tips'
 # ====== PLOTTING FROM AN IPYTHON NOTEBOOK
@@ -337,7 +337,7 @@ ax.xaxis.set_major_formatter(plt.FuncFormatter(format_func))
 
 ## Geographic Data with Basemap
 
-![basemap](./matplotlib-basemap.drawio.svg)
+![basemap](./04-matplotlib-basemap.drawio.svg)
 
 ```py title='install & import'
 !pip install basemap

@@ -2,7 +2,7 @@
 title: NumPy
 ---
 
-![NumPy Image](./numpy.drawio.svg)
+![NumPy Image](./02-numpy.drawio.svg)
 
 ## Array Basics - Create
 
