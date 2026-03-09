@@ -291,7 +291,7 @@ tseries.rolling(3).sum() # pandas takes the first three data points, computes su
 
 | Syntax                              | Usage                                                                                                                    |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `pd.read_csv()`                     | read CSV file                                                                                                            |
+| `pd.read_csv()`                     | read CSV file. Important parameters: `converters`                                                                        |
 | `pd.read_json()`                    | read JSON file                                                                                                           |
 | `pd.cut(series, bins=[0, 18, 80])`  | Create `(0, 18] & (18, 80]` bins. Useful for going from a continuous variable to a categorical variable                  |
 | `pd.qcut(titanic["fare"], q=4)`     | Quantile-based discretization. It divides data into bins that each contain approximately the same number of observations |

@@ -335,9 +335,112 @@ ax.xaxis.set_major_formatter(plt.FuncFormatter(format_func))
 | `plt.MaxNLocator(3)`           | specify the maximum number of ticks that will be displayed |
 | `plt.MultipleLocator(np.pi/4)` | locates ticks at a multiple of the number you provide      |
 
+## Geographic Data with Basemap
+
+![basemap](./matplotlib-basemap.drawio.svg)
+
+```py title='install & import'
+!pip install basemap
+
+from mpl_toolkits.basemap import Basemap # one of the toolkit that lives under `mpl_toolkits` namespace
+```
+
+```py title='basic: plot on map image'
+fig = plt.figure(figsize=(8, 8))
+m = Basemap(
+    projection="lcc", # how to project 3D image on 2D surface
+    resolution=None, # 'c' (crude), 'l' (low), 'i' (intermediate), 'h' (high), 'f' (full), or None if no boundaries will be used
+    # AREA #1
+    width=8e6,  # width of the map in km
+    height=8e6,  # height of the map in km
+    lat_0=45,  # central latitude
+    lon_0=-100,  # central longitude
+    # OR AREA #2
+    llcrnrlat=-90, # lower-left corner latitude
+    llcrnrlon=-180, # lower-left corner longitude
+    urcrnrlat=90, # upper-right corner latitude
+    urcrnrlon=180, # upper-right corner longitude
+)
+# draw image
+m.etopo(scale=0.5, alpha=0.5)  # scale: allows to downsample (reduce resolution) the image
+
+# latitude(parallel) and longitude(meridian) lines
+m.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])  # labels: [left, right, top, bottom]
+m.drawmeridians(np.arange(-180, 180, 60), labels=[0, 0, 0, 1])
+
+# Map (long, lat) to (x, y) for plotting
+x, y = m(-122.3, 47.6)
+plt.plot(x, y, "ok", markersize=5)
+plt.text(x, y, " Seattle", fontsize=12)
+
+# plotting with lat/lon, rather than x/y
+# Basemap instance has Matplotlib plot counterparts, but have an additional Boolean argument `latlon`,
+# which if set to True allows you to pass raw latitudes and longitudes, rather than projected (x, y) coordinates
+m.scatter(lon, lat, latlon=True, ...)
+```
+
+| type of projection | example              | define                                                                                              |
+| ------------------ | -------------------- | --------------------------------------------------------------------------------------------------- |
+| Cylindrical        | `projection='cyl'`   | lines of latitude and longitude are mapped to horizontal and vertical lines. Map shape is Rectangle |
+| Pseudo-cylindrical | `projection='moll'`  | laditudes are horizontal, and longitudes are elliptical arc. Map shape is Oval                      |
+| Perspective        | `projection='ortho'` | similar to if you photographed the Earth from a particular point in space. Map shape is Circle      |
+| Conic              | `projection='lcc'`   | projects the map onto a single cone, which is then unrolled                                         |
+
+| draw a map background                   | syntax             | define                                                                           |
+| --------------------------------------- | ------------------ | -------------------------------------------------------------------------------- |
+| Physical boundaries and bodies of water | `drawcoastlines()` | Draw continental coast lines                                                     |
+|                                         | `drawrivers()`     | Draw rivers on the map                                                           |
+|                                         | `fillcontinents()` | Fill the continents with a given color; optionally fill lakes with another color |
+| Political boundaries                    | `drawcountries()`  | Draw country boundaries                                                          |
+| Map features                            | `drawparallels()`  | Draw lines of constant latitude                                                  |
+|                                         | `drawmeridians()`  | Draw lines of constant longitude                                                 |
+| Whole-globe images                      | `bluemarble()`     | Project NASA’s blue marble image onto the map                                    |
+|                                         | `shadedrelief()`   | Project a shaded relief image onto the map                                       |
+|                                         | `etopo()`          | Draw an etopo relief image onto the map                                          |
+
+## Visualization with Seaborn
+
+| plot                                                | define                                                                      |
+| --------------------------------------------------- | --------------------------------------------------------------------------- |
+| `sns.kdeplot(data[col], fill=True)`                 | Kernel density estimates for visualizing distributions                      |
+| `sns.distplot(data['x'])`                           | Kernel density and histograms plotted together                              |
+| `sns.jointplot(data, x="x", y="y", kind="kde")`     | Joint distribution plot with a 2D kernel density estimate                   |
+| `sns.jointplot(data, x="x", y="y", kind="hex")`     | Joint distribution plot with a hexagonal bin representation                 |
+| `sns.pairplot(iris, vars=<col-list> hue="species")` | Pair plot showing the relationships between multiple variables              |
+| Faceted histograms                                  | Histograms of subsets                                                       |
+| Categorical plot                                    | Used for drawing a wide variety of plots that involve categorical variables |
+
+```py title='Example: Faceted histograms'
+tips = sns.load_dataset('tips')
+tips["tip_pct"] = 100 * tips["tip"] / tips["total_bill"]
+grid = sns.FacetGrid(tips, row="sex", col="time", margin_titles=True)
+grid.map(plt.hist, "tip_pct", bins=np.linspace(0, 40, 15))
+```
+
+```py title='Example: Categorical Plot: Distribution Box'
+tips = sns.load_dataset("tips")
+g = sns.catplot(tips, x="day", y="total_bill", hue="sex", kind="box")
+g.set_axis_labels("Day", "Total Bill") # OR plt.xlabel("Day"); plt.ylabel("Total Bill")
+```
+
+```py title="Example:Categorical Plot: Bar Plots"
+planets = sns.load_dataset("planets")
+# ==== histogram as a special case
+g = sns.catplot(planets, x="year", aspect=2, kind="count", color="steelblue") # aspect: ratio of width to height of the figure
+g.set_xticklabels(step=5)
+# ==== Number of planets discovered by year and method
+g = sns.catplot(planets, x="year", aspect=4.0, kind="count", hue="method", order=range(2001, 2015)) # order: sets the limit as well
+g.set_ylabels("Number of Planets Discovered")
+```
+
 ## Misc
 
-| syntax                                                                          | explain                               |
+| matplotlib syntax                                                               | explain                               |
 | ------------------------------------------------------------------------------- | ------------------------------------- |
 | `plt.grid(visible=True, which="major", axis="both", linestyle="--", alpha=0.5)` | grid lines                            |
 | `plt.axes(xscale="log", yscale="log")`                                          | scale: can be linear scale, log scale |
+| `plt.axvline(4, color="red", linestyle="--")`                                   | axis Vertical Line                    |
+
+| seaborn syntax                                         | explain                                                      |
+| ------------------------------------------------------ | ------------------------------------------------------------ |
+| `g.map(plt.axvline, x=0, color="red", linestyle="--")` | Apply a plotting function to each facet's subset of the data |
