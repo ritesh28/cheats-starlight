@@ -296,3 +296,4 @@ tseries.rolling(3).sum() # pandas takes the first three data points, computes su
 | `pd.cut(series, bins=[0, 18, 80])`  | Create `(0, 18] & (18, 80]` bins. Useful for going from a continuous variable to a categorical variable                  |
 | `pd.qcut(titanic["fare"], q=4)`     | Quantile-based discretization. It divides data into bins that each contain approximately the same number of observations |
 | `pd.Series([1, 0, 3]).astype(bool)` | Convert Series to `bool` dtype                                                                                           |
+| `pd.plot(kind=<plot-type>, ax=)`    | Create plot. e.g. `df.plot(ax=ax, kind="scatter", x="x", y="y")`                                                         |

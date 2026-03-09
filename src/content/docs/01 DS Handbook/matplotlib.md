@@ -12,6 +12,9 @@ title: Matplotlib
 import matplotlib as mpl
 import matplotlib.pyplot as plt # most often used than 'mpl' module
 plt.style.use('classic') # use plt.style directive to choose styles for the figures
+# plt.style.available[:5]
+# Some good style: fivethirtyeight, ggplot, bmh
+# to use seaborn style: import seaborn as sns; sns.set_theme()
 
 plt.show() # needed in .py file and NOT in .ipynb
 ```
@@ -26,6 +29,13 @@ plt.show() # needed in .py file and NOT in .ipynb
 | density & contour | 3 (x,y,z)            | `.contour()`,`.contourf()`,`.imshow()` | display 3D data in 2D using contours or color-coded regions                          |
 | histogram         | 1 (x) or 2(x,y)      | `.hist()`, `.hist2d()`, `.hexbin()`    | shows distribution of data                                                           |
 
+```py title='lines'
+x = np.linspace(0, 10, 1000)
+# ==== MULTIPLE LINES
+y = np.sin(x[:, np.newaxis] + np.pi * np.arange(0, 2, 0.5)) # shape: (1000, 4)
+lines = plt.plot(x, y) # creates and returns a list of created line instances (4)
+```
+
 ```py title='scatter plot with plt.plot'
 plt.plot(x, y, "o", color="c")  # third argument is the marker style
 # other markers: ".", ",", "x", "+", "v", "^", "<", ">", "s" (square), "d" (diamond)
@@ -39,7 +49,7 @@ plt.plot(
     y,
     "-p",  # pentagon marker with a line
     color="gray",
-    linewidth=4,
+    linewidth=4, # or lw=4
     markersize=15,
     markerfacecolor="white",
     markeredgecolor="gray",
@@ -173,3 +183,161 @@ plt.xlabel("x")  # Label for x-axis
 plt.ylabel("sin(x)")
 plt.legend()
 ```
+
+```py title='legends'
+# ==== CUSTOMIZATION
+ax.legend(
+    loc="upper center",
+    ncol=2,  # number of column
+    frameon=True,  # turn on the frame
+    fancybox=True,  # rounded box
+    shadow=True,  # add a shadow
+    scatterpoints=1,  # number of points in the legend for SCATTER PLOT
+)
+
+# ==== CHOOSING ELEMENTS FOR THE LEGENDS
+# lines is a list of plt.Line2D instances
+plt.legend(lines[:2], ['first', 'second']) # map line & label
+
+# ==== ALTERNATIVE METHOD FOR CHOOSING ELEMENTS
+plt.plot(x, y[:, 0], label='first')
+plt.plot(x, y[:, 1], label='second')
+plt.plot(x, y[:, 2:]) # by default, the legend ignores all elements without a label attribute
+plt.legend()
+
+# ==== EXAMPLE: SCATTER PLOT
+# Here we are creating FAKE scatter point with labels so that it can be shown in legend
+# The legend will always reference some object that is on the plot, so if we’d like to display a particular shape we need to plot it
+# we'll plot empty lists with the desired size and label
+for area in [100, 300, 500]:
+    plt.scatter([], [], c='k', alpha=0.3, s=area, label=str(area) + ' km$^2$')
+plt.legend(scatterpoints=1, frameon=False, labelspacing=1, title='City Area')
+
+# ==== MULTIPLE LEGENDS
+# specify the lines and labels of the first legend
+ax.legend(lines[:2], ["line A", "line B"], loc="upper right")
+# Create the second legend and add the artist manually.
+from matplotlib.legend import Legend
+leg = Legend(ax, lines[2:], ["line C", "line D"], loc="lower right") # create a new legend artist from scratch
+ax.add_artist(leg)
+```
+
+```py title='colorbar'
+plt.colorbar(extend="both") # indicate the out-of-bounds values with a triangular arrow at the top and bottom
+plt.clim(-1, 1) # limit
+plt.*(...,cmap=plt.cm.get_cmap("Blues", 6)) # discrete colorbars (6 values) instead of continuous
+```
+
+## Multiple subplots
+
+```py title='plt.axes: subplots by hand'
+ax1 = plt.axes()  # standard axes
+ax2 = plt.axes([0.65, 0.65, 0.2, 0.2]) # [left, bottom, width, height]
+
+# ==== add_axes()
+fig = plt.figure()
+ax1 = fig.add_axes([0.1, 0.5, 0.8, 0.4], xticklabels=[], ylim=(-1.2, 1.2))
+ax2 = fig.add_axes([0.1, 0.1, 0.8, 0.4], ylim=(-1.2, 1.2))
+```
+
+```py title='plt.subplot: grid of subplots'
+fig = plt.figure()
+fig.subplots_adjust(hspace=0.4, wspace=0.4) # height & width spacing is 40% of the subplot height & width, respectively
+for i in range(1, 7):
+    plt.subplot(2, 3, i) # (row,col, index_of_plot). Runs from upper left to bottom right
+    plt.text(0.5, 0.5, str((2, 3, i)), fontsize=18, ha="center")
+```
+
+```py title='plt.subplots: whole grid in one go'
+# `subplots` with 's'
+fig, ax = plt.subplots(2, 3, sharex="col", sharey="row")
+ax.shape  # (2, 3). 2 rows, 3 columns
+# sharex="col" or sharex=True: same column share their x-axis scale
+# sharey="row" or sharey=True: same row share their y-axis scale
+```
+
+```py title='plt.GridSpec: more complicated arrangements'
+# plt.GridSpec() does not create a plot by itself; it is a interface that is recognized by the plt.subplot()
+# similarly plt.subplot(), runs from upper left to bottom right
+grid = plt.GridSpec(2, 3, wspace=0.4, hspace=0.3)
+plt.subplot(grid[0, 0])
+plt.subplot(grid[0, 1:])
+plt.subplot(grid[1, :2])
+plt.subplot(grid[1, 2])
+```
+
+```py title='plt.GridSpec: multi-axes histogram example'
+fig = plt.figure()
+grid = plt.GridSpec(4, 4, hspace=0.2, wspace=0.2)
+main_ax = fig.add_subplot(grid[:-1, 1:])
+y_hist = fig.add_subplot(grid[:-1, 0], xticklabels=[], sharey=main_ax) # share y-axis with main_ax
+x_hist = fig.add_subplot(grid[-1, 1:], yticklabels=[], sharex=main_ax) # share x-axis with main_ax
+# scatter points on the main axes
+main_ax.plot(x, y, "ok", markersize=3, alpha=0.2)
+# histogram on the attached axes
+x_hist.hist(x, 40, histtype="stepfilled", orientation="vertical", color="gray")
+x_hist.invert_yaxis() # invert y-axis
+y_hist.hist(y, 40, histtype="stepfilled", orientation="horizontal", color="gray")
+y_hist.invert_xaxis()
+```
+
+## Text & Annotation
+
+```py title='Basic'
+style = dict(size=10, color="gray", ha="center")  # ha: horizonal alignment
+plt.text(2, 0, "Thanksgiving", **style)  # (x, y, text, **kwargs)
+```
+
+```py title='Transforms & Text Position'
+fig, ax = plt.subplots(facecolor="lightgray")
+ax.axis([0, 10, 0, 10])
+ax.text(1, 5, ". Data: (1, 5)", transform=ax.transData)  # default. Transform associated with data coordinates
+ax.text(0.5, 0.1, ". Axes: (0.5, 0.1)", transform=ax.transAxes) # Transform associated with the axes (in units of axes dimensions)
+ax.text(0.2, 0.2, ". Figure: (0.2, 0.2)", transform=fig.transFigure) # Transform associated with the figure (in units of figure dimensions)
+# if we change the axes limits, it is only the transData coordinates that will be affected, while the others remain stationary
+```
+
+```py title='Arrows & Annotation'
+# plt.annotate(): creates text + an arrow.The arrow can be very flexibly specified
+ax.annotate(
+    "local maximum",
+    xy=(6.28, 1), # point to which the annotation points
+    xytext=(10, 4), # text position
+    arrowprops=dict(facecolor="black", shrink=0.05), # arrow style is controlled through the arrowprops dict
+)
+ax.annotate(
+    "local minimum",
+    xy=(5 * np.pi, -1),
+    xytext=(2, -6),
+    arrowprops=dict(arrowstyle="->", connectionstyle="angle3,angleA=0,angleB=-90"),
+)
+```
+
+## Customizing Ticks
+
+```py title='Major & Minor Ticks'
+# major ticks are usually bigger or more pronounced, while minor ticks are usually smaller
+# We can customize tick properties by setting the formatter and locator objects of each axis
+ax.yaxis.set_major_locator(plt.NullLocator())  # removes the ticks (and thus the labels as well)
+ax.xaxis.set_major_formatter(plt.NullFormatter())  # removes the labels (but kept the ticks/gridlines)
+```
+
+```py title='tick format'
+def format_func(value, tick_number):
+    # value is the tick value, tick_number is the index of the tick
+    return "some-text"
+ax.xaxis.set_major_formatter(plt.FuncFormatter(format_func))
+```
+
+| locator                        | expain                                                     |
+| ------------------------------ | ---------------------------------------------------------- |
+| `plt.NullLocator()`            | removes the ticks (and thus the labels as well)            |
+| `plt.MaxNLocator(3)`           | specify the maximum number of ticks that will be displayed |
+| `plt.MultipleLocator(np.pi/4)` | locates ticks at a multiple of the number you provide      |
+
+## Misc
+
+| syntax                                                                          | explain                               |
+| ------------------------------------------------------------------------------- | ------------------------------------- |
+| `plt.grid(visible=True, which="major", axis="both", linestyle="--", alpha=0.5)` | grid lines                            |
+| `plt.axes(xscale="log", yscale="log")`                                          | scale: can be linear scale, log scale |
