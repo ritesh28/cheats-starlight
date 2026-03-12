@@ -409,6 +409,7 @@ m.scatter(lon, lat, latlon=True, ...)
 | `sns.pairplot(iris, vars=<col-list> hue="species")` | Pair plot showing the relationships between multiple variables              |
 | Faceted histograms                                  | Histograms of subsets                                                       |
 | Categorical plot                                    | Used for drawing a wide variety of plots that involve categorical variables |
+| `sns.lmplot(x="total_bill", y="tip", data=tips)`    | plots scatter data and draws a Linear regression Model fit (LM)             |
 
 ```py title='Example: Faceted histograms'
 tips = sns.load_dataset('tips')
@@ -440,6 +441,7 @@ g.set_ylabels("Number of Planets Discovered")
 | `plt.grid(visible=True, which="major", axis="both", linestyle="--", alpha=0.5)` | grid lines                            |
 | `plt.axes(xscale="log", yscale="log")`                                          | scale: can be linear scale, log scale |
 | `plt.axvline(4, color="red", linestyle="--")`                                   | axis Vertical Line                    |
+| `plt.subplots(...subplot_kw={...}, gridspec_kw=dict(...))`                      | `_kw` stands for keyword arguments    |
 
 | seaborn syntax                                         | explain                                                      |
 | ------------------------------------------------------ | ------------------------------------------------------------ |

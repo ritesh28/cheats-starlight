@@ -6,18 +6,18 @@ title: NumPy
 
 ## Array Basics - Create
 
-| Task to perform                                    | Syntax                                                        |
-| -------------------------------------------------- | ------------------------------------------------------------- |
-| from list                                          | `np.array([1,2,3,4], dtype=np.float32)`                       |
-| filled with 0s                                     | `np.zeros(10)` or `np.zeros((10,))` 1Dimension                |
-| filled with 1s                                     | `np.ones((3,5), dtype=np.float)` 2Dimension                   |
-| filled with 3.14                                   | `np.full((3,5), 3.14)`                                        |
-| linear sequence                                    | `np.arange(0,20,2)` </br> similar to python `range()`         |
-| 5 values evenly spaced between 0 and 1 (including) | `np.linspace(0,1,5)`                                          |
-| uniformly distributed values between 0 & 1         | `np.random.random((3,3))`                                     |
-| random integers between 0 & 10 (excluding)         | `np.random.randint((0,10,(3,3)))`                             |
-| generate same random numbers                       | `np.random.seed(0)` or `np.random.randomState(seed).rndint()` |
-| chose 3 random values from a list with no repeat   | `np.random.choice([10, 20, 30, 40, 50], 3, replace=False)`    |
+| Task to perform                                    | Syntax                                                                                   |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| from list                                          | `np.array([1,2,3,4], dtype=np.float32)`                                                  |
+| filled with 0s                                     | `np.zeros(10)` or `np.zeros((10,))` 1Dimension. `(10,)`(1D) & `(10,1)`(2D) are different |
+| filled with 1s                                     | `np.ones((3,5), dtype=np.float)` 2Dimension                                              |
+| filled with 3.14                                   | `np.full((3,5), 3.14)`                                                                   |
+| linear sequence                                    | `np.arange(0,20,2)` </br> similar to python `range()`                                    |
+| 5 values evenly spaced between 0 and 1 (including) | `np.linspace(0,1,5)`                                                                     |
+| uniformly distributed values between 0 & 1         | `np.random.random((3,3))`                                                                |
+| random integers between 0 & 10 (excluding)         | `np.random.randint((0,10,(3,3)))`                                                        |
+| generate same random numbers                       | `np.random.seed(0)` or `np.random.randomState(seed).rndint()`                            |
+| chose 3 random values from a list with no repeat   | `np.random.choice([10, 20, 30, 40, 50], 3, replace=False)`                               |
 
 ## Array Basics - Attributes
 

@@ -4,6 +4,7 @@
     "Autograd",
     "CUDA",
     "dtype",
+    "hyperparameters",
     "isort",
     "kwargs",
     "Matplotlib",
