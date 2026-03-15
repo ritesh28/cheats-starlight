@@ -400,16 +400,17 @@ m.scatter(lon, lat, latlon=True, ...)
 
 ## Visualization with Seaborn
 
-| plot                                                | define                                                                      |
-| --------------------------------------------------- | --------------------------------------------------------------------------- |
-| `sns.kdeplot(data[col], fill=True)`                 | Kernel density estimates for visualizing distributions                      |
-| `sns.distplot(data['x'])`                           | Kernel density and histograms plotted together                              |
-| `sns.jointplot(data, x="x", y="y", kind="kde")`     | Joint distribution plot with a 2D kernel density estimate                   |
-| `sns.jointplot(data, x="x", y="y", kind="hex")`     | Joint distribution plot with a hexagonal bin representation                 |
-| `sns.pairplot(iris, vars=<col-list> hue="species")` | Pair plot showing the relationships between multiple variables              |
-| Faceted histograms                                  | Histograms of subsets                                                       |
-| Categorical plot                                    | Used for drawing a wide variety of plots that involve categorical variables |
-| `sns.lmplot(x="total_bill", y="tip", data=tips)`    | plots scatter data and draws a Linear regression Model fit (LM)             |
+| plot                                                    | define                                                                      |
+| ------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `sns.kdeplot(data[col], fill=True)`                     | Kernel density estimates for visualizing distributions                      |
+| `sns.distplot(data['x'])`                               | Kernel density and histograms plotted together                              |
+| `sns.jointplot(data, x="x", y="y", kind="kde")`         | Joint distribution plot with a 2D kernel density estimate                   |
+| `sns.jointplot(data, x="x", y="y", kind="hex")`         | Joint distribution plot with a hexagonal bin representation                 |
+| `sns.pairplot(iris, vars=<col-list> hue="species")`     | Pair plot showing the relationships between multiple variables              |
+| Faceted histograms                                      | Histograms of subsets                                                       |
+| Categorical plot                                        | Used for drawing a wide variety of plots that involve categorical variables |
+| `sns.lmplot(x="total_bill", y="tip", data=tips)`        | plots scatter data and draws a Linear regression Model fit (LM)             |
+| `sns.heatmap(mat, square=True, annot=True, cbar=False)` | heatmap                                                                     |
 
 ```py title='Example: Faceted histograms'
 tips = sns.load_dataset('tips')
