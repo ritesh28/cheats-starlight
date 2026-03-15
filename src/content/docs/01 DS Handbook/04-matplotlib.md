@@ -447,3 +447,10 @@ g.set_ylabels("Number of Planets Discovered")
 | seaborn syntax                                         | explain                                                      |
 | ------------------------------------------------------ | ------------------------------------------------------------ |
 | `g.map(plt.axvline, x=0, color="red", linestyle="--")` | Apply a plotting function to each facet's subset of the data |
+
+```py title='re-use axis'
+plt.scatter(x, y)
+lim = plt.axis() # store the axis
+plt.plot(x_test, y_test)
+plt.axis(lim) # set the axis to the previous value
+```

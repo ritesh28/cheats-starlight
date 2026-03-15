@@ -28,12 +28,14 @@ title: Machine Learning
   - Typically one evaluates the efficacy of the model by comparing its results to some known **baseline**
   - Example: Gaussian Naive Bayes is often a good model to use as a baseline classification because it is fast and has no hyperparameters to choose
 
-| package           | method                                                   | usage                                                                                         |
-| ----------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `model_selection` | `train_test_split(X, y, random_state=0, train_size=0.5)` | split the data into a training set and a testing set                                          |
-| `model_selection` | `cross_val_score(model, X, y, cv=5)`                     | cross-validation. `cv=5`: 5-fold                                                              |
-| `metrics`         | `accuracy_score(ytest, y_model)`                         | returns fraction of predicted labels that match their true value                              |
-| `metrics`         | `confusion_matrix(ytest, y_model)`                       | "confusion" stems from its ability to show whether the model is confusing two or more classes |
+| package           | method                                                          | usage                                                                                         |
+| ----------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `model_selection` | `train_test_split(X, y, random_state=0, train_size=0.5)`        | split the data into a training set and a testing set                                          |
+| `model_selection` | `cross_val_score(model, X, y, cv=5)`                            | cross-validation. `cv=5`: 5-fold                                                              |
+| `model_selection` | `validation_curve(model, X, y, param_name=, param_range=, cv=)` | compute both training and validation score across the param range                             |
+| `model_selection` | `learning_curve(model, X, y, train_sizes=, cv=)`                | returns training dataset, training scores, & validation scores                                |
+| `metrics`         | `accuracy_score(ytest, y_model)`                                | returns fraction of predicted labels that match their true value                              |
+| `metrics`         | `confusion_matrix(ytest, y_model)`                              | "confusion" stems from its ability to show whether the model is confusing two or more classes |
 
 ## Model Validation
 
@@ -85,5 +87,19 @@ cross_val_score(model, X, y, cv=LeaveOneOut(len(X)))
     - For low model complexity (high-bias model)(training data is underfit): model is a poor predictor for both training data and any previously unseen data
     - For high model complexity (high-variance model)(training data is overfit): model predicts the training data very well, but fails for any previously unseen data
     - For some intermediate value, the validation curve has a maximum. This level of complexity indicates a suitable trade-off between bias and variance
+  - Use `validation_curve()` for compute both training and validation score across a hyperparameter range of the model
+- Learning Curve:
+  - SEE INFOGRAPHIC
+  - Relationship b/t training size & model score:
+    - For small dataset: Model will overfit. Training score will be high, while validation score will be low (since model has not seen a lot of data)
+    - For large dataset: Model will underfit. Training score will decrease, but the validation score will increase
+    - Model will never, except by chance, give better score to validation set than training set: this means the curves should keep getting closer together but never cross
+  - NOTE:
+    - Adding more samples will not help you once a particular model has converged to a particular score
+    - In that case, only way to increase model performance is to use another (often more complex) model
+  - Use `learning_curve()`
 
-$\sqrt{3x-1}+(1+x)^2$
+$$
+y=ax+b \\
+y=ax^3+bx^2+cx+d \dashrightarrow \text{degree-3 polynomial}
+$$
