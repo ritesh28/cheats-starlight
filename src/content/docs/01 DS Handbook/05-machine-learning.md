@@ -28,18 +28,21 @@ title: Machine Learning
   - Typically one evaluates the efficacy of the model by comparing its results to some known **baseline**
   - Example: Gaussian Naive Bayes is often a good model to use as a baseline classification because it is fast and has no hyperparameters to choose
 
-| package                   | method                                                          | usage                                                                          |
-| ------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `model_selection`         | `train_test_split(X, y, random_state=0, train_size=0.5)`        | split the data into a training set and a testing set                           |
-| `model_selection`         | `cross_val_score(model, X, y, cv=5)`                            | cross-validation. `cv=5`: 5-fold                                               |
-| `model_selection`         | `validation_curve(model, X, y, param_name=, param_range=, cv=)` | compute both training and validation score across the param range              |
-| `model_selection`         | `learning_curve(model, X, y, train_sizes=, cv=)`                | returns training dataset, training scores, & validation scores                 |
-| `model_selection`         | `GridSearchCV(model, param_grid=, cv=)`                         | calling `fit()` will fit model at each grid point, keeping track of all scores |
-| `metrics`                 | `accuracy_score(ytest, y_model)`                                | returns fraction of predicted labels that match their true value               |
-| `metrics`                 | `confusion_matrix(ytest, y_model)`                              | "confusion" shows whether the model is confusing two or more classes           |
-| `feature_extraction`      | `DictVectorizer(sparse=False, dtype=int)`                       | Vectorization: one-hot encoding                                                |
-| `feature_extraction.text` | `CountVectorizer()`                                             | Vectorization: texts -> word counts                                            |
-| `feature_extraction.text` | `TfidfVectorizer()`                                             | Vectorization: texts -> tf-idf (value range: `[0,1]`)                          |
+| package                   | method                                                          | usage                                                                              |
+| ------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `model_selection`         | `train_test_split(X, y, random_state=0, train_size=0.5)`        | split the data into a training set and a testing set                               |
+| `model_selection`         | `cross_val_score(model, X, y, cv=5)`                            | cross-validation. `cv=5`: 5-fold                                                   |
+| `model_selection`         | `validation_curve(model, X, y, param_name=, param_range=, cv=)` | compute both training and validation score across the param range                  |
+| `model_selection`         | `learning_curve(model, X, y, train_sizes=, cv=)`                | returns training dataset, training scores, & validation scores                     |
+| `model_selection`         | `GridSearchCV(model, param_grid=, cv=)`                         | calling `fit()` will fit model at each grid point, keeping track of all scores     |
+| `metrics`                 | `accuracy_score(ytest, y_model)`                                | returns fraction of predicted labels that match their true value                   |
+| `metrics`                 | `confusion_matrix(ytest, y_model)`                              | "confusion" shows whether the model is confusing two or more classes               |
+| `feature_extraction`      | `DictVectorizer(sparse=False, dtype=int)`                       | Vectorization: one-hot encoding                                                    |
+| `feature_extraction.text` | `CountVectorizer()`                                             | Vectorization: texts -> word counts                                                |
+| `feature_extraction.text` | `TfidfVectorizer()`                                             | Vectorization: texts -> tf-idf (value range: `[0,1]`)                              |
+| `preprocessing`           | `PolynomialFeatures(degree=3, include_bias=False)`              | Generate feature matrix consisting of all polynomial combinations of input feature |
+| `impute`                  | `SimpleImputer(strategy="mean")`                                | Replace missing values                                                             |
+| `pipeline`                | `make_pipeline(estimator1, estimator2, ...)`                    | Apply all Vectorizations at once                                                   |
 
 ## Model Validation
 
@@ -130,18 +133,26 @@ model = grid.best_estimator_
 ## Feature Engineering/Vectorization
 
 - Feature engineering is the process of taking whatever information you have about your problem and turning it into numbers that you can use to build your feature matrix
-- Also called vectorization, as it involves converting arbitrary data into well-behaved vectors
-- Categorical Features:
-  - Do not encode as a numerical mapping i.e `{'abc':1,'xyz':2}` since model makes a fundamental assumption that numerical data reflect algebraic quantities
-  - One-hot encoding: This creates extra columns indicating the presence or absence of a category with a value of 1 or 0
-- Text Features:
-  - word-count: take each snippet of text, count the occurrences of each word within it, and put the results in a table
-    - Disadvantage: too much weight on the words that appear very frequently
-  - term frequency–inverse document frequency (TF–IDF): weights the word counts by a measure of how often they appear in the documents
-- Image Features:
-  - simple approach: simply use each pixel value as a feature column
-- Derived Features:
-  - This column is mathematically derived from some input feature/column
+- Also called vectorization, as it involves converting arbitrary data into well-behaved vectors:
+  1. **Categorical Features:**
+     - Do not encode as a numerical mapping i.e `{'abc':1,'xyz':2}` since model makes a fundamental assumption that numerical data reflect algebraic quantities
+     - One-hot encoding: This creates extra columns indicating the presence or absence of a category with a value of 1 or 0
+  2. **Text Features:**
+     - word-count: take each snippet of text, count the occurrences of each word within it, and put the results in a table
+       - Disadvantage: too much weight on the words that appear very frequently
+     - term frequency–inverse document frequency (TF–IDF): weights the word counts by a measure of how often they appear in the documents
+  3. **Image Features:**
+     - Simple approach: Use each pixel value as a feature column
+  4. **Derived Features:**
+     - This column is mathematically derived from some input feature/column
+     - This approach allow to improve the score not by changing the model, but by transforming the input
+     - e.x. `preprocessing.PolynomialFeatures()` returns matrix of all polynomial combinations of input features
+  5. **Imputation of Missing Data:**
+     - It is a task of replacing missing data with some appropriate fill value
+     - Simple strategy: Replace missing values with mean, median, or most frequent value. This provide baseline imputation. Use `preprocessing.Imputer`
+- Feature Pipelines:
+  - This allow to apply multiple vectorization at once
+  - `model = make_pipeline(SimpleImputer(strategy="mean"), PolynomialFeatures(degree=2), LinearRegression())`
 
 ```py title='Vectorization'
 # ==== CATEGORICAL FEATURES: one-hot encoding
@@ -167,7 +178,32 @@ print(pd.DataFrame(X.toarray(), columns=vec.get_feature_names_out()))
 # 0     1        0   1        1      0
 # 1     1        0   0        0      1
 # 2     0        1   0        1      0
+
+# ==== DERIVED FEATURES: PolynomialFeatures
+# Data that is not well described by a straight line
+x = np.array([1, 2, 3, 4, 5])
+y = np.array([4, 2, 1, 3, 7])
+X = x[:, np.newaxis]
+poly = PolynomialFeatures(degree=3, include_bias=False)
+X2 = poly.fit_transform(X)
+# The derived feature matrix has columns representing x, x^2, & x^3
+model = LinearRegression().fit(X2, y)
+# Computing a linear regression on this expanded input gives a much closer fit to our data
+yfit = model.predict(X2)
+plt.scatter(x, y)
+plt.plot(x, yfit)
+
+# ==== IMPUTING MISSING VALUES: simple approach
+X = np.array([[np.nan, 0, 3], [3, 7, 9], [3, 5, 2], [4, np.nan, 6], [8, 8, 1]])
+imp = SimpleImputer(strategy="mean")
+X2 = imp.fit_transform(X)
 ```
+
+## Models
+
+![All models](./machine-learning-all-models.drawio.svg)
+
+## Model: Naive Bayes Classification
 
 $$
 y=ax+b \\
