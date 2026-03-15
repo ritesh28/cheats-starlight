@@ -28,14 +28,18 @@ title: Machine Learning
   - Typically one evaluates the efficacy of the model by comparing its results to some known **baseline**
   - Example: Gaussian Naive Bayes is often a good model to use as a baseline classification because it is fast and has no hyperparameters to choose
 
-| package           | method                                                          | usage                                                                                         |
-| ----------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `model_selection` | `train_test_split(X, y, random_state=0, train_size=0.5)`        | split the data into a training set and a testing set                                          |
-| `model_selection` | `cross_val_score(model, X, y, cv=5)`                            | cross-validation. `cv=5`: 5-fold                                                              |
-| `model_selection` | `validation_curve(model, X, y, param_name=, param_range=, cv=)` | compute both training and validation score across the param range                             |
-| `model_selection` | `learning_curve(model, X, y, train_sizes=, cv=)`                | returns training dataset, training scores, & validation scores                                |
-| `metrics`         | `accuracy_score(ytest, y_model)`                                | returns fraction of predicted labels that match their true value                              |
-| `metrics`         | `confusion_matrix(ytest, y_model)`                              | "confusion" stems from its ability to show whether the model is confusing two or more classes |
+| package                   | method                                                          | usage                                                                          |
+| ------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `model_selection`         | `train_test_split(X, y, random_state=0, train_size=0.5)`        | split the data into a training set and a testing set                           |
+| `model_selection`         | `cross_val_score(model, X, y, cv=5)`                            | cross-validation. `cv=5`: 5-fold                                               |
+| `model_selection`         | `validation_curve(model, X, y, param_name=, param_range=, cv=)` | compute both training and validation score across the param range              |
+| `model_selection`         | `learning_curve(model, X, y, train_sizes=, cv=)`                | returns training dataset, training scores, & validation scores                 |
+| `model_selection`         | `GridSearchCV(model, param_grid=, cv=)`                         | calling `fit()` will fit model at each grid point, keeping track of all scores |
+| `metrics`                 | `accuracy_score(ytest, y_model)`                                | returns fraction of predicted labels that match their true value               |
+| `metrics`                 | `confusion_matrix(ytest, y_model)`                              | "confusion" shows whether the model is confusing two or more classes           |
+| `feature_extraction`      | `DictVectorizer(sparse=False, dtype=int)`                       | Vectorization: one-hot encoding                                                |
+| `feature_extraction.text` | `CountVectorizer()`                                             | Vectorization: texts -> word counts                                            |
+| `feature_extraction.text` | `TfidfVectorizer()`                                             | Vectorization: texts -> tf-idf (value range: `[0,1]`)                          |
 
 ## Model Validation
 
@@ -98,6 +102,72 @@ cross_val_score(model, X, y, cv=LeaveOneOut(len(X)))
     - Adding more samples will not help you once a particular model has converged to a particular score
     - In that case, only way to increase model performance is to use another (often more complex) model
   - Use `learning_curve()`
+- Grid Search:
+  - Find the optimal hyperparameters for the model by specifying a grid of values: `param_grid = {hp1: [...], hp2: [...], hp3: [...]}`
+  - `GridSearchCV()` returns a model with has `fit()`, `score()` & other methods
+  - `grid.best_params_`: returns best value for each hyperparameter from the `param_grid`
+  - `grid.best_estimator_`: returns best model
+
+```py title='Tune hyperparameter knobs'
+def PolynomialRegression(degree=2, **kwargs):
+  return make_pipeline(PolynomialFeatures(degree), LinearRegression(**kwargs))
+
+# ==== SINGLE HYPERPARAMETER
+degree = np.arange(0, 21)
+train_scores, val_scores = validation_curve(PolynomialRegression(), X, y, 'polynomialfeatures__degree', degree, cv=7)
+
+# ==== MULTIPLE HYPERPARAMETERS
+param_grid = {
+    "polynomialfeatures__degree": np.arange(21),
+    "linearregression__fit_intercept": [True, False],
+    "linearregression__normalize": [True, False],
+}
+grid = GridSearchCV(PolynomialRegression(), param_grid, cv=7)
+grid.fit(X, y)
+model = grid.best_estimator_
+```
+
+## Feature Engineering/Vectorization
+
+- Feature engineering is the process of taking whatever information you have about your problem and turning it into numbers that you can use to build your feature matrix
+- Also called vectorization, as it involves converting arbitrary data into well-behaved vectors
+- Categorical Features:
+  - Do not encode as a numerical mapping i.e `{'abc':1,'xyz':2}` since model makes a fundamental assumption that numerical data reflect algebraic quantities
+  - One-hot encoding: This creates extra columns indicating the presence or absence of a category with a value of 1 or 0
+- Text Features:
+  - word-count: take each snippet of text, count the occurrences of each word within it, and put the results in a table
+    - Disadvantage: too much weight on the words that appear very frequently
+  - term frequency–inverse document frequency (TF–IDF): weights the word counts by a measure of how often they appear in the documents
+- Image Features:
+  - simple approach: simply use each pixel value as a feature column
+- Derived Features:
+  - This column is mathematically derived from some input feature/column
+
+```py title='Vectorization'
+# ==== CATEGORICAL FEATURES: one-hot encoding
+data = [
+    {"price": 850000, "rooms": 4, "neighborhood": "Queen Anne"},
+    {"price": 700000, "rooms": 3, "neighborhood": "Fremont"},
+    {"price": 600000, "rooms": 2, "neighborhood": "Fremont"},
+]
+vec = DictVectorizer(sparse=False, dtype=int)
+X = vec.fit_transform(data)
+print(vec.get_feature_names_out()) # array(['neighborhood=Fremont', 'neighborhood=Queen Anne', 'price', 'rooms'], dtype=object)
+print(X) # X.toarray() if sparse=True
+# array([[     0,      1, 850000,      4],
+#        [     1,      0, 700000,      3],
+#        [     1,      0, 600000,      2]])
+
+# ==== TEXT FEATURES: word count
+sample = ["problem of evil", "evil queen", "horizon problem"]
+vec = CountVectorizer()
+X = vec.fit_transform(sample)
+print(pd.DataFrame(X.toarray(), columns=vec.get_feature_names_out()))
+#    evil  horizon  of  problem  queen
+# 0     1        0   1        1      0
+# 1     1        0   0        0      1
+# 2     0        1   0        1      0
+```
 
 $$
 y=ax+b \\
