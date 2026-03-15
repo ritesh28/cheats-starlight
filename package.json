@@ -23,5 +23,9 @@
     "rehype-document": "^7.0.3",
     "sharp": "^0.32.5",
     "tailwindcss": "^4.1.6"
+  },
+  "devDependencies": {
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0"
   }
 }

@@ -3,6 +3,8 @@ import vercel from "@astrojs/vercel";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 import rehypeDocument from "rehype-document";
+import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
 import { pluginAccordionCode } from "./src/plugin-accordion-code";
 import rehypeImageZoom from "./src/rehype-image-zoom";
 
@@ -26,7 +28,7 @@ export default defineConfig({
         },
       ],
       favicon: "favicon.ico",
-      customCss: ["./src/global.css"],
+      customCss: ["./src/global.css", "katex/dist/katex.min.css"],
       expressiveCode: {
         plugins: [pluginAccordionCode()],
         defaultProps: {
@@ -38,8 +40,10 @@ export default defineConfig({
     }),
   ],
   markdown: {
+    remarkPlugins: [remarkMath],
     rehypePlugins: [
       rehypeImageZoom,
+      rehypeKatex,
       [
         rehypeDocument,
         {

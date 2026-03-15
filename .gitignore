@@ -1,6 +1,7 @@
 dist/
 .DS_Store
 .astro/
+.vercel/
 node_modules/
 .env
 *.ipynb
