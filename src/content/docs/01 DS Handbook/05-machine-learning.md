@@ -203,7 +203,31 @@ X2 = imp.fit_transform(X)
 
 ![All models](./machine-learning-all-models.drawio.svg)
 
-## Model: Naive Bayes Classification
+| type           | sub-type    | model                   | package       | model             |
+| -------------- | ----------- | ----------------------- | ------------- | ----------------- |
+| Classification | Naive Bayes | Gaussian Naive Bayes    | `naive_bayes` | `GaussianNB()`    |
+| Classification | Naive Bayes | Multinomial Naive Bayes | `naive_bayes` | `MultinomialNB()` |
+
+## Naive Bayes Classification
+
+- These model group work as a quick-and-dirty baseline for a classification problem, since they are fast and have few tunable parameters
+- Suitable for very high-dimensional datasets
+- They provide straightforward probabilistic prediction
+- Bayesian Classification:
+  - We’re interested in finding the probability of a label given some observed features: $P(L|features)=\frac{P(features|L)P(L)}{P(features)}$
+  - All we need now is some model by which we can compute $P(features|L_i)$ for each label
+  - These models are called **generative model** because it specifies the hypothetical random process that generates the data
+  - We make naive assumptions about the generative model for each label, hence the name **naive bayes**
+- Gaussian Naive Bayes:
+  - Assumption: data from each label is drawn from a simple Gaussian distribution (SEE INFOGRAPHIC)
+  - Given a label, majority of data are located at a single point
+  - Fit the model by finding the mean & standard deviation of the points within each label
+  - `model = GaussianNB()`
+- Multinomial Naive Bayes:
+  - Assumption: feature are generated from a simple multinomial distribution
+  - Multinomial distribution: describes the probability of set of features (typically word count) belonging to a specific category
+  - E.g. For each category, "Spam" & "Not Spam", the model learns a unique probability for every word in the vocabulary
+  - This model is most appropriate for features that represent counts or count rates
 
 $$
 y=ax+b \\
