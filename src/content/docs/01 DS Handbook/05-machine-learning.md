@@ -203,10 +203,13 @@ X2 = imp.fit_transform(X)
 
 ![All models](./machine-learning-all-models.drawio.svg)
 
-| type           | sub-type    | model                   | package       | model             |
-| -------------- | ----------- | ----------------------- | ------------- | ----------------- |
-| Classification | Naive Bayes | Gaussian Naive Bayes    | `naive_bayes` | `GaussianNB()`    |
-| Classification | Naive Bayes | Multinomial Naive Bayes | `naive_bayes` | `MultinomialNB()` |
+| type           | sub-type    | model                        | package        | model                                                       |
+| -------------- | ----------- | ---------------------------- | -------------- | ----------------------------------------------------------- |
+| Classification | Naive Bayes | Gaussian Naive Bayes         | `naive_bayes`  | `GaussianNB()`                                              |
+| Classification | Naive Bayes | Multinomial Naive Bayes      | `naive_bayes`  | `MultinomialNB()`                                           |
+| Regression     | Linear      | Simple Linear Regression     | `linear_model` | `LinearRegression(fit_intercept=)`                          |
+| Regression     | Linear      | Ridge regularization ($L_2$) | `linear_model` | `make_pipeline(PolynomialFeatures(30), Ridge(alpha=0.1))`   |
+| Regression     | Linear      | Lasso regularization ($L_1$) | `linear_model` | `make_pipeline(PolynomialFeatures(30), Lasso(alpha=0.001))` |
 
 ## Naive Bayes Classification
 
@@ -228,6 +231,42 @@ X2 = imp.fit_transform(X)
   - Multinomial distribution: describes the probability of set of features (typically word count) belonging to a specific category
   - E.g. For each category, "Spam" & "Not Spam", the model learns a unique probability for every word in the vocabulary
   - This model is most appropriate for features that represent counts or count rates
+
+## Linear Regression
+
+- These models provide baseline for regression tasks
+- Simple Linear Regression:
+  - 2D straight-line fit is a model of the form $y=ax+b$, where $a$ is slope & $b$ is intercept
+  - multidimensional linear models:
+    - These are of form: $y=a_0+a_1x_1+a_2x_2+⋯$ where there are multiple x values/features
+    - Geometrically, this is akin to fitting a plane to points in 3D, or fitting a hyper-plane to points in higher dimensions
+  - `LinearRegression(fit_intercept=False)`: No intercept is used i.e. data is expected to be centered
+    - parameters: `coef_` list & `intercept_` value
+    - coefficients estimate how much each feature contributes
+- Basis Function Regression:
+  - Transforming data according to **basis functions** allows to fit linear regression to non-linear relationships b/t variables/features
+  - The idea is to take our multi-D linear model $y=a_0+a_1x_1+a_2x_2+⋯$ and build the $x_1,x_2,x_3...$, from 1D input $x$
+  - What we have done is taken 1D $x$ and projected them into a higher dimension, so that a linear fit can fit more complicated relationships between $x$ & $y$
+  - Polynomial basis functions:
+    - $y=a_0+a_1x+a_2x^2+a_3x^3+⋯$
+    - `PolynomialFeatures(3, include_bias=False)`: This transformer convert 1D into 3D by taking he exponent of each value
+    - `poly_model = make_pipeline(PolynomialFeatures(7), LinearRegression())`
+- Regularization:
+  - Basic function can quickly lead to overfitting
+  - Regularization: The process of penalizing large values of the model parameters. This is done to avoid overfitting
+  - Ridge regression ($L_2$ regularization):
+    - This proceeds by penalizing the sum of squares (2-norms) of the model coefficients (`.coef_`)
+    - $P=\alpha\sum_{n=1}^{N} \theta_n^2$, $\alpha$ controls the strength of the penalty, thus controlling the complexity of resulting model
+    - By squaring the magnitude of the coefficients, large coefficients are penalized heavily, forcing them to become smaller but not zero
+  - Lasso regularization ($L_1$):
+    - It involves penalizing the sum of absolute values (1-norms) of regression coefficients (`.coef_`)
+    - $P=\alpha\sum_{n=1}^{N} |\theta_n|$
+    - It adds a "penalty" to the standard regression model, which forces the coefficients of less important variables to shrink towards zero, often hitting exactly zero
+    - Use Lasso if you suspect only few features are important and you want the model to automatically perform feature selection by zeroing out the rest
+
+## Support Vector Machines
+
+## Misc
 
 $$
 y=ax+b \\
