@@ -28,21 +28,22 @@ title: Machine Learning
   - Typically one evaluates the efficacy of the model by comparing its results to some known **baseline**
   - Example: Gaussian Naive Bayes is often a good model to use as a baseline classification because it is fast and has no hyperparameters to choose
 
-| package                   | method                                                          | usage                                                                              |
-| ------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `model_selection`         | `train_test_split(X, y, random_state=0, train_size=0.5)`        | split the data into a training set and a testing set                               |
-| `model_selection`         | `cross_val_score(model, X, y, cv=5)`                            | cross-validation. `cv=5`: 5-fold                                                   |
-| `model_selection`         | `validation_curve(model, X, y, param_name=, param_range=, cv=)` | compute both training and validation score across the param range                  |
-| `model_selection`         | `learning_curve(model, X, y, train_sizes=, cv=)`                | returns training dataset, training scores, & validation scores                     |
-| `model_selection`         | `GridSearchCV(model, param_grid=, cv=)`                         | calling `fit()` will fit model at each grid point, keeping track of all scores     |
-| `metrics`                 | `accuracy_score(ytest, y_model)`                                | returns fraction of predicted labels that match their true value                   |
-| `metrics`                 | `confusion_matrix(ytest, y_model)`                              | "confusion" shows whether the model is confusing two or more classes               |
-| `feature_extraction`      | `DictVectorizer(sparse=False, dtype=int)`                       | Vectorization: one-hot encoding                                                    |
-| `feature_extraction.text` | `CountVectorizer()`                                             | Vectorization: texts -> word counts                                                |
-| `feature_extraction.text` | `TfidfVectorizer()`                                             | Vectorization: texts -> tf-idf (value range: `[0,1]`)                              |
-| `preprocessing`           | `PolynomialFeatures(degree=3, include_bias=False)`              | Generate feature matrix consisting of all polynomial combinations of input feature |
-| `impute`                  | `SimpleImputer(strategy="mean")`                                | Replace missing values                                                             |
-| `pipeline`                | `make_pipeline(estimator1, estimator2, ...)`                    | Apply all Vectorizations at once                                                   |
+| package                   | method                                                            | usage                                                                              |
+| ------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `model_selection`         | `train_test_split(X, y, random_state=0, train_size=0.5)`          | split the data into a training set and a testing set                               |
+| `model_selection`         | `cross_val_score(model, X, y, cv=5)`                              | cross-validation. `cv=5`: 5-fold                                                   |
+| `model_selection`         | `validation_curve(model, X, y, param_name=, param_range=, cv=)`   | compute both training and validation score across the param range                  |
+| `model_selection`         | `learning_curve(model, X, y, train_sizes=, cv=)`                  | returns training dataset, training scores, & validation scores                     |
+| `model_selection`         | `GridSearchCV(model, param_grid=, cv=)`                           | calling `fit()` will fit model at each grid point, keeping track of all scores     |
+| `metrics`                 | `accuracy_score(ytest, y_model)`                                  | returns fraction of predicted labels that match their true value                   |
+| `metrics`                 | `confusion_matrix(ytest, y_model)`                                | "confusion" shows whether the model is confusing two or more classes               |
+| `metrics`                 | `classification_report(ytest, y_model, target_names=['l1','l2'])` | Display matrix of precision, recall, F1, & support for all labels (classification) |
+| `feature_extraction`      | `DictVectorizer(sparse=False, dtype=int)`                         | Vectorization: one-hot encoding                                                    |
+| `feature_extraction.text` | `CountVectorizer()`                                               | Vectorization: texts -> word counts                                                |
+| `feature_extraction.text` | `TfidfVectorizer()`                                               | Vectorization: texts -> tf-idf (value range: `[0,1]`)                              |
+| `preprocessing`           | `PolynomialFeatures(degree=3, include_bias=False)`                | Generate feature matrix consisting of all polynomial combinations of input feature |
+| `impute`                  | `SimpleImputer(strategy="mean")`                                  | Replace missing values                                                             |
+| `pipeline`                | `make_pipeline(estimator1, estimator2, ...)`                      | Apply all Vectorizations at once                                                   |
 
 ## Model Validation
 
@@ -110,6 +111,7 @@ cross_val_score(model, X, y, cv=LeaveOneOut(len(X)))
   - `GridSearchCV()` returns a model with has `fit()`, `score()` & other methods
   - `grid.best_params_`: returns best value for each hyperparameter from the `param_grid`
   - `grid.best_estimator_`: returns best model
+  - NOTE: if `best_params_` fell at the edges, we would want to expand the grid to make sure we have found the true optimum.
 
 ```py title='Tune hyperparameter knobs'
 def PolynomialRegression(degree=2, **kwargs):
@@ -199,6 +201,22 @@ imp = SimpleImputer(strategy="mean")
 X2 = imp.fit_transform(X)
 ```
 
+## Metrics
+
+- For a given label, 4 outcomes:
+  - TN (True Negative) or TP (True Positive): Good outcome
+  - FN (False Negative): Bad. Predicted negative (not present) which is wrong
+  - FP (False Positive): Bad. Predicted positive (present) which is wrong
+- `accuracy_score()`
+- `confusion_matrix()`
+- `classification_report()`:
+  - | Metric    | Definition                                                                    |
+    | --------- | ----------------------------------------------------------------------------- |
+    | Precision | how many of prediction were right (more focus on `y_model`)                   |
+    | Recall    | how many of the total right labels you actually found (more focus on `ytest`) |
+    | F1-Score  | Harmonic mean of precision and recall                                         |
+    | Support   | The actual count of items in that class                                       |
+
 ## Models
 
 ![All models](./machine-learning-all-models.drawio.svg)
@@ -210,6 +228,7 @@ X2 = imp.fit_transform(X)
 | Regression     | Linear      | Simple Linear Regression     | `linear_model` | `LinearRegression(fit_intercept=)`                          |
 | Regression     | Linear      | Ridge regularization ($L_2$) | `linear_model` | `make_pipeline(PolynomialFeatures(30), Ridge(alpha=0.1))`   |
 | Regression     | Linear      | Lasso regularization ($L_1$) | `linear_model` | `make_pipeline(PolynomialFeatures(30), Lasso(alpha=0.001))` |
+| Classification | SVM         | Support Vector Classifier    | `svm`          | `SVC(kernel="linear\|rbf", C=1e10)`                         |
 
 ## Naive Bayes Classification
 
@@ -234,7 +253,7 @@ X2 = imp.fit_transform(X)
 
 ## Linear Regression
 
-- These models provide baseline for regression tasks
+- These model group provide baseline for regression tasks
 - Simple Linear Regression:
   - 2D straight-line fit is a model of the form $y=ax+b$, where $a$ is slope & $b$ is intercept
   - multidimensional linear models:
@@ -264,7 +283,26 @@ X2 = imp.fit_transform(X)
     - It adds a "penalty" to the standard regression model, which forces the coefficients of less important variables to shrink towards zero, often hitting exactly zero
     - Use Lasso if you suspect only few features are important and you want the model to automatically perform feature selection by zeroing out the rest
 
-## Support Vector Machines
+## Support Vector Machines (SVMs)
+
+- These model group provide models for both classification & regression
+- Support Vector Classifier:
+  - | Bayesian classification            | SVC                                                                                                                 |
+    | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+    | generative classification          | **discriminative classification**                                                                                   |
+    | we model each class                | we find a line (in 2D) or manifold (in multi-D) that divides the classes from each other                            |
+    | all points in a label are enclosed | only support vectors matters; any points further from the margin that are on the correct side do not modify the fit |
+  - Maximizing the Margin: Draw a line with a margin of some width, up to the nearest point (**Support Vector**), separating 2 sets of data
+  - `model = SVC(kernel=, C=1e10)`
+    - `kernel` transformation: Similar to basis function - transform non-linear data into higher dimensions in order to fit a linear classifier
+      - Unlike basis function, transformation is done implicitly i.e. without building full N-dimensional representation
+      - `kernel='linear'`: Used when data is already linearly separable; the simplest kernel
+      - `kernel='rbf'`: (radial basis function) Compute distance from every point. Thus projecting N points into N dimensions
+    - `C`: controls the margin hardness. For large C, margin is hard & points cannot lie in it. For smaller C, margin is softer & can grow to encompass some points
+    - `gamma`: (for kernel='rbf') inversely control the influence of distance. High gamma means that influence restricted to the immediate area of a given point
+  - `model.support_vectors_`: list of training points touching the margin
+
+## Decision Trees & Random Forests
 
 ## Misc
 
