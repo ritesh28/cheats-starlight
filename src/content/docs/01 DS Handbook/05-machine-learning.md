@@ -11,7 +11,9 @@ title: Machine Learning
 - **Model of Data**: is a blueprint, diagram, or math equation that defines how data elements are organized, stored, and related to one another
 - NOTE: Avoid saying 'algorithm'. Instead say 'model'. For example - 'Regression Model'
 - Algorithm: group of models
-- Supervised Vs Unsupervised: Supervised attempts to **predict** $y$ values from $x$ values. Unsupervised attempts to learn about **relationship** b/t $x$ & $y$ values
+- Supervised Vs Unsupervised:
+  - Supervised attempts to **predict** $y$ values from $x$ values.
+  - Unsupervised attempts to learn about **relationship** b/t $x$ & $y$ values, and not the position of samples in the multi-dimensional space
 
 ## Scikit-Learn
 
@@ -364,7 +366,9 @@ model = RandomForestClassifier(n_estimators=100, random_state=0) # averaging ove
 - Choosing the number of components:
   - This is determined by looking at the cumulative explained variance ratio (y-axis) as a function of the number of components (x-axis)
   - The graph provide the total variance contained within the first $N$ components
-- Disadvantage: PCA tends to be highly affected by outliers in the data
+- Disadvantage:
+  - PCA tends to be highly affected by outliers in the data
+  - Does not perform well when there are non-linear relationships within the data
 
 ```py title='PCA Usage'
 # ====Dimensionality reduction
@@ -387,6 +391,17 @@ filtered_data = pca.inverse_transform(components)
 ```
 
 ## Manifold Learning
+
+- Line in 2d, plane in 3d, and **manifold** in multi-D
+- Its a class of unsupervised estimators that seeks to describe datasets as low-dimensional manifolds embedded in high-dimensional spaces
+- Think of a piece of paper (2d object) in a room (3d). This paper can be twisted or bent out of the normal shape
+  - Manifold learning seeks to learn the fundamental 2d nature of paper, even as it is crumbled to fill the 3d space
+- Better than PCA when comes to non-linear relationships within the data
+- Multidimensional Scaling (MDS):
+
+## TODO
+
+- number of manifold methods, going most deeply into a couple techniques:multidimensional scaling (MDS), locally linear embedding (LLE), and isometric mapping (Isomap).
 
 ## Misc
 
