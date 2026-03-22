@@ -46,6 +46,7 @@ title: NumPy
 | Reshaping                       | `np.arange(1, 10).reshape((3, 3))`                                                               |
 | `newaxis` keyword               | Adds new dimension with size 1. E.x. `X.shape => (3, 2); X[:, np.newaxis, :].shape => (3, 1, 2)` |
 | Reshaping via `newaxis` keyword | `<arr>[np.newaxis, :]` or `<arr>.reshape((1, 3))`. Row vector                                    |
+| Flatten multi-D to 1D           | `xx.ravel()`. Shape: `(20, 20) -> (400,)`                                                        |
 | Concatenation                   | `np.concatenation(list_of_arrays, axis=zero_indexed_axis)`. SEE INFOGRAPHIC                      |
 | Vertical stack                  | `np.vstack(list_of_arrays)`. Concatenation along first axis                                      |
 | Horizontal stack                | `np.hstack(list_of_arrays)`. Concatenation along second axis                                     |

@@ -10,6 +10,7 @@ title: Machine Learning
 - ML involves building mathematical models to help understand data
 - **Model of Data**: is a blueprint, diagram, or math equation that defines how data elements are organized, stored, and related to one another
 - NOTE: Avoid saying 'algorithm'. Instead say 'model'. For example - 'Regression Model'
+- Algorithm: group of models
 
 ## Scikit-Learn
 
@@ -221,14 +222,18 @@ X2 = imp.fit_transform(X)
 
 ![All models](./machine-learning-all-models.drawio.svg)
 
-| type           | sub-type    | model                        | package        | model                                                       |
-| -------------- | ----------- | ---------------------------- | -------------- | ----------------------------------------------------------- |
-| Classification | Naive Bayes | Gaussian Naive Bayes         | `naive_bayes`  | `GaussianNB()`                                              |
-| Classification | Naive Bayes | Multinomial Naive Bayes      | `naive_bayes`  | `MultinomialNB()`                                           |
-| Regression     | Linear      | Simple Linear Regression     | `linear_model` | `LinearRegression(fit_intercept=)`                          |
-| Regression     | Linear      | Ridge regularization ($L_2$) | `linear_model` | `make_pipeline(PolynomialFeatures(30), Ridge(alpha=0.1))`   |
-| Regression     | Linear      | Lasso regularization ($L_1$) | `linear_model` | `make_pipeline(PolynomialFeatures(30), Lasso(alpha=0.001))` |
-| Classification | SVM         | Support Vector Classifier    | `svm`          | `SVC(kernel="linear\|rbf", C=1e10)`                         |
+| type           | group/algo    | model                        | package        | model                                                                              |
+| -------------- | ------------- | ---------------------------- | -------------- | ---------------------------------------------------------------------------------- |
+| Classification | Naive Bayes   | Gaussian Naive Bayes         | `naive_bayes`  | `GaussianNB()`                                                                     |
+| Classification | Naive Bayes   | Multinomial Naive Bayes      | `naive_bayes`  | `MultinomialNB()`                                                                  |
+| Regression     | Linear        | Simple Linear Regression     | `linear_model` | `LinearRegression(fit_intercept=)`                                                 |
+| Regression     | Linear        | Ridge regularization ($L_2$) | `linear_model` | `make_pipeline(PolynomialFeatures(30), Ridge(alpha=0.1))`                          |
+| Regression     | Linear        | Lasso regularization ($L_1$) | `linear_model` | `make_pipeline(PolynomialFeatures(30), Lasso(alpha=0.001))`                        |
+| Classification | SVM           | Support Vector Classifier    | `svm`          | `SVC(kernel="linear\|rbf", C=1e10)`                                                |
+| Classification | Decision Tree | Decision Tree Classifier     | `tree`         | `DecisionTreeClassifier()`                                                         |
+| Classification | Ensemble      | Bagging Classifier           | `ensemble`     | `BaggingClassifier(estimator=, n_estimators=100, max_samples=0.8, random_state=1)` |
+| Classification | Ensemble      | Random Forest Classifier     | `ensemble`     | `RandomForestClassifier(n_estimators=100, random_state=0)`                         |
+| Regression     | Ensemble      | Random Forest Regressor      | `ensemble`     | `RandomForestRegressor(n_estimators=100, random_state=0)`                          |
 
 ## Naive Bayes Classification
 
@@ -303,6 +308,31 @@ X2 = imp.fit_transform(X)
   - `model.support_vectors_`: list of training points touching the margin
 
 ## Decision Trees & Random Forests
+
+- These model group are ued for classification & regression
+- Ensemble Method: a method that relies on **aggregating** the results of a group/ensemble of simpler estimators/models
+- Decision Tree:
+  - We ask a series of questions designed to zero in on the classification. The trick is deciding which questions to ask at each step
+  - In ML, each node in the tree splits the data into two groups using a cutoff value within one of the features
+  - Overfitting is common. It is easy to go too deep in tree, and thus fit details of a particular data rather than overall properties of distributions they are drawn from
+- Bagging:
+  - Build on notion that multiple overfitting estimators can be combined to reduce the effect of overfitting
+  - Bagging uses an ensemble of **parallel** estimators, each of which overfit the data, and averages the results to find a better classification
+- Random Forest:
+  - Random forest is an example of bagging
+  - An ensemble of **randomized** decision trees
+
+```py title='random forest'
+# ====MANUAL APPROACH
+tree = DecisionTreeClassifier()
+# randomized the data by fitting each estimator with a random subset of 80% of the training points
+bag = BaggingClassifier(tree, n_estimators=100, max_samples=0.8, random_state=1) # random_state: get same result every time
+bag.fit(X, y)
+
+# ====AUTO APPROACH
+# RandomForestClassifier: ensemble of randomized decision trees
+model = RandomForestClassifier(n_estimators=100, random_state=0) # averaging over 100 randomized decision trees
+```
 
 ## Misc
 
