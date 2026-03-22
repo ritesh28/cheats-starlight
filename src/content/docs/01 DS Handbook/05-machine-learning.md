@@ -11,6 +11,7 @@ title: Machine Learning
 - **Model of Data**: is a blueprint, diagram, or math equation that defines how data elements are organized, stored, and related to one another
 - NOTE: Avoid saying 'algorithm'. Instead say 'model'. For example - 'Regression Model'
 - Algorithm: group of models
+- Supervised Vs Unsupervised: Supervised attempts to **predict** $y$ values from $x$ values. Unsupervised attempts to learn about **relationship** b/t $x$ & $y$ values
 
 ## Scikit-Learn
 
@@ -222,18 +223,19 @@ X2 = imp.fit_transform(X)
 
 ![All models](./machine-learning-all-models.drawio.svg)
 
-| type           | group/algo    | model                        | package        | model                                                                              |
-| -------------- | ------------- | ---------------------------- | -------------- | ---------------------------------------------------------------------------------- |
-| Classification | Naive Bayes   | Gaussian Naive Bayes         | `naive_bayes`  | `GaussianNB()`                                                                     |
-| Classification | Naive Bayes   | Multinomial Naive Bayes      | `naive_bayes`  | `MultinomialNB()`                                                                  |
-| Regression     | Linear        | Simple Linear Regression     | `linear_model` | `LinearRegression(fit_intercept=)`                                                 |
-| Regression     | Linear        | Ridge regularization ($L_2$) | `linear_model` | `make_pipeline(PolynomialFeatures(30), Ridge(alpha=0.1))`                          |
-| Regression     | Linear        | Lasso regularization ($L_1$) | `linear_model` | `make_pipeline(PolynomialFeatures(30), Lasso(alpha=0.001))`                        |
-| Classification | SVM           | Support Vector Classifier    | `svm`          | `SVC(kernel="linear\|rbf", C=1e10)`                                                |
-| Classification | Decision Tree | Decision Tree Classifier     | `tree`         | `DecisionTreeClassifier()`                                                         |
-| Classification | Ensemble      | Bagging Classifier           | `ensemble`     | `BaggingClassifier(estimator=, n_estimators=100, max_samples=0.8, random_state=1)` |
-| Classification | Ensemble      | Random Forest Classifier     | `ensemble`     | `RandomForestClassifier(n_estimators=100, random_state=0)`                         |
-| Regression     | Ensemble      | Random Forest Regressor      | `ensemble`     | `RandomForestRegressor(n_estimators=100, random_state=0)`                          |
+| type           | group/algo    | model                        | package         | model                                                                              |
+| -------------- | ------------- | ---------------------------- | --------------- | ---------------------------------------------------------------------------------- |
+| Classification | Naive Bayes   | Gaussian Naive Bayes         | `naive_bayes`   | `GaussianNB()`                                                                     |
+| Classification | Naive Bayes   | Multinomial Naive Bayes      | `naive_bayes`   | `MultinomialNB()`                                                                  |
+| Regression     | Linear        | Simple Linear Regression     | `linear_model`  | `LinearRegression(fit_intercept=)`                                                 |
+| Regression     | Linear        | Ridge regularization ($L_2$) | `linear_model`  | `make_pipeline(PolynomialFeatures(30), Ridge(alpha=0.1))`                          |
+| Regression     | Linear        | Lasso regularization ($L_1$) | `linear_model`  | `make_pipeline(PolynomialFeatures(30), Lasso(alpha=0.001))`                        |
+| Classification | SVM           | Support Vector Classifier    | `svm`           | `SVC(kernel="linear\|rbf", C=1e10)`                                                |
+| Classification | Decision Tree | Decision Tree Classifier     | `tree`          | `DecisionTreeClassifier()`                                                         |
+| Classification | Ensemble      | Bagging Classifier           | `ensemble`      | `BaggingClassifier(estimator=, n_estimators=100, max_samples=0.8, random_state=1)` |
+| Classification | Ensemble      | Random Forest Classifier     | `ensemble`      | `RandomForestClassifier(n_estimators=100, random_state=0)`                         |
+| Regression     | Ensemble      | Random Forest Regressor      | `ensemble`      | `RandomForestRegressor(n_estimators=100, random_state=0)`                          |
+| Dim Reduction  | PCA           | PCA                          | `decomposition` | `PCA(n_components=2)`                                                              |
 
 ## Naive Bayes Classification
 
@@ -309,7 +311,7 @@ X2 = imp.fit_transform(X)
 
 ## Decision Trees & Random Forests
 
-- These model group are ued for classification & regression
+- These model group are ued for classification (& sometime regression)
 - Ensemble Method: a method that relies on **aggregating** the results of a group/ensemble of simpler estimators/models
 - Decision Tree:
   - We ask a series of questions designed to zero in on the classification. The trick is deciding which questions to ask at each step
@@ -321,6 +323,9 @@ X2 = imp.fit_transform(X)
 - Random Forest:
   - Random forest is an example of bagging
   - An ensemble of **randomized** decision trees
+  - The non-parametric model is extremely flexible, and can thus perform well on tasks that are underfit by other estimators
+  - The multiple trees allow for a **probabilistic** classification: `model.predict_proba()`
+  - Disadvantage: results are not easily interpretable; i.e conclusions can't be drawn about the meaning of the classification model
 
 ```py title='random forest'
 # ====MANUAL APPROACH
@@ -333,6 +338,55 @@ bag.fit(X, y)
 # RandomForestClassifier: ensemble of randomized decision trees
 model = RandomForestClassifier(n_estimators=100, random_state=0) # averaging over 100 randomized decision trees
 ```
+
+## Principal Component Analysis (PCA)
+
+- Unsupervised learning
+- PCA quantifies the relationship by finding a list of **principal axes** in the data, and using those axes to describe the dataset
+- The projection of each data point onto the principal axes are the **principal components** of the data
+- Transformation from data axes to principal axes is as an **affine transformation**, which means it is composed of a translation, rotation, and uniform scaling
+- Hyperparameter:
+  - `n_components=`:
+    - `None`: if not set, all components are kept
+    - integer value: Number of components to keep
+    - b/t 0 & 1: select the number of components such that the amount of variance that needs to be explained is greater than the percentage specified
+- Parameters:
+  - `.n_components`: number of components returned
+  - `.components_`: direction of principal axes from the `.mean_` value
+  - `.explained_variance_`: Think as length of axes. Significance of that axis is in describing the distribution of data. Measure of variance of data when projected onto that axis
+  - `.explained_variance_ratio_`: Return ratio. Total sum is 1
+  - `.mean_`: mean of all training points
+- Usage:
+  - Dimensionality reduction: removing lower principal components, resulting in lower-dimensional projection of data that preserves **maximal data variance**
+  - Tool for visualization
+  - Noise filtering: Idea is if data is reconstruct using just the largest subset of components, you should be preferentially keeping signal and throwing out noise
+  - Feature extraction within high-dimensional data
+- Choosing the number of components:
+  - This is determined by looking at the cumulative explained variance ratio (y-axis) as a function of the number of components (x-axis)
+  - The graph provide the total variance contained within the first $N$ components
+- Disadvantage: PCA tends to be highly affected by outliers in the data
+
+```py title='PCA Usage'
+# ====Dimensionality reduction
+pca = PCA(n_components=1)
+pca.fit(X)
+X_pca = pca.transform(X)
+print(X_pca.shape) # (*, 1). transformed data has been reduced to a single dimension
+X_new = pca.inverse_transform(X_pca) # perform inverse transform of this reduced data
+
+# ====Choosing n_components
+plt.plot(np.cumsum(pca.explained_variance_ratio_))
+plt.xlabel('number of components')
+plt.ylabel('cumulative explained variance')
+
+# ====Noise filtering
+# Task is to preserve 50% of the variance
+pca = PCA(0.50).fit(noisy_data)
+components = pca.transform(noisy_data)
+filtered_data = pca.inverse_transform(components)
+```
+
+## Manifold Learning
 
 ## Misc
 
