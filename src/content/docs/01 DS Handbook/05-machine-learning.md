@@ -225,22 +225,25 @@ X2 = imp.fit_transform(X)
 
 ![All models](./05-machine-learning-all-models.drawio.svg)
 
-| type           | group/algo    | model                        | package         | model                                                                              |
-| -------------- | ------------- | ---------------------------- | --------------- | ---------------------------------------------------------------------------------- |
-| Classification | Naive Bayes   | Gaussian Naive Bayes         | `naive_bayes`   | `GaussianNB()`                                                                     |
-| Classification | Naive Bayes   | Multinomial Naive Bayes      | `naive_bayes`   | `MultinomialNB()`                                                                  |
-| Regression     | Linear        | Simple Linear Regression     | `linear_model`  | `LinearRegression(fit_intercept=)`                                                 |
-| Regression     | Linear        | Ridge regularization ($L_2$) | `linear_model`  | `make_pipeline(PolynomialFeatures(30), Ridge(alpha=0.1))`                          |
-| Regression     | Linear        | Lasso regularization ($L_1$) | `linear_model`  | `make_pipeline(PolynomialFeatures(30), Lasso(alpha=0.001))`                        |
-| Classification | SVM           | Support Vector Classifier    | `svm`           | `SVC(kernel="linear\|rbf", C=1e10)`                                                |
-| Classification | Decision Tree | Decision Tree Classifier     | `tree`          | `DecisionTreeClassifier()`                                                         |
-| Classification | Ensemble      | Bagging Classifier           | `ensemble`      | `BaggingClassifier(estimator=, n_estimators=100, max_samples=0.8, random_state=1)` |
-| Classification | Ensemble      | Random Forest Classifier     | `ensemble`      | `RandomForestClassifier(n_estimators=100, random_state=0)`                         |
-| Regression     | Ensemble      | Random Forest Regressor      | `ensemble`      | `RandomForestRegressor(n_estimators=100, random_state=0)`                          |
-| Dim Reduction  | PCA           | PCA                          | `decomposition` | `PCA(n_components=2)`                                                              |
-| Dim Reduction  | Manifold      | MDS                          | `manifold`      | `MDS(n_components=2, dissimilarity="precomputed", random_state=1)`                 |
-| Dim Reduction  | Manifold      | LLE                          | `manifold`      | `LocallyLinearEmbedding(n_neighbors=, n_components=, method=, eigen_solver=)`      |
-| Dim Reduction  | Manifold      | Isometric Mapping            | `manifold`      | `Isomap(n_components=2)`                                                           |
+| type           | group/algo    | model                        | package         | model                                                                                    |
+| -------------- | ------------- | ---------------------------- | --------------- | ---------------------------------------------------------------------------------------- |
+| Classification | Naive Bayes   | Gaussian Naive Bayes         | `naive_bayes`   | `GaussianNB()`                                                                           |
+| Classification | Naive Bayes   | Multinomial Naive Bayes      | `naive_bayes`   | `MultinomialNB()`                                                                        |
+| Regression     | Linear        | Simple Linear Regression     | `linear_model`  | `LinearRegression(fit_intercept=)`                                                       |
+| Regression     | Linear        | Ridge regularization ($L_2$) | `linear_model`  | `make_pipeline(PolynomialFeatures(30), Ridge(alpha=0.1))`                                |
+| Regression     | Linear        | Lasso regularization ($L_1$) | `linear_model`  | `make_pipeline(PolynomialFeatures(30), Lasso(alpha=0.001))`                              |
+| Classification | SVM           | Support Vector Classifier    | `svm`           | `SVC(kernel="linear\|rbf", C=1e10)`                                                      |
+| Classification | Decision Tree | Decision Tree Classifier     | `tree`          | `DecisionTreeClassifier()`                                                               |
+| Classification | Ensemble      | Bagging Classifier           | `ensemble`      | `BaggingClassifier(estimator=, n_estimators=100, max_samples=0.8, random_state=1)`       |
+| Classification | Ensemble      | Random Forest Classifier     | `ensemble`      | `RandomForestClassifier(n_estimators=100, random_state=0)`                               |
+| Regression     | Ensemble      | Random Forest Regressor      | `ensemble`      | `RandomForestRegressor(n_estimators=100, random_state=0)`                                |
+| Dim Reduction  | PCA           | PCA                          | `decomposition` | `PCA(n_components=2)`                                                                    |
+| Dim Reduction  | Manifold      | MDS                          | `manifold`      | `MDS(n_components=2, dissimilarity="precomputed", random_state=1)`                       |
+| Dim Reduction  | Manifold      | LLE                          | `manifold`      | `LocallyLinearEmbedding(n_neighbors=, n_components=, method=, eigen_solver=)`            |
+| Dim Reduction  | Manifold      | Isometric Mapping            | `manifold`      | `Isomap(n_components=2)`                                                                 |
+| Clustering     | Cluster       | k-Mean                       | `cluster`       | `KMeans(n_clusters=4)`                                                                   |
+| Clustering     | Cluster       | kernelized k-Mean            | `cluster`       | `SpectralClustering(n_clusters=2, affinity="nearest_neighbors", assign_labels="kmeans")` |
+| Clustering     | Mixture       | GMM                          | `mixture`       | `GaussianMixture(n_components=4, covariance_type="full", random_state=42)`               |
 
 ## Naive Bayes Classification
 
@@ -447,6 +450,74 @@ out = model.fit_transform(X)
 ```
 
 ## k-Means Clustering
+
+- The k-means algorithm searches for a **predetermined** number of clusters within an unlabeled multidimensional dataset
+- Model group is based on Expectation–maximization (E–M) algorithm:
+  1. Guess some cluster centers
+  2. Repeat until converged:
+     1. E-Step: assign points to the nearest cluster center. It involves updating our **expectation** of which cluster each point belongs to
+     2. M-Step: set the cluster centers to the mean. It involves **maximizing** some fitness function (mean) that defines location of cluster centers
+- Caveat of E-M:
+  - Globally optimal result may not be achieved: initial cluster center selection may provide different result
+    - Solution: use big number for `n_init` for sklearn model
+  - Number of clusters must be selected beforehand: model cannot learn the number of clusters from the data
+  - Limited to linear cluster boundaries: model will fail for complicated boundaries (SEE INFOGRAPHIC)
+    - Solution: use a kernel transformation to project the data into a higher dimension where a linear separation is possible
+    - One of `SpectralClustering` variant is a kernelized k-means which uses graph of nearest neighbors to compute higher-D representation of the data
+- Hyperparameter:
+  - `n_init`: Number of times the k-means algorithm is run with different centroid seeds
+- Parameters:
+  - `.cluster_centers_`
+- Use `cluster.MiniBatchKMeans()` when dealing with large dataset: it uses a subset of the data to update the cluster centers at each step
+- Disadvantage:
+  - k-means has no intrinsic measure of probability or uncertainty of cluster assignments for a given sample point
+  - Lack of flexibility in cluster shape. In 2D, cluster shape is a circle
+
+```py title='k-mean'
+kmeans = KMeans(n_clusters=4)
+kmeans.fit(X)
+y_kmeans = kmeans.predict(X) # Predict the closest cluster number for each sample in X
+```
+
+## Gaussian Mixture Models (GMM)
+
+- It is an extension of the ideas behind k-means, but can also be a powerful tool for density estimation beyond simple clustering
+- GMM attempts to identify cluster, calculate gaussian probability distribution for each cluster, **mix** all distributions to fit model to cover all data points
+- Here, each cluster is associated not with a hard-edged sphere (as in k-mean), but with a smooth Gaussian model
+- `gmm.predict_proba(X)`: return matrix (n_samples, n_clusters) that measures the probability that any point belongs to the given cluster
+- Hyperparameter:
+  - `covariance_type`: controls the degrees of freedom in the shape of each cluster
+    - | covariance type | shape                | orientation   | efficiency          |
+      | --------------- | -------------------- | ------------- | ------------------- |
+      | `full`          | Any Ellipse          | Any Angle     | Low (Slowest)       |
+      | `tied`          | Identical Ellipses   | Same Angle    | Medium              |
+      | `diag`          | Axis-aligned Ellipse | 0° / 90° only | High                |
+      | `spherical`     | Circle / Sphere      | N/A           | Very High (Fastest) |
+- Parameter:
+  - `.weights_`: probability that a training data point belongs to a specific cluster/component. Sum of all weights is 1
+  - `.means_`: central location of each Gaussian cluster/component
+  - `.covariances_`: how spread out the data is around the mean for each Gaussian cluster/component
+- GMM as Density Estimation:
+  - The result of GMM fit to some data is technically not a clustering model, but a **generative probabilistic model** describing the distribution of the data
+  - Generative model of distribution: GMM provides a recipe to generate new random data distributed similarly to our input. `gmm.sample(400, random_state=42)`
+  - Number of components/clusters:
+    - To avoid overfitting
+    - We can use cross-validation or some analytic criterion such as Akaike information criterion (AIC) or the Bayesian information criterion (BIC)
+    - NOTE: this choice of number of components measures how well GMM works as a density estimator, not how well it works as a clustering algorithm
+- Think of GMM primarily as a density estimator, and use it for clustering only when warranted within simple datasets
+
+```py title='density estimation: components count'
+n_components = np.arange(1, 21)
+models = [GMM(n, covariance_type='full', random_state=0).fit(X) for n in n_components]
+# use one: AIC or BIC
+plt.plot(n_components, [m.bic(X) for m in models], label='BIC')
+plt.plot(n_components, [m.aic(X) for m in models], label='AIC')
+plt.legend(loc='best')
+plt.xlabel('n_components')
+# The optimal number of clusters is the value that minimizes the AIC or BIC
+```
+
+## Kernel Density Estimation
 
 ## Misc
 

@@ -335,6 +335,22 @@ ax.xaxis.set_major_formatter(plt.FuncFormatter(format_func))
 | `plt.MaxNLocator(3)`           | specify the maximum number of ticks that will be displayed |
 | `plt.MultipleLocator(np.pi/4)` | locates ticks at a multiple of the number you provide      |
 
+## Artist
+
+| property | explain                                                      |
+| -------- | ------------------------------------------------------------ |
+| `zorder` | drawing order (higher values are drawn on top of lower ones) |
+
+## Patch
+
+```py title=ellipse patch'
+from matplotlib.patches import Ellipse
+# Create the Ellipse patch
+# Center at (0.5, 0.5), width 0.4, height 0.2, rotated 30 degrees
+ellipse = Ellipse(xy=(0.5, 0.5), width=0.4, height=0.2, angle=30, edgecolor='navy', facecolor='skyblue', alpha=0.6, lw=2)
+ax.add_patch(ellipse) # Add the patch to the plot
+```
+
 ## Geographic Data with Basemap
 
 ![basemap](./04-matplotlib-basemap.drawio.svg)
