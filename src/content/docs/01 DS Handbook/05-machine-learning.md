@@ -238,6 +238,9 @@ X2 = imp.fit_transform(X)
 | Classification | Ensemble      | Random Forest Classifier     | `ensemble`      | `RandomForestClassifier(n_estimators=100, random_state=0)`                         |
 | Regression     | Ensemble      | Random Forest Regressor      | `ensemble`      | `RandomForestRegressor(n_estimators=100, random_state=0)`                          |
 | Dim Reduction  | PCA           | PCA                          | `decomposition` | `PCA(n_components=2)`                                                              |
+| Dim Reduction  | Manifold      | MDS                          | `manifold`      | `MDS(n_components=2, dissimilarity="precomputed", random_state=1)`                 |
+| Dim Reduction  | Manifold      | LLE                          | `manifold`      | `LocallyLinearEmbedding(n_neighbors=, n_components=, method=, eigen_solver=)`      |
+| Dim Reduction  | Manifold      | Isometric Mapping            | `manifold`      | `Isomap(n_components=2)`                                                           |
 
 ## Naive Bayes Classification
 
@@ -398,12 +401,52 @@ filtered_data = pca.inverse_transform(components)
   - Manifold learning seeks to learn the fundamental 2d nature of paper, even as it is crumbled to fill the 3d space
 - Better than PCA when comes to non-linear relationships within the data
 - Multidimensional Scaling (MDS):
-  - We are interested in the distance b/t each point and the other points in the dataset
+  - We are interested in the distance (or dissimilarities) b/t each point and the other points in the dataset
   - A common way to represent this is to use a distance matrix: an entry (i, j) contains the distance between point i and point j
+  - The model works backward to "recover" or invent a set of lower-dimension that would result in those exact distances
+  - There isn't just one "right" answer. If you have a 2D map of cities, you can rotate the map or flip it (mirror image), and the distances between the cities remain identical
+  - Hyperparameter:
+    - `n_components`: Number of components to return
+    - `dissimilarity`: setting to `precomputed` means that you are providing distance matrix & not data points
+  - Works for linear embedding which consist of rotations, translations, and scaling of data into higher-dimensional spaces
+  - Fails when embedding is non-linear
+- Nonlinear Manifolds: Locally Linear Embedding (LLE):
+  - Problem with MDS: it tries to preserve distances between faraway points when constructing the embedding
+  - LLE: rather than preserving all distances, it instead tries to preserve only the distances between **neighboring points**
+  - Hyperparameter:
+    - `n_neighbors=100`: for each point, the model looks at its 100 closest peers to understand the local shape of the data
+    - `n_components=2`: reduces your data down to two dimensions for easy visualization
+    - `method='modified'`: uses Modified LLE (MLLE). It helps prevent the data from "collapsing" or distorting when the number of neighbors is high
+    - `eigen_solver='dense'`: tells computer how to handle the heavy math (linear algebra) involved
+- Isometric mapping (Isomap):
+  - For high-D data (like image), LLE produces poor results, and Isomap seems to generally lead to more meaningful embeddings
+  - Steps to identify fundamental features in sample of images:
+    1. start with PCA, find out number of linear features required to describe the image
+    2. if the data is intrinsically very high dimensional, go for isomap
+    3. `Isomap(n_components=2)` so that projected data can be plotted on 2D plane
+    4. For each projected coordinates, plot the original image/sample
+    5. For Example: first two Isomap dimensions describe global image features: the brightness of image from left to right, and orientation of the face from bottom to top
+    6. We could then go on to classify this data, perhaps using manifold features as inputs to the classification algorithm
+- In practice manifold learning techniques are rarely used for anything more than simple qualitative visualization of high-dimensional data
+  - The presence of noise in the data can drastically change the embedding. In contrast, PCA naturally filters noise from the most important components
+  - Meaning of embedded dimensions is not always clear. In PCA, the principal components have a very clear meaning
 
-## TODO
+```py title='mds'
+from sklearn.manifold import MDS
+from sklearn.metrics import pairwise_distances
+X.shape # (10,3). Each sample is a point in multi-D
+D = pairwise_distances(X) # create distance matrix
+D.shape # (10,10)
+model = MDS(n_components=2, dissimilarity="precomputed", random_state=1)
+out = model.fit_transform(D)
+out.shape # (10,2)
 
-- number of manifold methods, going most deeply into a couple techniques:multidimensional scaling (MDS), locally linear embedding (LLE), and isometric mapping (Isomap).
+# ==== PASSING DATA POINTS
+model = MDS(n_components=2, random_state=1) # DON'T SET dissimilarity="precomputed"
+out = model.fit_transform(X)
+```
+
+## k-Means Clustering
 
 ## Misc
 
