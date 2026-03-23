@@ -83,7 +83,7 @@ cross_val_score(model, X, y, cv=LeaveOneOut(len(X)))
 
 ## Selecting the best model
 
-![Best Model](./machine-learning-best-model.drawio.svg)
+![Best Model](./05-machine-learning-best-model.drawio.svg)
 
 - Bias-variance trade-off:
   - The question of “the best model” is about finding a sweet spot in the trade-off between bias and variance
@@ -223,7 +223,7 @@ X2 = imp.fit_transform(X)
 
 ## Models
 
-![All models](./machine-learning-all-models.drawio.svg)
+![All models](./05-machine-learning-all-models.drawio.svg)
 
 | type           | group/algo    | model                        | package         | model                                                                              |
 | -------------- | ------------- | ---------------------------- | --------------- | ---------------------------------------------------------------------------------- |
@@ -393,11 +393,13 @@ filtered_data = pca.inverse_transform(components)
 ## Manifold Learning
 
 - Line in 2d, plane in 3d, and **manifold** in multi-D
-- Its a class of unsupervised estimators that seeks to describe datasets as low-dimensional manifolds embedded in high-dimensional spaces
+- Its a class of unsupervised estimators that seeks to describe datasets as low-dimensional manifolds **embedded** in high-dimensional spaces
 - Think of a piece of paper (2d object) in a room (3d). This paper can be twisted or bent out of the normal shape
   - Manifold learning seeks to learn the fundamental 2d nature of paper, even as it is crumbled to fill the 3d space
 - Better than PCA when comes to non-linear relationships within the data
 - Multidimensional Scaling (MDS):
+  - We are interested in the distance b/t each point and the other points in the dataset
+  - A common way to represent this is to use a distance matrix: an entry (i, j) contains the distance between point i and point j
 
 ## TODO
 
