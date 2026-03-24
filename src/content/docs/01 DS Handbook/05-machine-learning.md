@@ -225,25 +225,26 @@ X2 = imp.fit_transform(X)
 
 ![All models](./05-machine-learning-all-models.drawio.svg)
 
-| type           | group/algo    | model                        | package         | model                                                                                    |
-| -------------- | ------------- | ---------------------------- | --------------- | ---------------------------------------------------------------------------------------- |
-| Classification | Naive Bayes   | Gaussian Naive Bayes         | `naive_bayes`   | `GaussianNB()`                                                                           |
-| Classification | Naive Bayes   | Multinomial Naive Bayes      | `naive_bayes`   | `MultinomialNB()`                                                                        |
-| Regression     | Linear        | Simple Linear Regression     | `linear_model`  | `LinearRegression(fit_intercept=)`                                                       |
-| Regression     | Linear        | Ridge regularization ($L_2$) | `linear_model`  | `make_pipeline(PolynomialFeatures(30), Ridge(alpha=0.1))`                                |
-| Regression     | Linear        | Lasso regularization ($L_1$) | `linear_model`  | `make_pipeline(PolynomialFeatures(30), Lasso(alpha=0.001))`                              |
-| Classification | SVM           | Support Vector Classifier    | `svm`           | `SVC(kernel="linear\|rbf", C=1e10)`                                                      |
-| Classification | Decision Tree | Decision Tree Classifier     | `tree`          | `DecisionTreeClassifier()`                                                               |
-| Classification | Ensemble      | Bagging Classifier           | `ensemble`      | `BaggingClassifier(estimator=, n_estimators=100, max_samples=0.8, random_state=1)`       |
-| Classification | Ensemble      | Random Forest Classifier     | `ensemble`      | `RandomForestClassifier(n_estimators=100, random_state=0)`                               |
-| Regression     | Ensemble      | Random Forest Regressor      | `ensemble`      | `RandomForestRegressor(n_estimators=100, random_state=0)`                                |
-| Dim Reduction  | PCA           | PCA                          | `decomposition` | `PCA(n_components=2)`                                                                    |
-| Dim Reduction  | Manifold      | MDS                          | `manifold`      | `MDS(n_components=2, dissimilarity="precomputed", random_state=1)`                       |
-| Dim Reduction  | Manifold      | LLE                          | `manifold`      | `LocallyLinearEmbedding(n_neighbors=, n_components=, method=, eigen_solver=)`            |
-| Dim Reduction  | Manifold      | Isometric Mapping            | `manifold`      | `Isomap(n_components=2)`                                                                 |
-| Clustering     | Cluster       | k-Mean                       | `cluster`       | `KMeans(n_clusters=4)`                                                                   |
-| Clustering     | Cluster       | kernelized k-Mean            | `cluster`       | `SpectralClustering(n_clusters=2, affinity="nearest_neighbors", assign_labels="kmeans")` |
-| Clustering     | Mixture       | GMM                          | `mixture`       | `GaussianMixture(n_components=4, covariance_type="full", random_state=42)`               |
+| type               | model                        | package         | model                                                                                    |
+| ------------------ | ---------------------------- | --------------- | ---------------------------------------------------------------------------------------- |
+| Classification     | Gaussian Naive Bayes         | `naive_bayes`   | `GaussianNB()`                                                                           |
+| Classification     | Multinomial Naive Bayes      | `naive_bayes`   | `MultinomialNB()`                                                                        |
+| Regression         | Simple Linear Regression     | `linear_model`  | `LinearRegression(fit_intercept=)`                                                       |
+| Regression         | Ridge regularization ($L_2$) | `linear_model`  | `make_pipeline(PolynomialFeatures(30), Ridge(alpha=0.1))`                                |
+| Regression         | Lasso regularization ($L_1$) | `linear_model`  | `make_pipeline(PolynomialFeatures(30), Lasso(alpha=0.001))`                              |
+| Classification     | Support Vector Classifier    | `svm`           | `SVC(kernel="linear\|rbf", C=1e10)`                                                      |
+| Classification     | Decision Tree Classifier     | `tree`          | `DecisionTreeClassifier()`                                                               |
+| Classification     | Bagging Classifier           | `ensemble`      | `BaggingClassifier(estimator=, n_estimators=100, max_samples=0.8, random_state=1)`       |
+| Classification     | Random Forest Classifier     | `ensemble`      | `RandomForestClassifier(n_estimators=100, random_state=0)`                               |
+| Regression         | Random Forest Regressor      | `ensemble`      | `RandomForestRegressor(n_estimators=100, random_state=0)`                                |
+| Dim Reduction      | PCA                          | `decomposition` | `PCA(n_components=2)`                                                                    |
+| Dim Reduction      | MDS                          | `manifold`      | `MDS(n_components=2, dissimilarity="precomputed", random_state=1)`                       |
+| Dim Reduction      | LLE                          | `manifold`      | `LocallyLinearEmbedding(n_neighbors=, n_components=, method=, eigen_solver=)`            |
+| Dim Reduction      | Isometric Mapping            | `manifold`      | `Isomap(n_components=2)`                                                                 |
+| Clustering         | k-Mean                       | `cluster`       | `KMeans(n_clusters=4)`                                                                   |
+| Clustering         | kernelized k-Mean            | `cluster`       | `SpectralClustering(n_clusters=2, affinity="nearest_neighbors", assign_labels="kmeans")` |
+| Clustering/Density | GMM                          | `mixture`       | `GaussianMixture(n_components=4, covariance_type="full", random_state=42)`               |
+| Density            | KDE                          | `neighbors`     | `KernelDensity(kernel="gaussian", bandwidth=0.5)`                                        |
 
 ## Naive Bayes Classification
 
@@ -497,9 +498,10 @@ y_kmeans = kmeans.predict(X) # Predict the closest cluster number for each sampl
   - `.weights_`: probability that a training data point belongs to a specific cluster/component. Sum of all weights is 1
   - `.means_`: central location of each Gaussian cluster/component
   - `.covariances_`: how spread out the data is around the mean for each Gaussian cluster/component
+  - `.converged_`: has the model has converged
 - GMM as Density Estimation:
   - The result of GMM fit to some data is technically not a clustering model, but a **generative probabilistic model** describing the distribution of the data
-  - Generative model of distribution: GMM provides a recipe to generate new random data distributed similarly to our input. `gmm.sample(400, random_state=42)`
+  - Generative model of distribution: GMM provides a recipe to generate new random data distributed similarly to our input. `gmm.sample(n_samples=400)`
   - Number of components/clusters:
     - To avoid overfitting
     - We can use cross-validation or some analytic criterion such as Akaike information criterion (AIC) or the Bayesian information criterion (BIC)
@@ -517,11 +519,33 @@ plt.xlabel('n_components')
 # The optimal number of clusters is the value that minimizes the AIC or BIC
 ```
 
-## Kernel Density Estimation
+## Kernel Density Estimation (KDE)
 
-## Misc
+- Density estimator: it is an algorithm that seeks to model the probability distribution that generated a dataset
+- KDE is almost same as GMM. KDE is non-parametric model which uses a mixture consisting of one Gaussian component **per point**
+- Instead of grouping data together (like bins in histogram), place a small shape (**kernel**) directly on top of every individual data point
+- Hyperparameter:
+  - `kernel`: The specific shape placed on each point. E.g. gaussian, linear
+    - For gaussian, total area under the curve is 1
+  - `bandwidth`: controls the width of each individual kernel:
+    - Small Bandwidth: Creates a jagged, "spiky" curve that may overfit to noise (high variance estimate, i.e overfitting) (under-smoothing)
+    - Large Bandwidth: Creates a very smooth curve that might hide important peaks (high bias estimate, i.e underfitting)(over-smoothing)
 
-$$
-y=ax+b \\
-y=ax^3+bx^2+cx+d \dashrightarrow \text{degree-3 polynomial}
-$$
+```py title='kde plot'
+x.shape # (1000,)
+kde = KernelDensity(bandwidth=1.0, kernel='gaussian')
+kde.fit(x[:, None])
+
+x_d = np.linspace(-4, 10, 1000)
+log_prob = kde.score_samples(x_d[:, None]) # Compute the log-likelihood of each sample
+plt.fill_between(x_d, np.exp(log_prob), alpha=0.5)
+plt.plot(x, np.full_like(x, -0.01), '|k', markeredgewidth=1)
+plt.ylim(-0.02, 0.22)
+```
+
+```py title='optimal bandwidth'
+bandwidths = 10 ** np.linspace(-1, 1, 100)
+grid = GridSearchCV(KernelDensity(kernel='gaussian'), {'bandwidth': bandwidths}, cv=LeaveOneOut(len(x)))
+grid.fit(X)
+grid.best_params_
+```
