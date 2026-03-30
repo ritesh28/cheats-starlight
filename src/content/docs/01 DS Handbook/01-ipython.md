@@ -33,13 +33,15 @@ Notebook maintains list of input (code which you enter in the cell) and output (
 
 ## Magic Commands
 
-| Task to perform                                 | Magic command | Example                                                                                                                                |
-| ----------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| running external code                           | `%run`        | `%run myscript.py`. This execute `script.py` file. Also, any function defined within it are available for use in your IPython session. |
-| timing single-line code execution (line mode)   | `%timeit`     | `%timeit l = [n**2 for n in range(1000)]`                                                                                              |
-| timing multiple-line code execution (cell mode) | `%%timeit`    | First line is `%%timeit`. All code in that cell (called body of cell) are timed.                                                       |
+| Task to perform       | Magic command | Example                                                                                                              |
+| --------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| running external code | `%run`        | `%run myscript.py`: execute the file. Also, any defined function & variable are available in current IPython session |
+| timing (line mode)    | `%timeit`     | `%timeit l = [n**2 for n in range(1000)]`                                                                            |
+| timing (cell mode)    | `%%timeit`    | First line is `%%timeit`. All code in that cell (called body of cell) are timed                                      |
 
-| `%timeit`                                                                                                               | `%time`                                                                                             |
-| ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| It repeats the tests many times                                                                                         | Runs only one time                                                                                  |
-| Useful when you want to eliminate the influence of other tasks on your machine, such as disk flushing and OS scheduling | Useful when running task multiple time results in different result every time like sorting an array |
+- `%timeit`
+  - It repeats the tests many times
+  - Useful when you want to eliminate the influence of other tasks on your machine, such as disk flushing and OS scheduling
+- `%time`
+  - Runs only one time
+  - Useful when running task multiple time results in different result every time like sorting an array

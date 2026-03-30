@@ -60,3 +60,10 @@ title: Mathematics
       2. Calculate the Sum of Squares (ss): `∑((a[i] - m) ** 2)`
       3. `variance = ss / count`
     - **Standard Deviation**: measures how spread out numbers are. The symbol is σ (Greek letter sigma). `σ = Math.sqrt(variance)`
+
+## TODO: katex
+
+$$
+y=ax+b \\
+y=ax^3+bx^2+cx+d \dashrightarrow \text{degree-3 polynomial}
+$$
