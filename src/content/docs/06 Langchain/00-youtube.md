@@ -2,6 +2,17 @@
 title: LangChain Crash Course
 ---
 
+## LangChain vs LangGraph vs LangFlow vs LangSmith
+
+- All this form a LLM app builder stack
+
+|           | LangChain                         | LangGraph                                     | LangFlow                       | LangSmith                                   |
+| --------- | --------------------------------- | --------------------------------------------- | ------------------------------ | ------------------------------------------- |
+|           | foundation                        |                                               | visual layer                   | production mode                             |
+| features  | prompt,model,tool,retriever       | memory,loop,decision,multi-agent coordination | drag,drop,experiment,prototype | tracing,debugging,evaluation,token tracking |
+| usage     | chatbot, RAG system, simple agent | stateful, branching, agentic workflow         | fast iteration, collaboration  |                                             |
+| lifecycle | build with                        | scale with                                    | prototype with                 | ship with                                   |
+
 ## LangChain Ecosystem
 
 - A set of tools designed to simplify the entire lifecycle of building, deploying, and monitoring applications powered by Large Language Models (LLMs)

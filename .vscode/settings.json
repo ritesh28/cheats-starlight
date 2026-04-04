@@ -1,6 +1,8 @@
 {
   "cSpell.words": [
+    "agentic",
     "arange",
+    "autodiff",
     "Autograd",
     "coef",
     "CUDA",
@@ -10,6 +12,7 @@
     "hyperparameters",
     "Isomap",
     "isort",
+    "Keras",
     "kernelized",
     "kmeans",
     "kwargs",
