@@ -217,6 +217,25 @@ y_pred  # array([0])
        - Early Stopping: tell Keras to stop training if the Validation Loss stops improving, even if you set epochs=100. This saves time and prevents overfitting
        - Model Checkpoint-ing: You can set a "callback" to only save the version of the model that achieved the best validation score
   3. Testing set(10-15%): Used only once after training is complete to provide an unbiased evaluation of the final model
+- Saving and Restoring a Model:
+  - `model.save("my_keras_model.h5")`
+  - `model = keras.models.load_model("my_keras_model.h5")`
+- Using Callbacks:
+  - Callbacks are functions that allow you to save, interrupt model while it trains, rather than treating the training phase as an unchangeable "black box"
+  - They are triggered at global-level(`on_train_begin`, `on_train_end`), epoch-level(`on_epoch_begin`, `on_epoch_end`), & batch-level(`on_batch_begin`, `on_batch_end`)
+  - Common Built-in Callbacks:
+    - ModelCheckpoint:
+      - Saves model at regular interval (by default, end of each epoch). Depending on file name, file is overwritten or a new file is created at end of every epoch
+      - If validation set is present & `save_best_only=True`: saves model when its performance on the validation set is the best so far
+      - `checkpoint_cb = keras.callbacks.ModelCheckpoint("my_keras_model.h5"); model.fit(..., callbacks=[checkpoint_cb]) `
+    - EarlyStopping:
+      - Interrupt (but not save) training when theres no progress on validation set for a number of epochs (`patience`), and it will optionally roll back to the best model
+      - `early_stopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)`
+  - Custom callback: Create a class inheriting `keras.callbacks.Callback` and override methods like `on_epoch_end(self, epoch, logs)` (logs contain metrics like 'loss')
+- Visualization Using TensorBoard (build-in Callback function):
+  - TensorBoard is a live interactive visualization tool that you can use to view learning curves during training, compare learning curves between multiple runs
+  - Create a log directory. Each binary log file is called **event file**. Each binary data record in an event file is called **summary**
+  - TensorBoard **server** will monitor the log directory, and it will automatically pick up the changes and update the visualizations
 
 ```py title='validation set'
 # MANUAL SPLIT (PREFERRED)
@@ -307,7 +326,7 @@ history.history # returns dict of loss and extra metrics it measured at the end 
 # plt.show()
 
 # 5. EVALUATING MODEL
-model.evaluate(X_test, y_test) # can pass other arguments, such as `batch_size` or `sample_weight`
+loss, accuracy = model.evaluate(X_test, y_test) # can pass other arguments, such as `batch_size` or `sample_weight`
 # O/P => 313/313 [==============================] - 0s 747us/step - loss: 56.8926 - accuracy: 0.8532
 # X_test.shape=(10000, 28, 28) & batch_size=32 => which gives step=313 (10000/32)
 # NOTE: resist the temptation to tweak the hyperparameters on the test set, or else your estimate of the generalization error will be too optimistic
@@ -320,6 +339,7 @@ y_proba.round(2) # y_proba.shape: (3, 10)
 
 ```py title='Complex Models using Functional API: Wide & Deep NN'
 # REFER INFOGRAPHIC FOR WIDE & DEEP NN
+## COMPLEX MODEL WITH SINGLE INPUT & OUTPUT
 input = keras.layers.Input(shape=X_train.shape[1:]) # shape of each sample
 hidden1 = keras.layers.Dense(30, activation="relu")(input)
 hidden2 = keras.layers.Dense(30, activation="relu")(hidden1)
@@ -327,7 +347,7 @@ concat = keras.layers.Concatenate([input, hidden2])
 output = keras.layers.Dense(1)(concat)
 model = keras.models.Model(inputs=[input], outputs=[output]) # create model by specifying input & output layers
 
-## Handling multiple inputs
+## HANDLING MULTIPLE INPUTS
 # Here we are sending 5 features through the deep path (features 0 to 4), and 6 features through the wide path (features 2 to 7)
 input_A = keras.layers.Input(shape=[5])
 input_B = keras.layers.Input(shape=[6])
@@ -336,4 +356,62 @@ hidden2 = keras.layers.Dense(30, activation="relu")(hidden1)
 concat = keras.layers.concatenate([input_A, hidden2])
 output = keras.layers.Dense(1)(concat)
 model = keras.models.Model(inputs=[input_A, input_B], outputs=[output])
+# Pass pair of matrices (X_train_A, X_train_B) for fit(), evaluate() & predict()
+model.fit((X_train_A, X_train_B), y_train, ...)
+
+## HANDLING MULTIPLE OUTPUTS
+# Use case: Want to locate and classify main object in a picture. NN can learn features in data that are useful across tasks
+[...] # Same as multiple inputs handling
+output = keras.layers.Dense(1)(concat)
+aux_output = keras.layers.Dense(1)(hidden2)
+model = keras.models.Model(inputs=[input_A, input_B], outputs=[output, aux_output])
+model.compile(loss=["mse", "mse"], loss_weights=[0.9, 0.1], optimizer="sgd") # Each output needs its own loss function and have its own importance
+# Pass values for each output for fit(), evaluate(). predict() returns multiple sets of outputs
+history = model.fit([X_train_A, X_train_B], [y_train, y_train], ...)
+total_loss, main_loss, aux_loss = model.evaluate([X_test_A, X_test_B], [y_test, y_test])
+y_pred_main, y_pred_aux = model.predict([X_new_A, X_new_B])
+```
+
+```py title='Dynamic Models Using Subclassing API'
+# Sequential & Functional API are declarative: you start by declaring which layers you want to use and how they should be connected
+# Use subclassing api for dynamic model
+# Cons: Since architecture is hidden under call(), summary() do not return how layers are connected, and we can't save or inspect model
+class WideAndDeepModel(keras.models.Model): # Inherit Model class
+  def __init__(self, units=30, activation="relu", **kwargs):
+    # Create layers in __init__()
+    super().__init__(**kwargs)
+    self.hidden1 = keras.layers.Dense(units, activation=activation)
+    self.hidden2 = keras.layers.Dense(units, activation=activation)
+    self.main_output = keras.layers.Dense(1) # named as 'main_output', since Keras models have an 'output' attribute
+    self.aux_output = keras.layers.Dense(1)
+
+  def call(self, inputs):
+    # Connect the already defined layers in call()
+    # Additionally, Can do anything - for loops, if statements, low-level TensorFlow operations
+    input_A, input_B = inputs
+    hidden1 = self.hidden1(input_B)
+    hidden2 = self.hidden2(hidden1)
+    concat = keras.layers.concatenate([input_A, hidden2])
+    main_output = self.main_output(concat)
+    aux_output = self.aux_output(hidden2)
+    return main_output, aux_output
+
+model = WideAndDeepModel()
+```
+
+```py title'Visualization Using TensorBoard'
+root_logdir = os.path.join(os.curdir, "my_logs")
+def get_run_logdir():
+  import time
+  run_id = time.strftime("run_%Y_%m_%d-%H_%M_%S")
+  return os.path.join(root_logdir, run_id)
+run_logdir = get_run_logdir() # e.g., './my_logs/run_2019_01_16-11_28_43'
+
+# train model
+tensorboard_cb = keras.callbacks.TensorBoard(run_logdir) # pass the folder name
+# during training TensorBoard callback will create event files and write summaries to them
+history = model.fit(X_train, y_train, epochs=30, validation_data=(X_valid, y_valid), callbacks=[tensorboard_cb])
+
+# start the TensorBoard server
+!tensorboard --logdir=./my_logs --port=6006
 ```
