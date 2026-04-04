@@ -6,7 +6,6 @@ title: Introduction to ANN
 - Deep Learning (DL) is the study of Neural Network (NN)
 - NN Architecture: it is a structured arrangement, defining how artificial neurons are organized, connected, and layered to process data
 - Training ANN means finding/learning the right values for weights: $w_0$, $w_1$ ... $w_n$
-- FNN: Feed-forward Neural Network. In this architecture, the signal flows only in one direction (from the inputs to the outputs)
 
 ![ANN](./10-intro-ANN.drawio.svg)
 
@@ -68,8 +67,8 @@ title: Introduction to ANN
   2. Activation: It then applies an activation function (like ReLU or Sigmoid) to decide how much **signal** to send forward
   3. Sequential Flow: Layer 1 sends its results to Layer 2, Layer 2 to Layer 3, and so on. This continues until the data reaches the Output Layer
 - NOTE: each layer manages:
-  - weight matrix: it contains all the connection weights between the neurons and their **inputs**
-  - bias weight vector: it contains vector of bias (from previous layer) terms (one per neuron)
+  - weight matrix: it contains all the connection weights between the neurons and their **inputs**. Shape: (previous_layer_neuron_count, current_layer_neuron_count)
+  - bias weight vector: it contains vector of bias (from previous layer) terms (one per neuron). Shape: (current_layer_neuron_count,)
 
 ## Loss function
 
@@ -178,7 +177,16 @@ y_pred  # array([0])
   - For multi-class classification, you need one output neuron per class, and should use softmax activation function for the whole output layer
   - Loss function: use cross-entropy
 
-## Implementing MLPs with Keras
+## Other NNs:
+
+- FNN: Feed-forward Neural Network. In this architecture, the signal flows only in one direction (from the inputs to the outputs)
+  - Example: MLP
+- Wide & Deep NN:
+  - Non-sequential NN
+  - It connects all or part of the inputs directly to the output layer
+  - Advantage: learns both deep patterns (using the deep path) and simple rules (through the short path)
+
+## Implementing NN with Keras
 
 - Keras (https://keras.io/) provides **specification** (rules & guidelines) for how deep learning code should look and behave
 - Keras (https://github.com/keras-team/keras) (not to confuse, we'll call it keras-team) provide **implementation** as python package
@@ -192,7 +200,7 @@ y_pred  # array([0])
   2. Functional API:
      - Instead of a list, you define functions that take layers as inputs and return layers as outputs. You then connect them to create a graph
      - Pros: Supports multiple inputs/outputs, branching, and layer sharing. Allows you to access intermediate layer outputs easily
-  3. Model Subclassing:
+  3. Model Sub-classing:
      - OOPs approach
      - Create a class inheriting from `tf.keras.Model`. Define layers in the `__init__()` and the forward pass logic in the `call()`
 - During building model, whole dataset is made of:
@@ -211,13 +219,121 @@ y_pred  # array([0])
   3. Testing set(10-15%): Used only once after training is complete to provide an unbiased evaluation of the final model
 
 ```py title='validation set'
-# Manual Split
+# MANUAL SPLIT (PREFERRED)
 from sklearn.model_selection import train_test_split
 x_train_full, x_test, y_train_full, y_test = train_test_split(X, y, test_size=0.2) # Split off the Test set first
 x_train, x_val, y_train, y_val = train_test_split(x_train_full, y_train_full, test_size=0.2) # Split the remaining data into Train and Validation
 model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=10) # Pass them to the model
 
-# Automatic split
+# AUTOMATIC SPLIT
 # ensure your data is shuffled, otherwise the validation set might only contain one class of data
 model.fit(x_train, y_train, epochs=10, validation_split=0.2)
+```
+
+```py title='Image Classifier Using Sequential API: MLP architecture'
+## PROCESS(5 steps): CREATE -> COMPILE -> TRAIN -> EVALUATE -> PREDICT
+import tensorflow as tf
+from tensorflow import keras
+fashion_mnist = keras.datasets.fashion_mnist
+(X_train_full, y_train_full), (X_test, y_test) = fashion_mnist.load_data()
+X_train_full.dtype  # uint8
+X_train_full.shape  # (60000, 28, 28)
+y_train_full.shape  # (60000,)
+class_names = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"]  # from keras website
+class_names[y_train_full[0]]  # 'Ankle boot'
+
+# CREATE VALIDATION SET
+# Since working with Gradient Descent, scale the input features & convert them to float
+X_valid, X_train = X_train_full[:5000] / 255.0, X_train_full[5000:] / 255.0
+y_valid, y_train = y_train_full[:5000], y_train_full[5000:]
+
+# 1. CREATE MODEL
+model = keras.models.Sequential()  # Sequential API
+model.add(keras.layers.Flatten(input_shape=[28, 28]))  # convert input shape into 1D. Creates input layer `keras.layers.Input()`
+model.add(keras.layers.Dense(300, activation="relu"))  # OR: activation=keras.activations.relu
+model.add(keras.layers.Dense(100, activation="relu"))
+model.add(keras.layers.Dense(10, activation="softmax"))  # 10 neurons (one per class)
+
+# Alternative way to create model: pass list of layers
+# model = keras.models.Sequential([keras.layers.Flatten(...), keras.layers.Dense(...), ... ])
+
+# If the input shape is already 1D, we can directly create dense layer as first layer as:
+# keras.layers.Dense(30, activation="relu", input_shape=(8,))
+# Alternative: keras.layers.Input(shape=(8,)); keras.layers.Dense(30, activation="relu")
+
+model.summary() # return table of all model's layers
+#  Layer (type)                Output Shape              Param #
+# =================================================================
+#  flatten_1 (Flatten)         (None, 784)               0
+#  dense_3 (Dense)             (None, 300)               235500     # Calculation: 784 × 300 connection weights, plus 300 bias terms
+#  dense_4 (Dense)             (None, 100)               30100
+#  dense_5 (Dense)             (None, 10)                1010
+model.layers # return list of layers
+model.layers[1].name # OR: model.get_layer("dense_3").name. O/P => dense_3. return name of the layer
+weights, biases = model.layers[1].get_weights() # access all the parameters of a layer
+# weights are initialized randomly (needed to break symmetry), and biases are initialized to 0
+# set `kernel_initializer` (kernel is another name for the matrix of connection weights) or `bias_initializer` to use a different initialization method
+weights.shape, biases.shape # ((784, 300), (300,))
+
+# 2. COMPILE MODEL: specify the loss function and the optimizer to use
+model.compile(
+  loss="sparse_categorical_crossentropy", # OR: loss=keras.losses.sparse_categorical_crossentropy
+  optimizer="sgd", # OR: optimizer=keras.optimizers.SGD()
+  metrics=["accuracy"] # OR: metrics=[keras.metrics.sparse_categorical_accuracy]. Specify a list of extra metrics to compute during training and evaluation
+  )
+
+# 3. TRAINING MODEL
+history = model.fit(X_train, y_train, epochs=30, validation_data=(X_valid, y_valid))
+# NOTE: calling `fit()` again will continue training further (rather than restarting) since the weights are already updated
+# Other Parameter:
+##### batch_size=32 (default)
+##### class_weight: use it to give larger weight to underrepresented classes, and lower weight to overrepresented classes
+##### sample_weight: (supersedes class_weight) use it to give per-sample/instance weight (for e.x., some samples are credible while others are not)
+##### provide sample weights (but not class weights) for validation set by adding them as a third item in the validation_data tuple
+# O/P =>
+# Epoch 1/30
+# 1719/1719 [==============================] - 2s 1ms/step - loss: 0.7228 - accuracy: 0.7610 - val_loss: 0.5224 - val_accuracy: 0.8234
+# ...
+# A step is considered when the model has consumed one batch (32) of samples
+# Since X_train has 55,000 samples & each batch contains 32 samples - total number of batches/steps is 1719 (55000/32)
+# After every step, model calculate mean error/loss and updates weights as per optimizer function
+# After every epoch, model evaluates on the validation set - used only for performance monitoring and not for training
+
+# 4. LEARNING CURVES: use it to verify if the model is converged and whether overfitting
+history.history # returns dict of loss and extra metrics it measured at the end of each epoch on the training set and on the validation set
+# pd.DataFrame(history.history).plot(figsize=(8, 5))
+# plt.grid(True)
+# plt.gca().set_ylim(0, 1)  # set the vertical range to [0-1]
+# plt.show()
+
+# 5. EVALUATING MODEL
+model.evaluate(X_test, y_test) # can pass other arguments, such as `batch_size` or `sample_weight`
+# O/P => 313/313 [==============================] - 0s 747us/step - loss: 56.8926 - accuracy: 0.8532
+# X_test.shape=(10000, 28, 28) & batch_size=32 => which gives step=313 (10000/32)
+# NOTE: resist the temptation to tweak the hyperparameters on the test set, or else your estimate of the generalization error will be too optimistic
+
+# 6. USING THE MODEL TO MAKE PREDICTIONS
+X_new = X_test[:3]
+y_proba = model.predict(X_new) # make prediction (estimates one probability per class)
+y_proba.round(2) # y_proba.shape: (3, 10)
+```
+
+```py title='Complex Models using Functional API: Wide & Deep NN'
+# REFER INFOGRAPHIC FOR WIDE & DEEP NN
+input = keras.layers.Input(shape=X_train.shape[1:]) # shape of each sample
+hidden1 = keras.layers.Dense(30, activation="relu")(input)
+hidden2 = keras.layers.Dense(30, activation="relu")(hidden1)
+concat = keras.layers.Concatenate([input, hidden2])
+output = keras.layers.Dense(1)(concat)
+model = keras.models.Model(inputs=[input], outputs=[output]) # create model by specifying input & output layers
+
+## Handling multiple inputs
+# Here we are sending 5 features through the deep path (features 0 to 4), and 6 features through the wide path (features 2 to 7)
+input_A = keras.layers.Input(shape=[5])
+input_B = keras.layers.Input(shape=[6])
+hidden1 = keras.layers.Dense(30, activation="relu")(input_B)
+hidden2 = keras.layers.Dense(30, activation="relu")(hidden1)
+concat = keras.layers.concatenate([input_A, hidden2])
+output = keras.layers.Dense(1)(concat)
+model = keras.models.Model(inputs=[input_A, input_B], outputs=[output])
 ```
