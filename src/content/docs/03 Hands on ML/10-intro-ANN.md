@@ -8,6 +8,8 @@ title: Introduction to ANN
 - Training ANN means finding/learning the right values for weights: $w_0$, $w_1$ ... $w_n$
 - FNN: Feed-forward Neural Network. In this architecture, the signal flows only in one direction (from the inputs to the outputs)
 
+![ANN](./10-intro-ANN.drawio.svg)
+
 ## Artificial Neuron
 
 - An artificial neuron is a computation building block of NN
@@ -65,6 +67,9 @@ title: Introduction to ANN
   1. Weighted Sums: Each neuron multiplies the inputs by its weights and adds a bias
   2. Activation: It then applies an activation function (like ReLU or Sigmoid) to decide how much **signal** to send forward
   3. Sequential Flow: Layer 1 sends its results to Layer 2, Layer 2 to Layer 3, and so on. This continues until the data reaches the Output Layer
+- NOTE: each layer manages:
+  - weight matrix: it contains all the connection weights between the neurons and their **inputs**
+  - bias weight vector: it contains vector of bias (from previous layer) terms (one per neuron)
 
 ## Loss function
 
@@ -180,7 +185,7 @@ y_pred  # array([0])
   - keras-team don't do heavy mathematical lifting itself, but relies on "backend engine" to handle complex tensor operations and hardware acceleration
   - One of the popular engine is **TensorFlow**
   - TensorFlow itself now comes bundled with its own Keras implementation called `tf.keras`
-- 3 coding favour for building model:
+- 3 Coding favour for building model:
   1. Sequential API:
      - Simplest way to build a model - stack layers one after another in a linear list
      - Cons: Cannot handle multiple inputs/outputs, shared layers, or non-linear topology (like branches)
@@ -190,3 +195,29 @@ y_pred  # array([0])
   3. Model Subclassing:
      - OOPs approach
      - Create a class inheriting from `tf.keras.Model`. Define layers in the `__init__()` and the forward pass logic in the `call()`
+- During building model, whole dataset is made of:
+  1. Training set(70-80%): Used by the model to learn weights and patterns
+  2. Validation set(10-15%):
+     - Once the model has seen the entire training set (one epoch), it runs a forward pass on the Validation data
+     - It calculates Validation Loss and Accuracy
+     - NOTE: The model does not update its weights based on this data
+     - Comparison (training & validation metrics):
+       - Training Loss low, Validation Loss high: The model is overfitting
+       - Both losses decreasing: The model is learning well
+     - Use case:
+       - Hyperparameter Tuning like learning rate, adding more layers
+       - Early Stopping: tell Keras to stop training if the Validation Loss stops improving, even if you set epochs=100. This saves time and prevents overfitting
+       - Model Checkpoint-ing: You can set a "callback" to only save the version of the model that achieved the best validation score
+  3. Testing set(10-15%): Used only once after training is complete to provide an unbiased evaluation of the final model
+
+```py title='validation set'
+# Manual Split
+from sklearn.model_selection import train_test_split
+x_train_full, x_test, y_train_full, y_test = train_test_split(X, y, test_size=0.2) # Split off the Test set first
+x_train, x_val, y_train, y_val = train_test_split(x_train_full, y_train_full, test_size=0.2) # Split the remaining data into Train and Validation
+model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=10) # Pass them to the model
+
+# Automatic split
+# ensure your data is shuffled, otherwise the validation set might only contain one class of data
+model.fit(x_train, y_train, epochs=10, validation_split=0.2)
+```
