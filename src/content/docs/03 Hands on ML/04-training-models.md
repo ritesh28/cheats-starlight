@@ -29,6 +29,7 @@ title: Training Models
   2. Challenge to distinguish local minima and global minima
   3. If the curve is plateau-like (low slope). Algorithm will take a very long time to cross the plateau
 - NOTE: When using Gradient Descent, ensure that all features have a similar scale (use `StandardScaler`), or else it will take much longer to converge
+- Gradient Descent optimizes a model's internal parameters like slope ($m$) and intercept ($b$) in a linear regression model
 - Training a model means searching for a combination of model parameters that minimizes a cost function (over the training set)
 - MSE cost function for a Linear Regression model happens to be a convex function - no local minima and no sharp edge. Good candidate for gradient descent
 - Number of epochs: set very large number of epoch but interrupt the algorithm when gradient vector becomes smaller than a tiny number $\epsilon$ (tolerance)
