@@ -415,3 +415,76 @@ history = model.fit(X_train, y_train, epochs=30, validation_data=(X_valid, y_val
 # start the TensorBoard server
 !tensorboard --logdir=./my_logs --port=6006
 ```
+
+## Fine-Tuning Neural Network Hyperparameters
+
+- Wrap Keras models in objects that mimic regular Scikit-Learn regressors and use `GridSearchCV` or `RandomizedSearchCV` to explore the hyperparameter space
+  - NOTE: the `score` is negative:
+    - In Scikit-Learn, all evaluation tools follow a maximization convention, meaning a higher number must always represent a "better" model
+    - This creates a conflict with metrics (of Keras model) like Mean Squared Error (MSE), where a lower number is better
+    - To resolve this and make MSE compatible with its internal logic (of like `GridSearchCV`), Scikit-Learn flips the sign of the error
+- Fine tuning is a time consuming process:
+  - Use package like `Hyperopt`, `Scikit-Optimize (skopt)`
+  - Many companies offer services for hyperparameter optimization - like Google Cloud ML Engine has a hyperparameter tuning service
+
+```py title='keras wrapper'
+#### 1. CREATE A FUNCTION THAT WILL BUILD AND COMPILE A KERAS MODEL, GIVEN A SET OF HYPERPARAMETERS
+def build_model(n_hidden=1, n_neurons=30, learning_rate=3e-3, input_shape=[8]):
+  model = keras.models.Sequential()
+  options = {"input_shape": input_shape}
+  for layer in range(n_hidden):
+    model.add(keras.layers.Dense(n_neurons, activation="relu", **options))
+    options = {}
+  model.add(keras.layers.Dense(1, **options))
+  optimizer = keras.optimizers.SGD(learning_rate)
+  model.compile(loss="mse", optimizer=optimizer)
+  return model
+
+#### 2. CREATE WRAPPER
+keras_reg = keras.wrappers.scikit_learn.KerasRegressor(build_model) # this model will use default hyperparameter specified in `build_model()`
+# `keras_reg` can be used like a regular Scikit-Learn regressor
+# NOTE: any extra parameter passed to fit() will simply get passed to the underlying Keras model
+keras_reg.fit(X_train, y_train, epochs=100, validation_data=(X_valid, y_valid), callbacks=[keras.callbacks.EarlyStopping(patience=10)])
+mse_test = keras_reg.score(X_test, y_test) # negative nse score
+y_pred = keras_reg.predict(X_new)
+
+#### 3. FIND OPTIMAL HYPERPARAMETER USING RandomizedSearchCV
+from scipy.stats import reciprocal
+from sklearn.model_selection import RandomizedSearchCV
+param_distribs = {
+  "n_hidden": [0, 1, 2, 3],
+  "n_neurons": np.arange(1, 100),
+  "learning_rate": reciprocal(3e-4, 3e-2), # reciprocal distribution - ideal for scales where you want to explore small values (0.0003) and large values (0.03) "equally"
+}
+rnd_search_cv = RandomizedSearchCV(keras_reg, param_distribs, n_iter=10, cv=3) # randomly picks 10 different combinations. 3-fold cross-validation
+rnd_search_cv.fit(X_train, y_train, epochs=100, validation_data=(X_valid, y_valid), callbacks=[keras.callbacks.EarlyStopping(patience=10)])
+# For each of the 10 combinations, it trains the model for up to 100 epochs
+# Note: RandomizedSearchCV uses K-fold cross-validation, so it does not use X_valid and y_valid. These are just used for early stopping
+rnd_search_cv.best_params
+rnd_search_cv.best_score_ # negative number. Fix: Simply take the absolute value
+model = rnd_search_cv.best_estimator_.model
+```
+
+- Guidelines for choosing number of Hidden Layers:
+  - Start with just one or two hidden layers and it will work just fine
+  - For more complex problems, you can gradually ramp up the number of hidden layers, until you start overfitting the training set
+  - Reuse parts of a pretrained state-of-the-art network that performs a similar task. Training will be a lot faster and require much less data
+    - This is called transfer learning - a process of reusing lower hidden layers of a NN of similar task
+    - Idea:
+      - Lower layers model low-level structures(e.g., line segments of various shapes and orientations),
+      - Intermediate hidden layers combine these low-level structures to model intermediate-level structures (e.g., squares, circles), and
+      - highest hidden layers and the output layer combine these intermediate structures to model high-level structures (e.g., faces)
+    - E.g: If theres already a model to recognize faces, and you want a NN to recognize hairstyles, then you can kickstart training by reusing lower layers of first network
+- Guidelines for choosing number of Neurons per Hidden Layer:
+  - Number of neurons in the input and output layers is determined by the type of input and output your task requires
+  - Avoid pyramid - fewer and fewer neurons at each layer. Does not help much and an additional hyperparameter per layer to fine-tune
+  - Just like for the number of layers, you can try increasing the number of neurons gradually until the network starts overfitting
+  - In general, you will get better result by increasing the number of layers than the number of neurons per layer
+- Guidelines for choosing Learning Rate and Other Hyperparameters:
+  - Learning Rate:
+    - In general, optimal learning rate is about half of the maximum learning rate (i.e., the learning rate above which the training algorithm diverges)
+    - Approach 1: start with large value that makes the training diverge, then divide this by 3 and try again, and repeat until the training stops diverging
+    - Approach 2: reduce the learning rate during training (learning schedule function)
+  - Choosing a better optimizer than plain old Mini-batch Gradient Descent (and tuning its hyperparameters) is also quite important
+  - Activation function: In general, ReLU is a good default for all hidden layers. For the output layer, it really depends on your task
+  - Epoch: In most cases, the number of training iterations does not actually need to be tweaked: just use early stopping instead
