@@ -298,6 +298,15 @@ X2 = imp.fit_transform(X)
     - $P=\alpha\sum_{n=1}^{N} |\theta_n|$
     - It adds a "penalty" to the standard regression model, which forces the coefficients of less important variables to shrink towards zero, often hitting exactly zero
     - Use Lasso if you suspect only few features are important and you want the model to automatically perform feature selection by zeroing out the rest
+  - Norm:
+    - A norm is a mathematical tool that measures the "size" or magnitude of a vector
+    - In ML, different norms (like L1, L2) are used to calculate distance and penaliZe weights during training
+    - L1 Norm (Manhattan or Taxicab Norm):
+      - Instead of the shortest path, think of a taxi driving through city blocks. You can only move in straight lines along the axes
+      - Formula: Sum of the absolute values of the components. $\|x\|_1 = |x_1| + |x_2| + \dots + |x_n|$
+    - L2 Norm (Euclidean Norm):
+      - Common way to calculate distance
+      - Formula: Square all the components, add them up, then take the square root. $\|x\|_2 = \sqrt{x_1^2 + x_2^2 + \dots + x_n^2}$
 
 ## Support Vector Machines (SVMs)
 
