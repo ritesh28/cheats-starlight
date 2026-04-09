@@ -194,3 +194,48 @@ model.summary()
 - If you observe that gradients explode during training (track in TensorBoard), you may want to try both clipping by value and by norm, with different threshold
 
 ## Reusing Pretrained Layers
+
+- Transfer Learning:
+  - Its a technique to reuse the lower layers of NN that accomplishes a similar task to the one you are trying to tackle
+  - E.x.:
+    - Suppose you have access to a NN that was trained to classify pictures into 100 different categories, including animals, plants, vehicles, and everyday objects
+    - You now want to train a DNN to classify specific types of vehicles
+    - These tasks are very **similar, even partly overlapping,** so you should try to reuse parts of the first network
+  - NOTE: Add a **preprocessing step** to resize image (input) to the size expected by the original model
+  - Transfer learning will work best when the inputs have similar low-level features - for e.x. grey colored image
+  - The more similar tasks are, the more lower layers you want to reuse. For very similar tasks, you can try keeping all hidden layers and just replace output layer
+- Freezing/unfreezing reused layers:
+  - Freeze a layer means make their weights non-trainable, so gradient descent won’t modify them
+  - Once you have decided the number of reused layers:
+    - First, freeze all the reused layers then train your model and see how it performs
+    - Then try unfreezing one or two of the top hidden layers to let backpropagation tweak them and see if performance improves
+  - The more training data you have, the more layers you can unfreeze
+  - NOTE: Reduce the learning rate when you unfreeze reused layers: this will avoid wrecking their fine-tuned weights
+  - NOTE: Always compile your model after you freeze or unfreeze layers
+- NOTE: In general, transfer learning does not work very well with small dense networks: it works best with deep convolutional neural networks
+
+```py title='Transfer learning with Keras'
+model_A = keras.models.load_model("my_model_A.h5")
+model_B_on_A = keras.models.Sequential(model_A.layers[:-1]) # reuse all layers except for the output layer
+model_B_on_A.add(keras.layers.Dense(1, activation="sigmoid"))
+# NOTE: model_A and model_B_on_A now share some layers. When you train model_B_on_A, it will also affect model_A
+# To avoid modifying model_A, use clone_model(). REMEMBER: clone_model() does not clone the weights)
+# model_A_clone = keras.models.clone_model(model_A)
+# model_A_clone.set_weights(model_A.get_weights())
+
+#### TRAIN
+# For first few epochs, our model will make large error, which leads to large gradient that will wreck the reused weights
+# Solution: freeze reused layers initially, giving the new output layer some time to learn reasonable weights
+for layer in model_B_on_A.layers[:-1]:
+    layer.trainable = False
+model_B_on_A.compile(loss="binary_crossentropy", optimizer="sgd", metrics=["accuracy"]) # Always compile after freezing/unfreezing
+history = model_B_on_A.fit(X_train_B, y_train_B, epochs=4, validation_data=(X_valid_B, y_valid_B))
+# unfreeze
+for layer in model_B_on_A.layers[:-1]:
+    layer.trainable = True
+optimizer = keras.optimizers.SGD(lr=1e-4) # the default lr is 1e-3. Reducing learning rate
+model_B_on_A.compile(loss="binary_crossentropy", optimizer=optimizer, metrics=["accuracy"])
+history = model_B_on_A.fit(X_train_B, y_train_B, epochs=16, validation_data=(X_valid_B, y_valid_B))
+```
+
+## Unsupervised Pretraining
