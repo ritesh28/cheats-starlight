@@ -204,15 +204,34 @@ model.summary()
   - NOTE: Add a **preprocessing step** to resize image (input) to the size expected by the original model
   - Transfer learning will work best when the inputs have similar low-level features - for e.x. grey colored image
   - The more similar tasks are, the more lower layers you want to reuse. For very similar tasks, you can try keeping all hidden layers and just replace output layer
-- Freezing/unfreezing reused layers:
-  - Freeze a layer means make their weights non-trainable, so gradient descent won’t modify them
-  - Once you have decided the number of reused layers:
-    - First, freeze all the reused layers then train your model and see how it performs
-    - Then try unfreezing one or two of the top hidden layers to let backpropagation tweak them and see if performance improves
-  - The more training data you have, the more layers you can unfreeze
-  - NOTE: Reduce the learning rate when you unfreeze reused layers: this will avoid wrecking their fine-tuned weights
-  - NOTE: Always compile your model after you freeze or unfreeze layers
-- NOTE: In general, transfer learning does not work very well with small dense networks: it works best with deep convolutional neural networks
+  - Freezing/unfreezing reused layers:
+    - Freeze a layer means make their weights non-trainable, so gradient descent won’t modify them
+    - Once you have decided the number of reused layers:
+      - First, freeze all the reused layers then train your model and see how it performs
+      - Then try unfreezing one or two of the top hidden layers to let backpropagation tweak them and see if performance improves
+    - The more training data you have, the more layers you can unfreeze
+    - NOTE: Reduce the learning rate when you unfreeze reused layers: this will avoid wrecking their fine-tuned weights
+    - NOTE: Always compile your model after you freeze or unfreeze layers
+  - NOTE: In general, transfer learning does not work very well with small dense networks: it works best with deep convolutional neural networks
+- Unsupervised Pretraining:
+  - Useful when you have plenty of unlabeled data (and little labeled data) and can't find a model trained on a similar task
+  - Unsupervised pretraining: Learning "Features" pattern first, "Labels" later
+  - Train layers one by one, starting with the lowest layer and then going up, using an unsupervised feature detector algorithm such as autoencoders
+  - All layers except the one being trained are frozen. Each layer is trained on the output of the previously trained layers
+  - Once all layers have been trained this way:
+    - Unfreeze all the pretrained layers, or just some of the upper ones
+    - Add the output layer for your task, and fine-tune the final network using supervised learning (i.e., with the labeled set)
+- Pretraining on an Auxiliary (Supplementary) Task:
+  - Useful when you don't have labeled data for a given task, but you have plenty of labeled data for a similar (auxiliary) task
+  - Train NN for the auxiliary task and then reuse the lower layers of that network for your actual task
+  - The first NN lower layers will learn feature detectors that will likely be reusable by the second NN
+  - Example:
+    - For natural language processing (NLP) applications, you can easily download millions of text documents and automatically generate labeled data from it
+    - For example, you could randomly mask out some words and train a model to predict what the missing words are (this will be Auxiliary task)
+    - This Auxiliary task NN already know quite a lot about language, and you can reuse it for your actual task, and fine-tune it on your labeled data
+  - Self-supervised learning:
+    - Self-supervised learning is when you automatically generate the labels from the data itself, thus created labeled dataset
+    - Since this approach requires no human labeling whatsoever, it is best classified as a form of unsupervised learning
 
 ```py title='Transfer learning with Keras'
 model_A = keras.models.load_model("my_model_A.h5")
@@ -238,4 +257,4 @@ model_B_on_A.compile(loss="binary_crossentropy", optimizer=optimizer, metrics=["
 history = model_B_on_A.fit(X_train_B, y_train_B, epochs=16, validation_data=(X_valid_B, y_valid_B))
 ```
 
-## Unsupervised Pretraining
+## Faster Optimizers

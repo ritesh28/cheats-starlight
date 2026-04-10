@@ -3,6 +3,7 @@
     "agentic",
     "arange",
     "autodiff",
+    "autoencoders",
     "Autograd",
     "backpropagating",
     "coef",
