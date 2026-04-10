@@ -2,6 +2,15 @@
 title: Training Deep Neural Networks (DNN)
 ---
 
+- Ways to speed up training (and reach a better solution):
+  1. Initialization strategy for the connection weights
+  2. Activation functions
+  3. Batch normalization
+  4. Reusing parts of a pretrained network (possibly built on an auxiliary task or using unsupervised learning)
+  5. Optimizer
+
+![train DNN](./11-training-DNN.drawio.svg)
+
 ## Vanishing/Exploding Gradients Problems
 
 - During backpropagation process:
@@ -258,3 +267,93 @@ history = model_B_on_A.fit(X_train_B, y_train_B, epochs=16, validation_data=(X_v
 ```
 
 ## Faster Optimizers
+
+- Optimizer is an algorithm responsible for updating model's internal parameters (its weights and biases) to reduce errors and improve performance
+- Momentum Optimization:
+  - Analogy: Think of a heavy ball rolling down the hill - initially it start slow but quickly it will pick up momentum
+  - In contrast, regular Gradient Descent (GD) will simply take small regular steps down the slope, so it will take much more time to reach the bottom
+  - GD equation: $\theta \leftarrow \theta - \eta \nabla_{\theta} J(\theta)$
+    - $\theta$ represents all weights
+    - $\nabla_{\theta}$ is the gradient **vector** of weights
+    - Updated $\theta$ is old $\theta$ minus learning rate ($\eta$) times gradient of the cost/error function $J(\theta)$
+  - Unlike GD, Momentum optimization cares a great deal about what previous gradients were
+  - Momentum algorithm (has 2 steps):
+    1. $m \leftarrow \beta m - \eta \nabla_{\theta} J(\theta)$
+       - $m$ represents momentum vector
+       - $\beta$, a hyperparameter, is called 'momentum' which is set between 0 (high friction) and 1 (no friction). A typical momentum value is 0.9
+       - $\beta$ determines how much of previous momentum vector to keep
+    2. $\theta \leftarrow \theta + m$
+  - Understanding the Speed Multiplier:
+    - In standard GD, step size is always fixed: $step=\eta\times\nabla$
+    - In Momentum, we multiply $\beta$ to the previous step. This creates a geometric series of steps $total update = \eta\nabla\times(1+\beta+\beta^2+\beta^3+\cdots)$
+    - According to the mathematical rule for infinite geometric series, the sum of $(1+\beta+\beta^2+\beta^3+\cdots)$ is exactly $\frac{1}{1-\beta}$
+    - For $\beta=0.9$, infinite series returns 10. This means on long run, Momentum optimization is 10 times faster than Gradient Descent
+  - Advantage over GD:
+    - Faster Convergence: In flat areas (plateaus), GD takes tiny steps and can feel stuck. Momentum builds up enough speed to "race" across these flat sections
+    - Momentum can easily roll past local optima and reach global optima
+    - Does better even if NN lacks Batch normalization:
+      - At layers closer to the output, some inputs might be huge (e.g., 100.0) while others are tiny (e.g., 0.01)
+      - Momentum ignores sideways bouncing caused by those uneven scales and uses its "built-up speed" to stay focused on the long-term path to the minimum
+  - `optimizer = keras.optimizers.SGD(lr=0.001, momentum=0.9)`: set `momentum` when creating the SGD optimizer
+  - Drawback: Extra hyperparameter to tune. However, the momentum value of 0.9 usually works well
+- Nesterov Accelerated Gradient (NAG):
+  - Variant of Momentum Optimization
+  - The idea is to measure the gradient of the cost function not at the local position but slightly ahead in the direction of the momentum
+  - NAG algorithm (has 2 steps):
+    1. $m \leftarrow \beta m - \eta \nabla_{\theta} J(\theta + {\beta m})$. Gradient is measured at $\theta + {\beta m}$ rather than at $\theta$
+    2. $\theta \leftarrow \theta + m$
+  - This small tweak works because in general the momentum vector will be pointing in the right direction (i.e., toward the optimum)
+  - `optimizer = keras.optimizers.SGD(lr=0.001, momentum=0.9, nesterov=True)`: set `nesterov=True` when creating the SGD optimizer
+- AdaGrad (Adaptive Gradient):
+  - While Momentum focuses on speed, AdaGrad focuses on scale
+  - Analogy:
+    - Imagine you are walking on a path where some sections are made of solid rock (frequent features) and others are deep mud (rare features)
+    - Standard GD tries to walk at the same pace everywhere. It might sprint over the rock but get stuck in the mud
+    - AdaGrad tracks how much you’ve moved in each direction:
+      - If you've moved a lot (rock), it slows you down to avoid overshooting
+      - If you've barely moved at all (mud), it speeds you up (gives you a higher learning rate) to help you get through it
+  - AdaGrad scale down the steepest dimensions more than the flatter ones. This helps to point the result towards the global optimum
+  - Algorithm (has 2 steps):
+    - $s \leftarrow s + \nabla_{\theta} J(\theta) \otimes \nabla_{\theta} J(\theta)$
+      - $\otimes$ represent element-wise multiplication (multiply the numbers that are in the same position)
+      - Vector $s$ represents the accumulated sum of squared gradients
+      - $s$ becomes larger and larger at each iteration
+    - $\theta \leftarrow \theta - \eta \nabla_{\theta} J(\theta) \oslash \sqrt{s + \epsilon}$
+      - $\oslash$ represent element-wise division
+      - Almost identical to GD, but one big difference: the gradient vector is scaled down
+      - $\epsilon$ is a smoothing term to avoid division by zero, typically set to $10^{-10}$
+  - This algorithm decays the learning rate, but it does so faster for steep dimensions than for dimensions with gentler slopes. This is called **adaptive learning rate**
+  - Disadvantage: Its minimizes learning rate to almost 0, which ends up stopping NN entirely before reaching the global optimum
+  - AVOID USING IT
+- RMSProp:
+  - Problem of AdaGrad: It slows down a bit too fast and ends up never converging to the global optimum
+  - RMSProp algorithm fixes this by accumulating only the gradients from the most recent iterations (as opposed to all the gradients since the beginning of training)
+  - Algorithm (has 2 steps):
+    - $s \leftarrow \rho s + (1-\rho)\nabla_{\theta} J(\theta) \otimes \nabla_{\theta} J(\theta)$
+      - Uses exponential decay ($\rho$). Decay rate is typically set to 0.9 (extra hyperparameter, but this default value often works well)
+    - $\theta \leftarrow \theta - \eta \nabla_{\theta} J(\theta) \oslash \sqrt{s + \epsilon}$: Same as AdaGrad
+  - `keras.optimizers.RMSprop(lr=0.001, rho=0.9)`
+- Adam (ADAptive Moment estimation) Optimization:
+  - Combines the ideas of Momentum optimization (keep track of decaying past gradients) and RMSProp (keep track of decaying past squared gradients)
+  - The momentum decay hyperparameter $beta_1$ is typically initialized to 0.9, while the scaling decay hyperparameter $\beta_2$ is initialized to 0.999
+  - `optimizer = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999)`
+  - Since Adam is an adaptive learning rate algorithm (like AdaGrad and RMSProp), it requires less tuning of the learning rate hyperparameter $\eta$
+- NAdam Optimization:
+  - Variant of Adam
+  - it is simply Adam optimization plus the Nesterov trick, so it will often converge slightly faster than Adam
+- Learning Rate Scheduling:
+  - If you set learning rate way too high, training may actually diverge
+  - If you set learning rate too low, training will eventually converge to the optimum, but it will take a very long time
+  - If you set learning rate slightly high, it will make progress very quickly at first, but it will end up dancing around the optimum, never really settling down
+  - Approach #1: Before Training
+    - Start with a large learning rate, and divide it by 3 until the training algorithm stops diverging
+    - optimal learning rate is typically half the current learning rate
+  - Approach #2: Reduce the learning rate during training. These strategies are called **learning schedules**:
+    - Power scheduling
+    - Exponential scheduling
+    - Piecewise constant scheduling
+    - Performance scheduling
+
+## Misc:
+
+- A sparse model is a machine learning system where most of the internal parameters (weights) or connections are exactly **zero**

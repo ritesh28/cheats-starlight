@@ -25,6 +25,7 @@
     "Matplotlib",
     "multinomial",
     "ndarray",
+    "Nesterov",
     "newaxis",
     "numpy",
     "overfit",
