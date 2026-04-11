@@ -341,6 +341,15 @@ history = model_B_on_A.fit(X_train_B, y_train_B, epochs=16, validation_data=(X_v
 - NAdam Optimization:
   - Variant of Adam
   - it is simply Adam optimization plus the Nesterov trick, so it will often converge slightly faster than Adam
+- | Optimizer Class                  | Convergence speed | Convergence quality   |
+  | -------------------------------- | ----------------- | --------------------- |
+  | SGD                              | bad               | good                  |
+  | SGD(momentum=...)                | average           | good                  |
+  | SGD(momentum=..., nesterov=True) | average           | good                  |
+  | AdaGrad                          | good              | bad (stops too early) |
+  | RMSprop                          | good              | average or good       |
+  | Adam                             | good              | average or good       |
+  | NAdam                            | good              | average or good       |
 - Learning Rate Scheduling:
   - If you set learning rate way too high, training may actually diverge
   - If you set learning rate too low, training will eventually converge to the optimum, but it will take a very long time
@@ -349,11 +358,102 @@ history = model_B_on_A.fit(X_train_B, y_train_B, epochs=16, validation_data=(X_v
     - Start with a large learning rate, and divide it by 3 until the training algorithm stops diverging
     - optimal learning rate is typically half the current learning rate
   - Approach #2: Reduce the learning rate during training. These strategies are called **learning schedules**:
-    - Power scheduling
-    - Exponential scheduling
-    - Piecewise constant scheduling
-    - Performance scheduling
+    - Power scheduling (also known as polynomial decay): Learning rate first drops quickly, then more and more slowly
+      - Learning rate at any given step ($t$): $\eta_t = \frac{\eta_0}{(1 + \frac{t}{s})^c}$
+        - Step is when NN process a single mini-batch
+        - $t$: Iteration/Step Number. It tracks how many batches of data the model has seen so far
+        - Hyperparameter: $\eta_0$ (Initial Learning Rate), $s$ (Scale. Also called 'Decay rate' which is inverse of Scale), $c$ (Power. Usually set to 1 by default)
+      - If $c=1$ - learning rate at every $s$ step becomes $\eta_0/2,\eta_0/3,\eta_0/4,\cdots$
+    - Exponential scheduling: Learning rate is reduced by a fixed percentage
+      - Unlike Power Scheduling, which slows down its rate of decay over time, Exponential Scheduling drops the learning rate relentlessly
+      - Learning rate at any given step ($t$): $\eta_t = \eta_0 \cdot r^{t/s}$
+        - $r$: Decay Rate/Base. If $r=0.1$ learning rate will gradually drop by a factor of 10 every $s$ steps
+        - For other variables, refer previous 'Power scheduling'
+    - Piecewise constant scheduling:
+      - Use a constant $\eta$ for a number of epochs (e.g. $\eta_0=0.1$ for 5 epochs), then a smaller $\eta$ for another number of epochs (e.g. $\eta_1=0.001$ for 50 epochs), and so on
+      - Problem: it requires fiddling around to figure out the right sequence of learning rates and how long to use each of them
+    - Performance scheduling: Measure validation error every $N$ steps (just like for early stopping) and reduce $\eta$ by a factor of $\lambda$ when the error stops dropping
+  - When calling `fit()` next time, set `initial_epoch` if learning schedule is based on epoch counter since epoch is reset to 0 every time you call `fit()`
+
+```py title='learning schedule'
+## POWER SCHEDULING
+optimizer = keras.optimizers.SGD(lr=0.01, decay=1e-4) # `decay` is inverse of Scale
+
+## EXPONENTIAL SCHEDULING
+def exponential_decay(lr0, s): # Not hardcoding initial learning rate & scale
+    def exponential_decay_fn(epoch, current_lr): # Scheduler require this function signature (epoch, optional_current_learning_rate) -> new_learning_rate
+        return lr0 * 0.1**(epoch / s)
+    return exponential_decay_fn
+exponential_decay_fn = exponential_decay(lr0=0.01, s=20)
+lr_scheduler = keras.callbacks.LearningRateScheduler(exponential_decay_fn) # callback scheduler
+history = model.fit(X_train_scaled, y_train, [...], callbacks=[lr_scheduler]) # update lr at the beginning of each epoch
+
+## PERFORMANCE SCHEDULING
+# ReduceLROnPlateau: Stands for "reduce learning rate on plateau"
+# Below code will multiply the learning rate by 0.5 whenever the best validation loss does not improve for 5 consecutive epochs
+lr_scheduler = keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=5)
+```
+
+```py title='tf.keras scheduler'
+# tf.keras offers an alternative way to implement learning rate scheduling
+# this approach is not part of the Keras API, it is specific to tf.keras
+# Here, you save the model, the learning rate and its schedule (including its state) get saved as well
+s = 20 * len(X_train) // 32 # number of steps in 20 epochs (batch size = 32)
+learning_rate = keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.01, decay_steps=s, decay_rate=0.1)
+optimizer = keras.optimizers.SGD(learning_rate)
+```
+
+## Avoiding Overfitting Through Regularization
+
+- L1 & L2 Regularization:
+  - `layer = keras.layers.Dense(..., kernel_regularizer=keras.regularizers.l2(0.01))`: Apply L2 regularization to a Keras layer’s connection weights
+  - `keras.regularizers.l1_l2()`: Apply both L1 & L2 regularization
 
 ## Misc:
 
 - A sparse model is a machine learning system where most of the internal parameters (weights) or connections are exactly **zero**
+- L1 & L2 Regularization:
+  - $\lambda$: The regularization parameter (hyperparameter) that controls the strength of the penalty
+  - $w_j$: The individual weight (coefficient) of the model
+  - $\text{Loss}(y, \hat{y})$: The standard cost/loss function, such as Mean Squared Error (MSE)
+  - L1 Regularization (Lasso):
+    - L1 adds the sum of the absolute values of the weights to the cost/error function
+    - This often results in "sparse" models where some weights become exactly zero
+    - Equation: $J(\theta) = \text{Loss}(y, \hat{y}) + \lambda \sum_{j=1}^{n} |w_j|$
+  - L2 Regularization (Ridge):
+    - L2 adds the sum of the squared values of the weights
+    - This keeps weights small but rarely forces them to zero, leading to a more evenly distributed contribution from all features
+    - Equation: $J(\theta) = \text{Loss}(y, \hat{y}) + \lambda \sum_{j=1}^{n} w_j^2$
+- Dropout:
+  - In Dropout, "dropping" a neuron means its output is temporarily forced to zero for a single training step
+  - Since the output is zero, it’s as if the neuron (and all its outgoing connections) doesn't exist for that specific pass
+  - It happens at every training step (every batch), not the whole epoch
+  - Every neuron (including the input neurons, but always excluding the output neurons) has a probability $p$ of being temporarily “dropped out"
+    - Dropout rate: Its the hyperparameter $p$ and it is typically set to 50%
+  - During backpropagation, no gradient flows through a zeroed-out neuron, so its weights are not updated for that step
+  - #1 Idea behind dropout: Imagine a 5-person team working on a project:
+    - Without Dropout: One "superstar" does all the work, and the other four just sit back. If the superstar gets sick (noisy data), the project fails
+    - With Dropout: Every day, two random people do not work. To get the project done, everyone has to learn the skills. You end up with a robust team where no one is indispensable
+  - #2 Idea behind dropout: Ensemble Power similar to Random Forest:
+    - a
+  - Testing vs. Training:
+    - After training, neurons don’t get dropped anymore
+
+```py title='refactor using partial'
+from functools import partial
+
+RegularizedDense = partial( # specifying common hyperparameter for Dense class
+    keras.layers.Dense,
+    activation="elu",
+    kernel_initializer="he_normal",
+    kernel_regularizer=keras.regularizers.l2(0.01),
+)
+model = keras.models.Sequential(
+    [
+        keras.layers.Flatten(input_shape=[28, 28]),
+        RegularizedDense(300),
+        RegularizedDense(100),
+        RegularizedDense(10, activation="softmax", kernel_initializer="glorot_uniform"),
+    ]
+)
+```

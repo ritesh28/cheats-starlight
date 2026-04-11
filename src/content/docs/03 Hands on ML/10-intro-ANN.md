@@ -218,7 +218,22 @@ y_pred  # array([0])
        - Model Checkpoint-ing: You can set a "callback" to only save the version of the model that achieved the best validation score
   3. Testing set(10-15%): Used only once after training is complete to provide an unbiased evaluation of the final model
 - Saving and Restoring a Model:
-  - `model.save("my_keras_model.h5")`
+  - `model.save("my_keras_model.h5")`:
+    - What is saved:
+      - Architecture: Configuration of the layers (type, size, activation functions, etc.)
+      - Weights & biases
+      - Optimizer State: This is a big one. It includes the Momentum or Accumulated Gradients (like the `s` in AdaGrad or `v` in RMSprop)
+      - Loss and Metrics
+      - Compilation Information: Whether you were using Adam or SGD, the current learning rate, etc
+    - What is NOT saved:
+      - Training History: The log of loss and accuracy values from previous epochs (the data usually found in the `history` object)
+      - Epoch Counter: Most standard saving functions do not record that you were on "Epoch 42"
+      - Dataset: The training or validation data
+      - External Callbacks: Any custom logic you wrote for early stopping, TensorBoard logging, or custom learning rate schedules that aren't built into the optimizer
+      - Random Seeds: The state of the random number generator is usually not preserved, meaning "resumed" training session might behave slightly differently than a continuous one
+    - The "Best Practice" Fix:
+      - To prevent losing the epoch count or training history, developers usually use a `Checkpoint` Callback
+      - This automatically saves the model at the end of each epoch and often includes a custom script to log the epoch number to a separate `.json` or `.txt` file
   - `model = keras.models.load_model("my_keras_model.h5")`
 - Using Callbacks:
   - Callbacks are functions that allow you to save, interrupt model while it trains, rather than treating the training phase as an unchangeable "black box"
