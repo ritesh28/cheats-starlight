@@ -436,6 +436,26 @@ optimizer = keras.optimizers.SGD(learning_rate)
     - It can also help to increase the dropout rate for large layers, and reduce it for small ones
     - Many state-of-the-art architectures only use dropout after the last hidden layer, so you may want to try this if full dropout is too strong
   - NOTE: for self-normalizing network, use **AlphaDropout**: this is a variant of dropout that preserves the mean and standard deviation of its inputs
+- Monte-Carlo (MC) Dropout:
+  - It a technique that keeps **Dropout active during testing** to turn a standard NN into a tool that can provide better uncertainty estimates
+  - Unlike standard Dropout (which is turned off during testing), MC Dropout keeps dropping random neurons even when making real-world predictions
+  - Instead of predicting once, you run it through $T$ times (e.g., 100 times). Because different neurons are dropped each time, you get 100 slightly different predictions
+  - The final "answer" is the average of all those passes. This usually improves accuracy, similar to how an ensemble of models works
+  - If all 100 passes give the same result, the model is **confident**. If the 100 passes show widely different results, the model is **uncertain**
+  - $T$: Hyperparameter. The number of Monte Carlo samples you use:
+    - The higher it is, the more accurate the predictions and their uncertainty estimates will be
+    - Your job is to find the right tradeoff between latency and accuracy
+- Max-Norm Regularization:
+  - It is a technique that ensures the weights ($w$ vector) of the **incoming connections** for each neuron stays within a specific limit $r$ (radius)
+  - Instead of adding a penalty to the loss function (like L1 or L2 regularization), it directly rescales the weight vector if it gets too large
+  - Visualizing it: Imagine weight vector is an arrow. If the arrow becomes longer than $r$, you simply "clip" it so the tip of arrow sits on the edge of a circle of radius $r$
+  - Constraint Equation: $\|w\|_2 \leq r$
+    - $w$: The vector of incoming weights for a single neuron
+    - $\|\cdot\|_2$ (L2 Norm): The "length" of that vector, calculated as the square root of the sum of squared weights: $\sqrt{w_1^2 + w_2^2 + \dots + w_n^2}$
+    - $r$: The max-norm hyperparameter (the maximum allowed "length")
+  - Rescaling Step Equation: If weights vector is bigger, the optimizer scales them down: $w \leftarrow w \frac{r}{\|w\|_2}$
+  - Reducing $r$ increases the amount of regularization and helps reduce overfitting
+  - Also help alleviate the vanishing/exploding gradients problems (if you are not using Batch Normalization)
 
 ```py title='dropout'
 # Use keras.layers.Dropout layer
@@ -453,7 +473,64 @@ model = keras.models.Sequential([
 ])
 ```
 
-## Misc:
+```py title='mc dropout'
+## APPROACH #1 (when there is no self-normalizing layer)
+with keras.backend.learning_phase_scope(1): # force training mode = dropout on
+    y_probas = np.stack([model.predict(X_test_scaled) for _ in range(100)])
+y_proba = y_probas.mean(axis=0) # MC Dropout prediction
+
+## APPROACH #2:
+# When model contains other layers that behave in a special way during training (such as Batch Normalization layers)
+# Replace the Dropout layers with the following MCDropout class
+class MCDropout(keras.layers.Dropout):
+    def call(self, inputs):
+        return super().call(inputs, training=True) # override the call() method to force dropout on always
+# Similarly, you could define an MCAlphaDrop out class by subclassing AlphaDropout instead
+# If model is already trained using Dropout => create a clone model -> replace Dropout layers with MCDropout -> copy existing model’s weights
+```
+
+```py title='max-norm regularization'
+# Set every hidden layer’s kernel_constraint argument to a max_norm() constraint, with the appropriate max value
+keras.layers.Dense(100, activation="elu", kernel_initializer="he_normal", kernel_constraint=keras.constraints.max_norm(1.))
+
+# After each epoch, fit() calls the constraint object returned by max_norm(), passing layer’s weights and getting clipped weights in return, which then replace layer’s weights
+# max_norm(axis=):
+#### default: axis=0
+#### Since, dense layer has weights of shape [number of inputs, number of neurons], max norm constraint will apply independently to each neuron’s incoming/input weight vector
+```
+
+## Practical Guidelines
+
+- Below default configuration works fine in most cases, without requiring much hyperparameter tuning. That said, please do not consider these defaults as hard rules:
+- | Hyperparameter         | Default value                               |
+  | ---------------------- | ------------------------------------------- |
+  | Kernel initializer     | He initialization                           |
+  | Activation function    | ELU                                         |
+  | Normalization          | None if shallow; Batch Norm if deep         |
+  | Regularization         | Early stopping (+$l_2$ reg. if needed)      |
+  | Optimizer              | Momentum optimization (or RMSProp or NAdam) |
+  | Learning rate schedule | Performance Scheduling                      |
+- If the network is a simple stack of dense layers, then it can self-normalize, and you should use following default configuration:
+- | Hyperparameter         | Default value                               |
+  | ---------------------- | ------------------------------------------- |
+  | Kernel initializer     | LeCun initialization                        |
+  | Activation function    | SELU                                        |
+  | Normalization          | None (self-normalization)                   |
+  | Regularization         | Alpha dropout (always use early stopping)   |
+  | Optimizer              | Momentum optimization (or RMSProp or NAdam) |
+  | Learning rate schedule | Performance Scheduling                      |
+- NOTE: Always normalize the input features. Reuse parts of a pretrained NN that solves similar problem (or use unsupervised pretraining or do pretraining on auxiliary task)
+- If you need a sparse model, you can use $l_1$ regularization (and optionally zero out the tiny weights after training)
+  - This will break self-normalization, so you should use the default configuration in this case
+- If you need a low-latency model (one that performs lightning-fast predictions):
+  - Use less layers
+  - Avoid Batch Normalization
+  - Replace SELU activation function with the leaky ReLU
+  - Having a sparse model will also help
+  - You may also want to reduce the float precision from 32-bits to 16-bit (or even 8-bits)
+- For risk-sensitive application, or a task where inference latency is not very important: use MC Dropout
+
+## Misc
 
 - A sparse model is a machine learning system where most of the internal parameters (weights) or connections are exactly **zero**
 - L1 & L2 Regularization:
