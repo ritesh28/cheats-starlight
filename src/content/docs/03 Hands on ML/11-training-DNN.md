@@ -408,6 +408,50 @@ optimizer = keras.optimizers.SGD(learning_rate)
 - L1 & L2 Regularization:
   - `layer = keras.layers.Dense(..., kernel_regularizer=keras.regularizers.l2(0.01))`: Apply L2 regularization to a Keras layer’s connection weights
   - `keras.regularizers.l1_l2()`: Apply both L1 & L2 regularization
+- Dropout:
+  - In Dropout, "dropping" a neuron means its output is temporarily forced to zero for a single training step
+  - Since the output is zero, it’s as if the neuron (and all its outgoing connections) doesn't exist for that specific pass
+  - It happens at every training step (every batch), not the whole epoch
+  - Every neuron (including the input neurons, but always excluding the output neurons) has a probability $p$ of being temporarily “dropped out"
+    - Dropout rate: Its the hyperparameter $p$ and it is typically set to 50%
+  - During backpropagation, no gradient flows through a zeroed-out neuron, so its weights are not updated for that step
+  - #1 Idea behind dropout: Imagine a 5-person team working on a project:
+    - Without Dropout: One "superstar" does all the work, and the other four just sit back. If the superstar gets sick (noisy data), the project fails
+    - With Dropout: Every day, two random people do not work. To get the project done, everyone has to learn the skills. You end up with a robust team where no one is indispensable
+  - #2 Idea behind dropout: Ensemble Power similar to Random Forest:
+    - Since each neuron can be either present or absent, there is a total of $2^N$ possible networks (where $N$ is the total number of droppable neurons)
+    - These NN are obviously not independent since they share many of their weights, but they are nevertheless all different
+    - The resulting NN can be seen as an averaging ensemble of all these smaller neural networks
+  - Testing vs. Training:
+    - After training, neurons don’t get dropped anymore
+    - Problem:
+      - During training, 50% ($p$=0.5) of neurons are "off," so a neuron only receives half the usual signals
+      - At testing, all neurons are "on," meaning the signal suddenly doubles in strength, confusing the model
+    - Fix 1(Post Training): To balance this, you scale the weights down by 0.5 ($(1-p)$ called as "keep probability") so the total incoming signal matches what the model "expects"
+    - Fix 2(During Training): Modern frameworks usually divide the neuron's outputs by 0.5 (keep probability) during training instead
+  - Overfitting:
+    - Since dropout is only active during training, the training loss is penalized compared to the validation loss, so comparing the two can be misleading
+    - `with keras.backend.learning_phase_scope(1): fit(...)`: this will force dropout to be active during both training and validation (Specific to `tf.keras`)
+    - Increase dropout rate if model is overfitting. Conversely, decrease dropout rate if model underfit
+    - It can also help to increase the dropout rate for large layers, and reduce it for small ones
+    - Many state-of-the-art architectures only use dropout after the last hidden layer, so you may want to try this if full dropout is too strong
+  - NOTE: for self-normalizing network, use **AlphaDropout**: this is a variant of dropout that preserves the mean and standard deviation of its inputs
+
+```py title='dropout'
+# Use keras.layers.Dropout layer
+# During training, it randomly drops some "inputs" (setting them to 0) and divides the remaining inputs by the keep probability
+# After training, it does nothing at all, it just passes the inputs to the next layer
+# Following code applies dropout regularization before every Dense layer, using a dropout rate of 0.2
+model = keras.models.Sequential([
+    keras.layers.Flatten(input_shape=[28, 28]),
+    keras.layers.Dropout(rate=0.2), # drops neurons from the Flatten layer
+    keras.layers.Dense(300, activation="elu", kernel_initializer="he_normal"),
+    keras.layers.Dropout(rate=0.2),
+    keras.layers.Dense(100, activation="elu", kernel_initializer="he_normal"),
+    keras.layers.Dropout(rate=0.2),
+    keras.layers.Dense(10, activation="softmax")
+])
+```
 
 ## Misc:
 
@@ -424,20 +468,6 @@ optimizer = keras.optimizers.SGD(learning_rate)
     - L2 adds the sum of the squared values of the weights
     - This keeps weights small but rarely forces them to zero, leading to a more evenly distributed contribution from all features
     - Equation: $J(\theta) = \text{Loss}(y, \hat{y}) + \lambda \sum_{j=1}^{n} w_j^2$
-- Dropout:
-  - In Dropout, "dropping" a neuron means its output is temporarily forced to zero for a single training step
-  - Since the output is zero, it’s as if the neuron (and all its outgoing connections) doesn't exist for that specific pass
-  - It happens at every training step (every batch), not the whole epoch
-  - Every neuron (including the input neurons, but always excluding the output neurons) has a probability $p$ of being temporarily “dropped out"
-    - Dropout rate: Its the hyperparameter $p$ and it is typically set to 50%
-  - During backpropagation, no gradient flows through a zeroed-out neuron, so its weights are not updated for that step
-  - #1 Idea behind dropout: Imagine a 5-person team working on a project:
-    - Without Dropout: One "superstar" does all the work, and the other four just sit back. If the superstar gets sick (noisy data), the project fails
-    - With Dropout: Every day, two random people do not work. To get the project done, everyone has to learn the skills. You end up with a robust team where no one is indispensable
-  - #2 Idea behind dropout: Ensemble Power similar to Random Forest:
-    - a
-  - Testing vs. Training:
-    - After training, neurons don’t get dropped anymore
 
 ```py title='refactor using partial'
 from functools import partial
