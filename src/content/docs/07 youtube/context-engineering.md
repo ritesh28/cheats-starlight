@@ -1,3 +1,9 @@
+---
+title: LLM Context Engineering
+---
+
+![overview](./context-engineering.drawio.svg)
+
 ## Foundation of LLM Context
 
 - Difference b/t prompting and context:
@@ -46,7 +52,7 @@
   - Context Rot: Performance degradation within the allowed limit (Common Problem)
   - Lost in the middle Effect: LLMs effectively use information at the beginning or end of a long input context but struggle to access or reason with information buried in middle
 - The Three-Layer Context Model (REFER INFOGRAPHIC):
-  - Every LLM call assembles context from three distinct layers - Instructional, Knowledge, and Tool - each with its own engineering discipline
+  - Every LLM call assembles context from three distinct layers (IKT) - Instructional, Knowledge, and Tool - each with its own engineering discipline
 
 ## RAG Pipeline Architecture
 
