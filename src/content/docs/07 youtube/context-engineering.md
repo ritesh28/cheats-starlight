@@ -2,9 +2,9 @@
 title: LLM Context Engineering
 ---
 
-![overview](./context-engineering.drawio.svg)
-
 ## Foundation of LLM Context
+
+![Foundation](./context-engineering-foundation.drawio.svg)
 
 - Difference b/t prompting and context:
   - prompt: system message + user message
@@ -43,6 +43,14 @@ title: LLM Context Engineering
   4. Tool outputs
   5. Conversation History
   6. Current Query
+- The Three-Layer Context Model (REFER INFOGRAPHIC):
+  - Every LLM call assembles context from three distinct layers (IKT) - Instructional, Knowledge, and Tool - each with its own engineering discipline
+- Difference b/t Memory & Conversation History:
+  - Memory is more persistent than the conversation history
+  - In other words - Memory is long-term and conversation history is short-term
+  - Example: In Email, consider the agent is replying to a thread containing 10 conversation:
+    - Conversation History: 10 conversation
+    - Memory: LLM create a summary (from last 100-200 emails) of how the user reply - user preferences
 - If the conversation grows long, the system must either:
   - Drop older messages (most common in chat systems)
   - Summarize earlier content into fewer tokens
@@ -51,8 +59,17 @@ title: LLM Context Engineering
   - Context Overflow: Exceeding the maximum token limit (Uncommon Problem)
   - Context Rot: Performance degradation within the allowed limit (Common Problem)
   - Lost in the middle Effect: LLMs effectively use information at the beginning or end of a long input context but struggle to access or reason with information buried in middle
-- The Three-Layer Context Model (REFER INFOGRAPHIC):
-  - Every LLM call assembles context from three distinct layers (IKT) - Instructional, Knowledge, and Tool - each with its own engineering discipline
+
+## Instructional layer (system prompts)
+
+![system prompt](./context-engineering-system-prompt.drawio.svg)
+
+- 5 components (IrfKT) of a system prompt (in broad terms):
+  - Identity: What this agent is, or Overview of a project
+  - Rules: Do & Don't. **Guardrails**
+  - Format: Structure of output, or Folder structure of a project
+  - Knowledge: Background facts for all interactions. **NOTE**: Knowledge describes reality. Rules control behavior
+  - Tools: What capabilities/functions are available: `search_codebase`, `check_lint`
 
 ## RAG Pipeline Architecture
 
