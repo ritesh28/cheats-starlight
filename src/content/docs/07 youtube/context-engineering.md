@@ -2,6 +2,13 @@
 title: LLM Context Engineering
 ---
 
+- coding agent vs LLM:
+  - Coding agent uses LLM as its "brain" to plan, write, test, and debug code, while LLM is a static model that generates code snippets based on a single prompt
+  - Agents use tools (bash, editors) to complete tasks, whereas LLMs are passive, single-turn text generators
+  - Example of coding agent:
+    - IDE-Integrated Agents: GitHub Copilot, Cursor
+    - Terminal & CLI-First Agents: Claude Code, Codex CLI
+
 ## Foundation of LLM Context
 
 ![Foundation](./context-engineering-foundation.drawio.svg)
@@ -64,12 +71,20 @@ title: LLM Context Engineering
 
 ![system prompt](./context-engineering-system-prompt.drawio.svg)
 
+- In claude code, system prompt is saved in `CLAUDE.md` file
+  - This file should not change frequently since it contains the main idea behind the project
+  - Whole file is not loaded in the context window. Some part are always loaded and some part are loaded as per demand (this is done by the agent internally)
 - 5 components (IrfKT) of a system prompt (in broad terms):
   - Identity: What this agent is, or Overview of a project
   - Rules: Do & Don't. **Guardrails**
   - Format: Structure of output, or Folder structure of a project
   - Knowledge: Background facts for all interactions. **NOTE**: Knowledge describes reality. Rules control behavior
   - Tools: What capabilities/functions are available: `search_codebase`, `check_lint`
+- While writing instructions don't be too vague or too specific. Just instruct how to approach a problem and what to do in edge cases (REFER INFOGRAPHIC - right altitude principle)
+- `AGENTS.md`: The emerging universal standard:
+  - Proposed by Agentic AI Foundation. This is already supported by OpenAI Codex, Github Copilot, Cursor, etc
+  - Placement: root of the repository (like README.md)
+  - Tools like OpenAI Codex read AGENTS.md files before beginning any work, building what they call an "instruction chain" from the root down through subdirectories (SEE INFOGRAPHIC)
 
 ## RAG Pipeline Architecture
 
