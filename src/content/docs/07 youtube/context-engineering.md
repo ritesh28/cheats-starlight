@@ -82,9 +82,18 @@ title: LLM Context Engineering
   - Tools: What capabilities/functions are available: `search_codebase`, `check_lint`
 - While writing instructions don't be too vague or too specific. Just instruct how to approach a problem and what to do in edge cases (REFER INFOGRAPHIC - right altitude principle)
 - `AGENTS.md`: The emerging universal standard:
+  - Alternative to `ClAUDE.md`. A project can contain both - `ClAUDE.md` at root and specific `AGENTS.md` at subdirectory level
   - Proposed by Agentic AI Foundation. This is already supported by OpenAI Codex, Github Copilot, Cursor, etc
   - Placement: root of the repository (like README.md)
   - Tools like OpenAI Codex read AGENTS.md files before beginning any work, building what they call an "instruction chain" from the root down through subdirectories (SEE INFOGRAPHIC)
+- | Feature | AGENTS.md (or CLAUDE.md)                                                         | SKILL.md                                                                        |
+  | ------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+  | Loading | Persistent: Loaded every time you start a session                                | On-Demand: Loaded only when Claude decides it's relevant to the task            |
+  | Purpose | Static Rule-book: High-level project context, coding standards, & build commands | Dynamic Toolset: Specialized "tricks" or complex multi-step workflows           |
+  | Scope   | Broad: Universal rules for the entire repository                                 | Narrow: Reusable expertise for specific actions (e.g., migrations, deployments) |
+  | Content | No front-matter                                                                  | Front-matter: Name, Description. Use `/<name>` to trigger the skill manually    |
+- NOTE: always provide examples in instruction file. SEE INFOGRAPHIC for type of task and its example structure
+  - Give only one example for each scenario to reduce token consumption. One example per scenario is sufficient
 
 ## RAG Pipeline Architecture
 
