@@ -69,6 +69,21 @@ title: LLM Context Engineering
   - Context Overflow: Exceeding the maximum token limit (Uncommon Problem)
   - Context Rot: Performance degradation within the allowed limit (Common Problem)
   - Lost in the middle Effect: LLMs effectively use information at the beginning or end of a long input context but struggle to access or reason with information buried in middle
+- WSCI (write-select-compress-isolate) principles for context window:
+  1. Write:
+     - The model produces something worth keeping, and you save it outside the context window. This is how agents develop memory
+     - The information flows outward from the window into some form of storage
+  2. Select:
+     - The model needs information it does not currently have, and you pull it into the window from external storage
+     - The information flows inward from storage into the window
+     - E.x. RAG
+  3. Compress/Compact:
+     - The window is getting full, and you need to shrink what is already inside it without losing the essential meaning
+     - The information stays in the window but becomes smaller
+     - Summarization is the classic technique
+  4. Isolate:
+     - The task is too large or complex for a single context window, so you split it across multiple parallel windows - multiple agents, each with a focused slice of the problem
+     - The information spreads across systems
 
 ## Instructional layer (system prompts)
 
@@ -103,10 +118,25 @@ title: LLM Context Engineering
 ![rag](./context-engineering-rag.drawio.svg)
 
 - Retrieval-augmented generation flow:
-  1. Chunking
-  2. Embedding
-  3. Vector Storage
-  4. Retrieval
+  1. Ingest: Load documents and convert into (structured) text. Use OCR for pdf files
+     - Library: Docling (IBM), PyMuPDF (very fast), LangChain document loader, BeautifulSoup (for html)
+  2. Chunking: Split documents into chunks. Types of chunking Strategies
+     1. Fixed-Size: Splits text at exact character count (e.g., every 500 characters). Cons: Often splits mid-sentence; destroys context and semantic meaning
+     2. Token: Similar to fixed-size but counts tokens specific to an embedding model. Ensures chunks fit perfectly within a model's context window
+     3. Sliding Window: Uses fixed-size chunks but includes an overlap (e.g., 20%) between them. Maintains continuity; prevents context loss at boundaries
+     4. Sentence: Splits text at natural sentence boundaries. Cons: Chunk sizes vary widely; some sentences may be too short to embed meaningfully
+     5. Paragraph: Divides text based on newline characters (e.g., \n\n). Preserves coherence within a topic
+     6. Recursive: Tries to split by large separators first (paragraphs), then smaller ones (sentences, words) if chunks are too big
+     7. Semantic: Uses embeddings to measure similarity between segments; splits only when the topic changes. Cons: Computationally expensive; requires embedding model
+     8. Topic: A variation of semantic chunking that explicitly detects major shifts in subject matter. Ideal for documents with distinct sections or multiple topics
+     9. Markdown: Uses Markdown-specific syntax like headers (#) or lists to define boundaries
+     10. Code: Splits source code by logical blocks like functions, classes, or specific syntax
+  3. Embedding: Convert text chunks to vectors using embedded model. E.x. OpenAI Embedding, SentenceTransformer
+  4. Vector Storage
+  5. Query: Embed user question using **same** embedding model
+  6. Retrieval: Find similar chunks via vector similarity search (top-k)
+  7. Re-rank (optional): Score & reorder retrieved chunks for precision using a cross encoder
+  8. Generate: LLM answers using retrieved context plus the user question
 
 ## Agent Architecture
 
