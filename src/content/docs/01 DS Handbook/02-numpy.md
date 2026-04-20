@@ -235,12 +235,13 @@ data[data["age"] < 30]["name"]  # Get names where age is under 30
 
 ## Misc
 
-| Syntax                                           | Usage                                                                                       |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `np.percentile(np.arange(101), q=[25, 50, 75])`  | Returns the q-th percentile(s) of the array elements                                        |
-| `np.where(a < 5, a, 10*a)`                       | Returns array with elements with `a` if `a < 5` or `10*a`                                   |
-| `counts, bin_edges = np.histogram(data, bins=4)` | Compute the histogram of a dataset                                                          |
-| `X, Y = np.meshgrid(x, y)`                       | Takes 1D array (representing axes) and returns 2 2D array used to create a rectangular grid |
+| Syntax                                                              | Usage                                                                                       |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `np.array([[[1], [2], [3]], [[4], [5], [6]]]).reshape(1, -1).shape` | (1, 6). Reshape the array to have 1 row and as many columns as needed                       |
+| `np.percentile(np.arange(101), q=[25, 50, 75])`                     | Returns the q-th percentile(s) of the array elements                                        |
+| `np.where(a < 5, a, 10*a)`                                          | Returns array with elements with `a` if `a < 5` or `10*a`                                   |
+| `counts, bin_edges = np.histogram(data, bins=4)`                    | Compute the histogram of a dataset                                                          |
+| `X, Y = np.meshgrid(x, y)`                                          | Takes 1D array (representing axes) and returns 2 2D array used to create a rectangular grid |
 
 ```py title='meshgrid'
 x = np.array([1, 2, 3])
