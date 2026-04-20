@@ -137,6 +137,31 @@ title: LLM Context Engineering
   6. Retrieval: Find similar chunks via vector similarity search (top-k)
   7. Re-rank (optional): Score & reorder retrieved chunks for precision using a cross encoder
   8. Generate: LLM answers using retrieved context plus the user question
+- TF-IDF (term frequency & inverse document frequency) embedding:
+  - Here, one document is one chunk
+  - On a plot, each term is one dimension
+  - This is a **sparse** model since most of dimension are 0
+  - TF: measures how frequently a term $t$ appears in a specific document $d$: $TF(t,d)=\frac{\text{no. of 't' in 'd'}}{\text{total no. of terms in 'd'}}$
+  - IDF: measures how important a term is across the entire corpus $D$: $IDF(t,D)=\log\frac{\text{total no. of documents}}{\text{no. of documents containing 't'}}$
+  - $TF\text{-}IDF(t,d,D)=TF(t,d) \times IDF(t,D)$
+- Embedding Dimensions:
+  - The primary trade-off in LLM embedding dimensions is between representational precision and operational efficiency
+  - Higher dimensionality allows the model to map text into a much richer semantic space
+  - Smaller embeddings prioritize performance and cost-savings over absolute semantic richness
+  - Use Smaller embedding - If the chunk texts are already diverse, taking about different-different topics
+  - Rule of Thumb: For most general RAG applications, 384 to 768 dimensions is considered the "sweet spot" for balancing cost and quality
+- Similarity Search Algorithms:
+  - Cosine Similarity: Measures the angle between two vectors, ignoring their length
+  - Dot Product: Considers both direction and magnitude. Higher values indicate greater similarity
+  - Euclidean Distance (L2): Measures the straight-line distance between two points
+  - Manhattan Distance (L1): Sums the absolute differences across all dimensions
+  - Approximate Nearest Neighbor (ANN): It is a class of algorithms designed to search through massive datasets of high-dimensional vectors (embeddings) in milliseconds
+    - While K-Nearest Neighbor (KNN) checks every single item to find the exact closest match, ANN find results that are "close enough" without scanning the entire database
+    - Librarians Analogy: Instead of "brute-force" scan of every record, ANN algorithms use indexes to organize data into searchable structures
+      - Graph-based (e.g. HNSW): Imagine a "social network" of vectors. Each vector "knows" its nearest neighbors. To find a match, you jump from node to node (friend to friend)
+      - Partition-based (e.g. IVF): Like a library divided into genre rooms. The algorithm searches through the books inside that room, ignoring 99% of the library
+      - Hashing-based (e.g. LSH): Groups similar items into the same "buckets" using specialized hash functions. If two vectors are close, they end up in the same bucket
+      - Compression-based (e.g. PQ): Compresses long vectors into tiny summaries to save space and speed up distance calculations
 
 ## Agent Architecture
 
