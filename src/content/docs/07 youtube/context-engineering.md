@@ -162,6 +162,10 @@ title: LLM Context Engineering
       - Partition-based (e.g. IVF): Like a library divided into genre rooms. The algorithm searches through the books inside that room, ignoring 99% of the library
       - Hashing-based (e.g. LSH): Groups similar items into the same "buckets" using specialized hash functions. If two vectors are close, they end up in the same bucket
       - Compression-based (e.g. PQ): Compresses long vectors into tiny summaries to save space and speed up distance calculations
+- Retrieved Metrics:
+  - Context Recall (calculated in %): How much of the relevant information was retrieved
+  - Context Precision (calculated in %): How much of the retrieved context is actually relevant
+  - If recall is 95% & precision is 40%: It means the system retrieved most relevant chunks but also pulled a lot of irrelevant ones - reduce top-k or add re-ranking
 
 ## Agent Architecture
 
