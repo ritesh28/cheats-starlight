@@ -113,11 +113,11 @@ title: LLM Context Engineering
 - NOTE: always provide examples in instruction file. SEE INFOGRAPHIC for type of task and its example structure
   - Give only one example for each scenario to reduce token consumption. One example per scenario is sufficient
 
-## RAG Pipeline Architecture
+## RAG (Retrieval-augmented generation) Pipeline Architecture
 
 ![rag](./context-engineering-rag.drawio.svg)
 
-- Retrieval-augmented generation flow:
+- RAG flow:
   1. Ingest: Load documents and convert into (structured) text. Use OCR for pdf files
      - Library: Docling (IBM), PyMuPDF (very fast), LangChain document loader, BeautifulSoup (for html)
   2. Chunking: Split documents into chunks. Types of chunking Strategies
@@ -166,6 +166,35 @@ title: LLM Context Engineering
   - Context Recall (calculated in %): How much of the relevant information was retrieved
   - Context Precision (calculated in %): How much of the retrieved context is actually relevant
   - If recall is 95% & precision is 40%: It means the system retrieved most relevant chunks but also pulled a lot of irrelevant ones - reduce top-k or add re-ranking
+
+## Tools, Function Calling, & MCP (Model Context Protocol)
+
+![tool MCP](./context-engineering-tools.drawio.svg)
+
+- RAG answer 'what does the model **know**?'; Tools answer 'what can the model **do**?'
+- With tool:
+  - LLM (a text predictor) becomes an agent that can **perceive** the world, **reason** about it, and **act** on it
+  - LLM can act as an information access tool - like API, database query, file read
+  - LLM can act as a computation tool - like calculator, code interpreters
+  - LLM can act as a side effect tool (i.e. can take action) - like email sender, device control, purchasing agent
+- Tool lifecycle (REFER INFOGRAPHIC):
+  1. Describe: tool schema
+  2. Decide: llm decide which tools to engage
+  3. Call: llm execute the tool with correct augments
+  4. Return: tool sends result back to llm
+  5. Response: llm uses the output of the tool to answer user's query
+- MCP: Its a protocol for connecting AI applications to external data sources and tools
+- MCP Primitives: These are fundamental building blocks for server
+  1. Tools
+  2. Resources
+  3. Prompts
+
+- =====TODO======:
+- MCP
+  - llm <---> client <---Transport---> server
+  - handshake between client & server
+  - transport layer: https/sse/socket (for internet connection), stdio (for same computer connection)
+  - server sends the output to the client (and not to llm)
 
 ## Agent Architecture
 
