@@ -184,24 +184,61 @@ title: LLM Context Engineering
   4. Return: tool sends result back to llm
   5. Response: llm uses the output of the tool to answer user's query
 - MCP: Its a protocol for connecting AI applications to external data sources and tools
-- MCP Primitives: These are fundamental building blocks for server
-  1. Tools
-  2. Resources
-  3. Prompts
-- JIT (Just In Time) Instructions: (SEE INFOGRAPHIC)
-- ReAct (Reason+Act) Framework: Thought, Action, Observation
+- MCP Architecture - The protocol follows a Host-Client-Server model:
+  - MCP Host: The user-facing AI application (e.g., Claude Desktop, Cursor, or VS Code). It orchestrates multiple connections and manages the user's overall conversation context
+  - MCP Client: An internal component within the Host that maintains a 1:1 connection with a specific server. MCP host creates 1 MCP client for each MCP server
+  - MCP Server: A standalone service that exposes specific Tools (actions), Resources (data), or Prompts (templates)
+    - Servers can be local (running on your machine via standard input/output (**stdio**)) or remote (accessible via **HTTP/SSE(streaming)/Socket**)
+    - Server sends the response to the MCP Client (and not to MCP Host)
+- MCP Server-Side Primitives: These are fundamental building blocks that servers can expose:
+  1. Tools (Actions): Executable functions that allow the model to perform operations with side effects. E.g. `get_weather`, `delete_product`, `create_ticket`
+  2. Resources (Context): Read-only data sources that provide the "grounding" information for a model's responses. E.g. file contents, database schemas, or API documentation
+  3. Prompts (Templates): Reusable instruction sets. They ensure consistency. E.g. `code-review` prompt that prepopulates instructions on how to analyze a specific codebase
+- MCP Client-Side Primitives are primitives that clients can expose. These primitives allow MCP server authors to build richer interactions:
+  1. Sampling: Allows server to "reach back" and ask the host's LLM to generate a completion
+     - This allow server to be model-independent
+     - E.x. A code-fixing server might use sampling to ask the model to generate a commit message for the fix it just made
+  2. Elicitation: Enables a server to pause its execution to ask the human user for more information or approval
+  3. Roots: Defines the specific filesystem boundaries (like a project directory) that a server is permitted to access
+- MCP Example - Imagine you are building a travel agent that needs to check local weather and your private calendar:
+  - Request: You ask the Host (e.g., Claude Desktop), "Can you schedule a lunch in London tomorrow when it’s not raining?"
+  - Discovery: The Host starts two MCP Clients to talk to two separate servers: Weather Server (exposes `get_forecast` tool) & Google Calendar Server (`create_event` tool)
+  - **Handshake**: Upon connection, MCP clients perform a "handshake" with each server to learn their available capabilities and input schemas
+  - Execution Loop:
+    - The LLM decides it needs the weather first. The Weather Client sends a request to the Weather Server
+    - The Weather Server calls an external API, gets the forecast, and sends the structured data back
+    - Equipped with the weather info, the LLM then instructs the Calendar Client to tell the Calendar Server to create a 1 PM event
+  - Final Response: The Host confirms the event is scheduled, integrating all external data into a natural language reply
+- JIT (Just In Time) Approach:
+  - Its a strategy where specific goals or context are dynamically generated and injected into the model's environment at the exact moment they are needed
+  - Agent-Side:
+    - Agents built with “just in time” approach do not pre-processing all relevant data up front
+    - Agent maintain lightweight identifiers (file paths, stored queries, web links, etc.) and use these references to dynamically load data into context at runtime using tools
+    - E.x. Claude Code leverages Bash commands like head and tail to analyze large volumes of data without ever loading the full data objects into context
+    - This mirrors human cognition - we don’t memorize every information, but use tools & indexing systems like file systems, & bookmarks to retrieve relevant information on demand
+  - Server-Side:
+    - `_jit_instructions` field in MCP server output is a specialized metadata field specifically tailored to the result of a tool execution
+    - Why: Instead of bloating system prompt with "if/then" rules for every possible tool outcome, the server injects these rules only when they are relevant
+    - E.x. Imagine a tool that searches a company database:
+      - Request: The model calls `search_employees(name="John")`
+      - Server Response: The server finds 50 matches
+      - `{"results": [...50 items...], "_jit_instructions": "Too many results to display. Ask user for last name or department to narrow the search before attempting to summarize."}`
+      - Model Behavior: model reads these instructions and, instead of trying to list all 50 names, it immediately follows the JIT advice and asks the user for more details
+    - | Feature            | Traditional      | JIT Approach     |
+      | ------------------ | ---------------- | ---------------- |
+      | tool instruction   | in system prompt | returned by tool |
+      | token usage        | very large       | small            |
+      | instruction timing | before reasoning | when needed      |
+- ReAct (Reason+Act) Framework: It operates in a structured feedback loop (Thought → Action → Observation), often visualized as a "scratchpad" (SEE INFOGRAPHIC)
+  - Loop:
+    1. Thought (Reasoning): The LLM verbalizes its understanding of the task, identifies what it doesn't know, and plans the next step
+    2. Action: Based on its thought, the model executes a specific task, such as calling an MCP tool, searching a database, or performing a calculation
+    3. Observation: The system feeds the results of that action (e.g., search results or an error message) back into the LLM
+    4. The model then generates a new thought based on this fresh observation, repeating the cycle until it reaches a final answer
+  - NOTE: for ReAct, always use **reasoning** model
 
 - =====TODO======:
-- MCP
-  - llm <---> client <---Transport---> server
-  - handshake between client & server
-  - transport layer: https/sse/socket (for internet connection), stdio (for same computer connection)
-  - server sends the output to the client (and not to llm)
-- JIT:
-  - one option: a field `_jit_instructions` in the server tool output
-  - at the end of day, JIT helps to reduce the size of server's output
-- ReAct Framework
-  - use reasoning model
+- Authentication & Authorization in MCP
 
 ## Agent Architecture
 
