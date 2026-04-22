@@ -188,6 +188,8 @@ title: LLM Context Engineering
   1. Tools
   2. Resources
   3. Prompts
+- JIT (Just In Time) Instructions: (SEE INFOGRAPHIC)
+- ReAct (Reason+Act) Framework: Thought, Action, Observation
 
 - =====TODO======:
 - MCP
@@ -195,6 +197,11 @@ title: LLM Context Engineering
   - handshake between client & server
   - transport layer: https/sse/socket (for internet connection), stdio (for same computer connection)
   - server sends the output to the client (and not to llm)
+- JIT:
+  - one option: a field `_jit_instructions` in the server tool output
+  - at the end of day, JIT helps to reduce the size of server's output
+- ReAct Framework
+  - use reasoning model
 
 ## Agent Architecture
 
