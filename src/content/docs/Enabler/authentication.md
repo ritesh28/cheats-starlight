@@ -1,3 +1,7 @@
+---
+title: Authentication
+---
+
 ## Basic Authentication
 
 - Client sends a username and password in every HTTP request header. While simple to implement, it is insecure without HTTPS encryption
@@ -75,6 +79,8 @@ Client (Browser)                 Server
 
 - Use short-lived Access Tokens for data requests
 - Use long-lived Refresh Tokens to securely generate new access tokens (**handshake**) without making the user log in again
+- Once a refresh token is used, the old one is immediately invalidated
+- "Log out of all devices" button allows server to immediately deletes all active refresh tokens from the server
 
 ```text
 Client App                       Auth Server
