@@ -18,6 +18,7 @@ Running a simple file
 Running project
 
 - `uv init`: create .python-version, .git, pyproject.toml file
+- `uv venv` & `source .venv/bin/activate`: Create virtual environment and activate it
 - `uv add <package>`: add package and modifies pyproject.toml
 - `uv remove <package>`
 - `uv sync`: sync the .venv folder with the pyproject.toml (single source of truth)
