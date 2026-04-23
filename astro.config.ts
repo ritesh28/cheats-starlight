@@ -1,6 +1,7 @@
 import starlight from "@astrojs/starlight";
 import vercel from "@astrojs/vercel";
 import tailwindcss from "@tailwindcss/vite";
+import mermaid from "astro-mermaid";
 import { defineConfig } from "astro/config";
 import rehypeDocument from "rehype-document";
 import rehypeKatex from "rehype-katex";
@@ -10,6 +11,7 @@ import rehypeImageZoom from "./src/rehype-image-zoom";
 
 export default defineConfig({
   integrations: [
+    mermaid(), // Must come BEFORE starlight
     starlight({
       title: "Cheats",
       logo: {

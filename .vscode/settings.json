@@ -5,6 +5,7 @@
     "autodiff",
     "autoencoders",
     "Autograd",
+    "autonumber",
     "backpropagating",
     "coef",
     "convolutional",

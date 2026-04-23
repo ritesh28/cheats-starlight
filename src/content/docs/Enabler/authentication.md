@@ -6,18 +6,20 @@ title: Authentication
 
 - Client sends a username and password in every HTTP request header. While simple to implement, it is insecure without HTTPS encryption
 
-```text
-Client (Browser)                 Server
+```mermaid
+sequenceDiagram
+    participant C as Client (Browser)
+    participant S as Server
+    autonumber
 
-      |                             |
-      |-- 1. GET /resource -------->|
-      |                             |-- 2. 401 Unauthorized
-      |<-- (WWW-Authenticate) ------|
-      |                             |
-      |-- 3. GET /resource -------->|
-      |    (Header: Basic base64)   |-- 4. Validates credentials
-      |                             |-- 5. Sends data
-      |<-- 200 OK + Resource -------|
+    C->>S: GET /resource
+    Note right of S: 401 Unauthorized
+    S-->>C: (WWW-Authenticate)
+
+    C->>S: GET /resource <br/> (Header: Basic base64)
+    Note right of S: Validates credentials
+    Note right of S: Sends data
+    S-->>C: 200 OK + Resource
 ```
 
 ## Session-Based Authentication (Stateful)
@@ -25,18 +27,20 @@ Client (Browser)                 Server
 - Server stores session data and gives the user a session ID (often in a cookie)
 - The server must check its own storage for every request to confirm the user is still logged in
 
-```text
-Client (Browser)                 Server (with DB)
+```mermaid
+sequenceDiagram
+    participant C as Client (Browser)
+    participant S as Server (with DB)
+    autonumber
 
-      |                             |
-      |-- 1. POST /login (Creds) -->|
-      |                             |-- 2. Create Session in DB
-      |<-- 3. Set-Cookie: SessionID-|
-      |                             |
-      |-- 4. GET /profile --------->|
-      |    (Cookie: SessionID)      |-- 5. Lookup SessionID in DB
-      |                             |-- 6. User found
-      |<-- 7. 200 OK + Data --------|
+    C->>S: POST /login (Creds)
+    Note right of S: Create Session in DB
+    S-->>C: Set-Cookie: SessionID
+
+    C->>S: GET /profile <br/> (Cookie: SessionID)
+    Note right of S: Lookup SessionID in DB
+    Note right of S: User found
+    S-->>C: 200 OK + Data
 ```
 
 ## API Keys
@@ -44,15 +48,17 @@ Client (Browser)                 Server (with DB)
 - API Keys are unique strings to identify an application or project rather than a specific person
 - They are passed for every request usually via headers
 
-```text
-Client App                       API Server
+```mermaid
+sequenceDiagram
+    participant C as Client App
+    participant S as API Server
+    autonumber
 
-      |                             |
-      |-- 1. GET /data ------------>|
-      |    (Header: X-API-Key)      |-- 2. Check key validity
-      |                             |-- 3. Check rate limits
-      |                             |-- 4. Valid
-      |<-- 5. 200 OK + JSON --------|
+    C->>S: GET /data <br/> (Header: X-API-Key)
+    Note right of S: Check key validity
+    Note right of S: Check rate limits
+    Note right of S: Valid
+    S-->>C: 200 OK + JSON
 ```
 
 ## JWT (JSON Web Tokens) (Stateless)
@@ -60,19 +66,21 @@ Client App                       API Server
 - Server issues a digitally signed token containing user data (claims)
 - The server trusts the token because it signed it; no DB lookup needed for requests
 
-```text
-Client (Browser)                 Server
+```mermaid
+sequenceDiagram
+    participant C as Client (Browser)
+    participant S as Server
+    autonumber
 
-      |                             |
-      |-- 1. POST /login (Creds) -->|
-      |                             |-- 2. Verify Creds
-      |                             |-- 3. Sign JWT (with secret)
-      |<-- 4. Token (JWT) ----------|
-      |                             |
-      |-- 5. GET /resource -------->|
-      |    (Auth: Bearer <JWT>)     |-- 6. Verify Signature
-      |                             |-- 7. Read user info from JWT
-      |<-- 8. 200 OK + Resource ----|
+    C->>S: POST /login (Creds)
+    Note right of S: Verify Creds
+    Note right of S: Sign JWT (with secret)
+    S-->>C: Token (JWT)
+
+    C->>S: GET /resource <br/> (Auth: Bearer <JWT>)
+    Note right of S: Verify Signature
+    Note right of S: Read user info from JWT
+    S-->>C: 200 OK + Resource
 ```
 
 ## Access vs. Refresh Tokens
@@ -82,18 +90,22 @@ Client (Browser)                 Server
 - Once a refresh token is used, the old one is immediately invalidated
 - "Log out of all devices" button allows server to immediately deletes all active refresh tokens from the server
 
-```text
-Client App                       Auth Server
+```mermaid
+sequenceDiagram
+    participant C as Client App
+    participant A as Auth Server
+    autonumber
 
-      |                             |
-      |-- 1. GET /data (Access TKN)-->|-- 2. "Token Expired!"
-      |<-- 3. 401 Unauthorized -----|
-      |                             |
-      |-- 4. POST /refresh -------->|
-      |    (Refresh Token)          |-- 5. Validate Refresh Token
-      |<-- 6. New Access Token -----|
-      |                             |
-      |-- 7. GET /data (New AT) --->|-- 8. Success!
+    C->>A: GET /data (Access Token)
+    Note right of A: Token Expired!
+    A-->>C: 401 Unauthorized
+
+    C->>A: POST /refresh <br/> (Refresh Token)
+    Note right of A: Validate Refresh Token
+    A-->>C: New Access Token
+
+    C->>A: GET /data (New Access Token)
+    Note right of A: Success!
 ```
 
 ## SSO (Single Sign-On)
@@ -102,40 +114,42 @@ Client App                       Auth Server
 - This centralizes identity management - the **Identity Provider (IdP)** acts as the single source of truth
 - Once you log into IdP for App A, you receive a global session. When you then access App B, IdP recognizes your active session and logs you in instantly without asking for password
 
-```text
-User (Browser)          App A (Service)        App B (Service)        IdP (Google/Okta)
+```mermaid
+sequenceDiagram
+    participant U as User (Browser)
+    participant A as App A (Service)
+    participant B as App B (Service)
+    participant I as IdP (Google/Okta)
+    autonumber
 
-      |                      |                      |                      |
-      |--- 1. Access App A ->|                      |                      |
-      |                      |-- 2. No Session? --->|                      |
-      |                      |      Redirect to IdP |                      |
-      |                      |                      |                      |
-      |<-- 3. Show Login Page ---------------------------------------------|
-      |--- 4. Enter Credentials ------------------------------------------>|
-      |                      |                      |                      |
-      |                      |                      |-- 5. IdP Validates --|
-      |                      |                      |   & Creates Global   |
-      |                      |                      |   SSO Cookie         |
-      |                      |                      |                      |
-      |<-- 6. Redirect back to App A with Auth Token ----------------------|
-      |--- 7. Send Token --->|                      |                      |
-      |<-- 8. Verify Token --|                      |                      |
-      |-- 9. Access App A -->|                      |                      |
-      |                      |                      |                      |
-      |================= LATER: USER ACCESSES APP B =======================|
-      |                      |                      |                      |
-      |--- 10. Access App B ----------------------->|                      |
-      |                      |                      |-- 11. No Session? -->|
-      |                      |                      |       Redirect to IdP|
-      |                      |                      |                      |
-      |                      |                      |<-- 12. IdP Sees   ---|
-      |                      |                      |    SSO Cookie &      |
-      |                      |                      |    Auto-Approves     |
-      |                      |                      |                      |
-      |<-- 13. Redirect back to App B with New Auth Token -----------------|
-      |--- 14. Send Token ------------------------->|                      |
-      |<-- 15. Verify Token ------------------------|                      |
-      |--- 16. Access App B ----------------------->|                      |
+    U->>A: Access App A
+    Note right of A: No Session?
+    A-->>U: Redirect to IdP
+
+    I-->>U: Show Login Page
+    U->>I: Enter Credentials
+
+    Note right of I: Validate Credentials <br/> Create Global SSO Cookie
+    I-->>U: Redirect back to App A with Auth Token
+
+    U->>A: Send Token
+    Note right of A: Verify Token
+    A-->>U: Success
+    U->>A: Access App A
+
+    Note over U,I: LATER: USER ACCESSES APP B
+
+    U->>B: Access App B
+    Note right of B: No Session?
+    B-->>U: Redirect to IdP
+
+    Note right of I: Sees SSO Cookie <br/> Auto-approves
+    I-->>U: Redirect back to App B with New Auth Token
+
+    U->>B: Send Token
+    Note right of B: Verify Token
+    B-->>U: Success
+    U->>B: Access App B
 ```
 
 ## OAuth (Open Authorization) 2.0 & OIDC (OpenID Connect)
@@ -152,27 +166,26 @@ User (Browser)          App A (Service)        App B (Service)        IdP (Googl
   - Access Token: The "key" that the client uses to access the Resource Server. It contains specific permissions called "scopes"
   - Refresh Token: Used to get a new access token once the current one expires, without asking the user to log in again
 
-```text
-User (Browser)        Client App          Auth Server        Resource Server
+```mermaid
+sequenceDiagram
+    participant U as User (Browser)
+    participant C as Client App
+    participant A as Auth Server
+    participant R as Resource Server
+    autonumber
 
-      |                   |                    |                    |
-      |-- 1. Login Req -->|                    |                    |
-      |                   |-- 2. Redirect ---->|                    |
-      |                   |    (client ID)     |                    |
-      |<-- 3. Prompt --------------------------|                    |
-      |-- 4. Credentials --------------------->|                    |
-      |                   |<-- 5. Auth Code ---|                    |
-      |                   |                    |                    |
-      |                   |-- 6. Exchange ---->|                    |
-      |                   |   (Auth Code +)    |                    |
-      |                   |  (Client Secret)   |                    |
-      |                   |                    |                    |
-      |                   |<-- 7. Access Token-|                    |
-      |                   |                    |                    |
-      |                   |-- 8. Access API ----------------------->|
-      |                   |    (with Token)    |                    |
-      |                   |                    |                    |
-      |                   |<-- 9. Data -----------------------------|
+    U->>C: Login Request
+    C->>A: Redirect <br/> (Client ID)
+    A-->>U: Prompt (Login/Consent)
+    U->>A: Credentials
+
+    A-->>C: Authorization Code
+
+    C->>A: Exchange Code <br/> (Auth Code + Client Secret)
+    A-->>C: Access Token
+
+    C->>R: Access API (with Token)
+    R-->>C: Data
 ```
 
 - Why both auth code and access token?:
