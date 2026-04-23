@@ -236,9 +236,50 @@ title: LLM Context Engineering
     3. Observation: The system feeds the results of that action (e.g., search results or an error message) back into the LLM
     4. The model then generates a new thought based on this fresh observation, repeating the cycle until it reaches a final answer
   - NOTE: for ReAct, always use **reasoning** model
+- MCP Authorization Flow:
 
-- =====TODO======:
-- Authentication & Authorization in MCP
+```mermaid
+sequenceDiagram
+    participant Client
+    participant MCP_Server
+    participant Auth_Server
+    participant User
+    autonumber
+
+    note over Client,User: 1. Initial Handshake
+    Client->>MCP_Server: Initial request
+    MCP_Server-->>Client: 401 Unauthorized + WWW-Authenticate (resource_metadata URL)
+
+    note over Client,User: 2. Protected Resource Metadata Discovery
+    Client->>MCP_Server: GET /protected-resource-metadata
+    MCP_Server-->>Client: PRM JSON (auth servers, scopes)
+
+    note over Client,User: 3. Authorization Server Discovery
+    Client->>Auth_Server: GET /auth-server
+    Auth_Server-->>Client: Auth metadata (authorize, token, & register endpoints)
+
+    note over Client,User: 4. Client Registration
+    alt Pre-registered client
+        Client->>Auth_Server: Use existing client credentials
+    else Dynamic Client Registration (DCR)
+        Client->>Auth_Server: POST /register (client metadata)
+        Auth_Server-->>Client: Client credentials
+    else No DCR & not pre-registered
+        Client->>User: Prompt for manual client configuration
+    end
+
+    note over Client,User: 5. User Authorization
+    Client->>User: Open browser to /authorize
+    User->>Auth_Server: Login & grant consent
+    Auth_Server-->>Client: Redirect with authorization code
+    Client->>Auth_Server: POST /token (exchange code)
+    Auth_Server-->>Client: Access token + refresh token
+
+    note over Client,User: 6. Authenticated Requests
+    Client->>MCP_Server: GET /mcp (Authorization: Bearer access_token)
+    MCP_Server->>Auth_Server: Validate token (optional/introspection)
+    MCP_Server-->>Client: Protected resource response
+```
 
 ## Agent Architecture
 
