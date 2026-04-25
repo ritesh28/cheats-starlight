@@ -313,9 +313,34 @@ sequenceDiagram
   - Here we pass a single contract (specification file) to sub-agents working on different tasks with some overlap
   - E.x. Frontend agent calls a particular endpoint & expect some certain output. Backend agent build that endpoint as per the same spec file as that of frontend agent
 - Type of context flow (SEE INFOGRAPHIC):
-  1. Full Isolation (fan-out): Orchestrator dispatches independent context to each agent. Orchestrator collects all outputs & merges them into a unified result
+  1. Full Isolation (fan-out/fan-in): Orchestrator dispatches independent context to each agent. Orchestrator collects all outputs & merges them into a unified result
   2. Shared base context: All agents receive same base context (system prompt). Also, each agent receives domain-specific context. Agents run in parallel but share understanding
   3. Sequential pipeline: Agents run in sequence; Agent B receives A's finding as additional context
+
+## Memory management
+
+![memory](./context-engineering-memory.drawio.svg)
+
+- ChatGPT is an agent which uses previous conversation as context when calling LLM API. Once the context reaches limit, some kind of compaction is done
+- 3-tier memory architecture (SEE INFOGRAPHIC):
+  1. Episodic memory: What happened. Specific events & exchanges
+  2. Semantic memory: What I Know. Facts, concept & structured knowledge
+  3. Procedural memory: How to do Things. Skills & patterns
+- Memory Retrieval Methods:
+  - Rule of Thumb: Start with temporal, add semantic when conversations go beyond 20 turns, add associative when you have cross-session memory
+  - | Method              | How It Works                                        | Best For                                       | Cost                     |
+    | ------------------- | --------------------------------------------------- | ---------------------------------------------- | ------------------------ |
+    | Text similarity     | Keyword/fuzzy matching against stored memories      | Exact recall: "what did they say about X?"     | Low (string ops)         |
+    | Semantic embeddings | Vector similarity search in embedding space         | Conceptual recall: "anything related to auth?" | Medium (embedding call)  |
+    | Temporal proximity  | Recent memories first, decay with time              | "What just happened?" or session continuity    | Low (timestamp sort)     |
+    | Associative chains  | Follow connections between related concepts (Graph) | "What else is related to this topic?"          | Medium (graph traversal) |
+    | Learned patterns    | ML-based relevance prediction trained on usage data | Production systems with large user bases       | High (model inference)   |
+- 5 memory management strategies (SEE INFOGRAPHIC):
+  1. Windowing
+  2. Summarization: go-to strategy
+  3. Key-Value extraction: Highly compression
+  4. Priority Pruning: Priorities are assigned based on some rules (No LLM involved)
+  5. Semantic Chunking: Works better but require additional LLM call (or embedding or keyword-matching) to segregate semantically
 
 ## Agent Architecture
 
