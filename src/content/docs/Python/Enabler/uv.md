@@ -19,6 +19,8 @@ Running project
 
 - `uv init`: create .python-version, .git, pyproject.toml file
 - `uv venv` & `source .venv/bin/activate`: Create virtual environment and activate it
+  - `uv` automatically detect and use a `.venv` folder located in your current directory or any parent directory
+  - If your virtual environment is not named `.venv` or is not in the project root, you may need to activate it or point `uv` to it
 - `uv add <package>`: add package and modifies pyproject.toml
 - `uv remove <package>`
 - `uv sync`: sync the .venv folder with the pyproject.toml (single source of truth)
