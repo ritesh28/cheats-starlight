@@ -341,6 +341,7 @@ sequenceDiagram
   3. Key-Value extraction: Highly compression
   4. Priority Pruning: Priorities are assigned based on some rules (No LLM involved)
   5. Semantic Chunking: Works better but require additional LLM call (or embedding or keyword-matching) to segregate semantically
+- Summary Drift: When each round of summarization degrades information slightly - after 5 rounds, details shift or disappear
 
 ## Agent Architecture
 
