@@ -84,6 +84,13 @@ title: LLM Context Engineering
   4. Isolate:
      - The task is too large or complex for a single context window, so you split it across multiple parallel windows - multiple agents, each with a focused slice of the problem
      - The information spreads across systems
+- Agent Architecture (SEE INFOGRAPHIC): Agent integrates all following 6 modules into a single orchestrator:
+  1. instructional context
+  2. RAG
+  3. MCP tools
+  4. Memory
+  5. Guardrails
+  6. Observability
 
 ## Instructional layer (system prompts)
 
@@ -342,7 +349,3 @@ sequenceDiagram
   4. Priority Pruning: Priorities are assigned based on some rules (No LLM involved)
   5. Semantic Chunking: Works better but require additional LLM call (or embedding or keyword-matching) to segregate semantically
 - Summary Drift: When each round of summarization degrades information slightly - after 5 rounds, details shift or disappear
-
-## Agent Architecture
-
-- The capstone agent integrates all six modules:instructional context, RAG, MCP tools, memory, guardrails, and observability:into a single orchestrator
