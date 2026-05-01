@@ -31,3 +31,14 @@ Smart UV:
 - To upgrade/downgrade python -> simply update the version in pyproject.toml and .python-version file
 - If the package is not already installed, simply add it to the pyproject.toml. When you run a script and that script depends on that missing package, Uv will simply first install the version of that package as mentioned in the pyproject.toml and then run the script
 - All script (project or simple file) run in virtual env. No need to explicitly manage virtual env
+
+# uv pip install VS uv add
+
+- They are two separate APIs for managing your Python project and environment
+- `uv pip` APIs are meant to resemble the pip CLI:
+  - You can think of this as a slightly "lower-level" API: you tell uv pip to install a specific package, or remove a specific package, and so on
+  - It came first, and it's partly motivated by a desire to make it easy for folks to adopt uv without changing their existing projects or workflows dramatically
+- `uv add`, `uv run`, `uv sync`, and `uv lock` are what we call the "project APIs":
+  - These are "higher-level": you define your dependencies in `pyproject.tom`l, and uv ensures that your environment is always in-sync with those dependencies
+  - Project APIs are more opinionated (you must use pyproject.toml, since they're designed around "projects"), while the uv pip APIs are more flexible
+  - Project APIs are more recent, and they tend to reflect the "uv-native" workflow
