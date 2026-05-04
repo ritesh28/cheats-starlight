@@ -105,4 +105,6 @@ title: Resume Roadmap
 - [Dive into Deep Learning](<file:///Users/riteshraj/Downloads/books/todo/Dive into Deep Learning.pdf>)
 - [Hugging Face](<folder:///Users/riteshraj/Downloads/books/todo/Natural Language Processing with Transformers, Revised Edition>)
 - [LangChain](<folder:///Users/riteshraj/Downloads/books/todo/Generative AI with LangChain>)
-- [NLP](folder:///Users/riteshraj/Downloads/books/todo/NLTK.pdf)
+- [NLP with old version 2](folder:///Users/riteshraj/Downloads/books/todo/NLTK.pdf)
+- [NLP with new version 3](https://www.nltk.org/book/)
+- [NLP](folder:///Users/riteshraj/Downloads/books/todo/python-3-text-processing-with-nltk-3-cookbook.pdf)
