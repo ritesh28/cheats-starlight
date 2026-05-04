@@ -32,6 +32,9 @@
     - It includes functions like `square()`, `exp()`. In `tf.keras`, these functions just call the corresponding TensorFlow operations
     - If you want to write code that will be portable to other Keras implementations, you should use these Keras functions
     - `from tensorflow import keras; K = keras.backend; K.square(K.transpose(t)) + 10`
+  - NOTE:
+    - For better performance, always use a vectorized implementation
+    - If you want to benefit from TensorFlow’s graph features, you should use only TensorFlow operations
 - Tensor Type Conversions:
   - Type conversions can significantly hurt performance, and they can easily go unnoticed when they are done automatically
   - To avoid this, TensorFlow does not perform any type conversions automatically: it raises exception if you try to execute an operation on tensors with incompatible types
@@ -80,4 +83,67 @@ v[:, 2].assign([0., 1.]) # => [[2., 42., 0.], [8., 10., 1.]]
 v.scatter_nd_update(indices=[[0, 0], [1, 2]], updates=[100., 200.]) # => [[100., 42., 0.], [8., 10., 200.]]
 ```
 
+## Saving and Loading Models That Contain Custom Components
+
+- When saving, Keras just saves the name of the custom function. It does not even save the arguments/hyperparameter of the custom function
+- When loading, you need to provide a dictionary that maps the function name to the actual function
+- NOTE: the function name is the function referenced/returned and not the name of the function that created it (REFER CODE 'custom huber func')
+- Use subclass & implement `get_config()` for model to save the arguments/hyperparameter (REFER CODE 'custom huber subclass')
+
 ## Custom Loss Functions
+
+- MSE (mean squared error) disadvantage: MSE might penalize large errors too much, so your model will end up being imprecise
+- MAE (mean absolute error) disadvantage: MAE would not penalize outliers as much, & training might take a while to converge & the trained model might not be very precise
+
+```py title='custom huber func'
+# For each batch during training, Keras will call the huber_fn() to compute the loss, and use it to perform a Gradient Descent step
+# Also, Keras will keep track of the total loss since the beginning of the epoch, and it will display the mean loss
+def create_huber(threshold=1.0):
+  def huber_fn(y_true, y_pred):
+    error = y_true - y_pred
+    is_small_error = tf.abs(error) < threshold
+    squared_loss = tf.square(error) / 2
+    linear_loss = threshold * tf.abs(error) - threshold**2 / 2
+    return tf.where(is_small_error, squared_loss, linear_loss) # return a tensor containing one loss per instance
+  return huber_fn
+
+model.compile(loss=create_huber(2.0), optimizer="nadam") # create_huber() returns huber_fn reference
+model.fit(X_train, y_train, [...])
+
+# LOADING MODEL
+model = keras.models.load_model("my_model_with_a_custom_loss_threshold_2.h5", custom_objects={"huber_fn": create_huber(2.0)})
+```
+
+```py title='custom huber subclass'
+from tensorflow import keras
+class HuberLoss(keras.losses.Loss):
+    def __init__(self, threshold=1.0, **kwargs):
+        # kwargs handles the name and reduction parameters of the base Loss class
+        # reduction algorithm specifies how to aggregate the individual instance losses across the batch
+        # default is 'auto' which means 'sum_over_batch_size' (total loss divided by batch size)
+        # other options include 'sum' (total loss) and 'none' (no reduction, return individual losses)
+        self.threshold = threshold
+        super().__init__(**kwargs)
+
+    def call(self, y_true, y_pred):
+        # takes labels and predictions, computes all the instance losses (per batch), and returns them
+        error = y_true - y_pred
+        is_small_error = tf.abs(error) < self.threshold
+        squared_loss = tf.square(error) / 2
+        linear_loss = self.threshold * tf.abs(error) - self.threshold**2 / 2
+        return tf.where(is_small_error, squared_loss, linear_loss)
+
+    def get_config(self):
+        # returns a dictionary mapping each hyperparameter name to its value
+        base_config = super().get_config()
+        return {**base_config, "threshold": self.threshold}
+
+model.compile(loss=HuberLoss(2.), optimizer="nadam")
+
+# LOADING MODEL
+model = keras.models.load_model("my_model_with_a_custom_loss_class.h5", custom_objects={"HuberLoss": HuberLoss})
+# When saving, Keras calls the loss instance’s get_config() and saves the config as JSON in the HDF5 file
+# When loading, Keras calls from_config() (implemented by base class (Loss)) and just creates an instance of the class, passing **config to the constructor
+```
+
+## Custom Activation Functions, Initializers, Regularizers, & Constraints

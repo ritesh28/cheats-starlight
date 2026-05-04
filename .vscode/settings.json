@@ -27,6 +27,7 @@
     "matmul",
     "Matplotlib",
     "multinomial",
+    "nadam",
     "ndarray",
     "Nesterov",
     "newaxis",
