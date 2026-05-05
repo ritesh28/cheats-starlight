@@ -99,7 +99,7 @@ v.scatter_nd_update(indices=[[0, 0], [1, 2]], updates=[100., 200.]) # => [[100.,
 # For each batch during training, Keras will call the huber_fn() to compute the loss, and use it to perform a Gradient Descent step
 # Also, Keras will keep track of the total loss since the beginning of the epoch, and it will display the mean loss
 def create_huber(threshold=1.0):
-  def huber_fn(y_true, y_pred):
+  def huber_fn(y_true, y_pred): # NOTE: In tf.keras, we already have keras.losses.Huber
     error = y_true - y_pred
     is_small_error = tf.abs(error) < threshold
     squared_loss = tf.square(error) / 2
@@ -147,3 +147,71 @@ model = keras.models.load_model("my_model_with_a_custom_loss_class.h5", custom_o
 ```
 
 ## Custom Activation Functions, Initializers, Regularizers, & Constraints
+
+- Activation functions: e.x. `keras.activations.softplus` equivalent to `tf.nn.softplus`
+- Initializer: e.x. `keras.initializers.glorot_normal`
+- Regularizer: e.x.: `keras.regularizers.l1(0.01)`
+- Constraint: e.x: ensure weights are all positive - `keras.constraints.nonneg()` or `tf.nn.relu`
+
+```py title='custom activation & kernel'
+def my_softplus(z): # return value is just tf.nn.softplus(z)
+  return tf.math.log(tf.exp(z) + 1.0)
+
+def my_glorot_initializer(shape, dtype=tf.float32):
+  stddev = tf.sqrt(2. / (shape[0] + shape[1]))
+  return tf.random.normal(shape, stddev=stddev, dtype=dtype)
+
+def my_l1_regularizer(weights):
+  return tf.reduce_sum(tf.abs(0.01 * weights))
+
+def my_positive_weights(weights): # return value is just tf.nn.relu(weights)
+  return tf.where(weights < 0., tf.zeros_like(weights), weights)
+
+layer = keras.layers.Dense(
+    30,
+    activation=my_softplus,
+    kernel_initializer=my_glorot_initializer,
+    kernel_regularizer=my_l1_regularizer,
+    kernel_constraint=my_positive_weights,
+)
+# Activation function will be applied to the output of this Dense layer, and its result will be passed on to the next layer
+# The layer’s weights will be initialized using the value returned by the initializer
+# At each training step regularization function will compute the regularization loss, which will be added to the main loss to get the final loss used for training
+# Finally, constraint function will be called after each training step, and the layer’s weights will be replaced by the constrained weights
+```
+
+```py title='custom regularizer subclass'
+# If a function has some hyperparameters that need to be saved along with the model, then subclass the appropriate class, such as:
+# keras.regularizers.Regularizer, keras.constraints.Constraint, keras.initializers.Initializer or keras.layers.Layer (for any layer, including activation functions)
+# NOTE: implement call() for losses, layers (including activation functions) and models, or __call__() for regularizers, initializers & constraints
+
+# we do not need to call the parent constructor or get_config(), as they are not defined by the parent class
+class MyL1Regularizer(keras.regularizers.Regularizer):
+    def __init__(self, factor):
+        self.factor = factor
+
+    def __call__(self, weights):
+        return tf.reduce_sum(tf.abs(self.factor * weights))
+
+    def get_config(self):
+        return {"factor": self.factor}
+```
+
+## Custom Metrics
+
+- **losses** are used by Gradient Descent to train a model; In contrast, **metrics** are used to evaluate a model
+  - For each batch during training, Keras will compute both loss & metric and keep track of its mean (by default) since the beginning of the epoch
+  - Using huber as metric: `model.compile(loss="mse", optimizer="nadam", metrics=[create_huber(2.0)])`
+  - Using huber as loss: `model.compile(loss=create_huber(2.0), optimizer="nadam")`
+- Keeping track of mean (since the beginning of the epoch) is not always favorable:
+  - Consider binary classifier’s precision - precision is number of true positives divided by number of total positive predictions (true positives + false positives)
+  - First batch: model made 5 positive predictions, 4 of which were correct; that’s 80% precision
+  - Second batch (w.r.t first batch, number of instances are different): model made 3 positive predictions, none are correct; that's 0% precision
+  - Mean is 40%; but it is not the model’s precision over these two batches. Overall precision is 50% ($\frac{4+0}{5+3}$), not 40%
+  - Conclusion: we need is an object that can keep track of number of true positives and number of false positives, and compute their ratio when requested
+    - This is precisely what `keras.metrics.Precision` class does
+    - This is called **streaming metric** (or **stateful metric**), as it is gradually updated, batch after batch
+
+```py title='precision'
+
+```
