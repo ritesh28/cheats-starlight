@@ -1,3 +1,7 @@
+---
+title: Custom Models and Training with TensorFlow
+---
+
 ## TODO examples (REMOVE LATER)
 
 - https://www.tensorflow.org/hub/tutorials
@@ -209,9 +213,35 @@ class MyL1Regularizer(keras.regularizers.Regularizer):
   - Second batch (w.r.t first batch, number of instances are different): model made 3 positive predictions, none are correct; that's 0% precision
   - Mean is 40%; but it is not the model’s precision over these two batches. Overall precision is 50% ($\frac{4+0}{5+3}$), not 40%
   - Conclusion: we need is an object that can keep track of number of true positives and number of false positives, and compute their ratio when requested
-    - This is precisely what `keras.metrics.Precision` class does
+    - This is precisely what `keras.metrics.Precision` class does (REFER CODE 'precision')
     - This is called **streaming metric** (or **stateful metric**), as it is gradually updated, batch after batch
+- To create a streaming metric, write a subclass of the `keras.metrics.Metric` class
 
 ```py title='precision'
+precision = keras.metrics.Precision()
 
+# FIRST BATCH: passing labels and predictions
+precision([0, 1, 1, 1, 0, 1, 0, 1], [1, 1, 0, 1, 0, 1, 0, 1]) # <tf.Tensor: shape=(), dtype=float32, numpy=0.8>
+# SECOND BATCH: it returns 50% which is the overall precision so far, not the second batch’s precision
+# This is called a streaming metric (or stateful metric), as it is gradually updated, batch after batch
+precision([0, 1, 0, 0, 1, 0, 1, 1], [1, 0, 1, 1, 0, 0, 0, 0]) # <tf.Tensor: shape=(), dtype=float32, numpy=0.5>
+
+# GET THE CURRENT VALUE OF THE METRIC
+precision.result() # <tf.Tensor: shape=(), dtype=float32, numpy=0.5>
+
+# TRACK NUMBER OF TRUE AND FALSE POSITIVES
+precision.variables
+# [<tf.Variable 'true_positives:0' shape=(1,) dtype=float32, numpy=array([4.], dtype=float32)>,
+#  <tf.Variable 'false_positives:0' shape=(1,) dtype=float32, numpy=array([4.], dtype=float32)>]
+
+# RESET THESE VARIABLES: both variables get reset to 0.0
+precision.reset_state()
+precision.variables
+# [<tf.Variable 'true_positives:0' shape=(1,) dtype=float32, numpy=array([0.], dtype=float32)>,
+#  <tf.Variable 'false_positives:0' shape=(1,) dtype=float32, numpy=array([0.], dtype=float32)>]
+```
+
+```py title='custom metric subclass'
+# This example keeps track of total Huber loss and number of instances seen so far
+# When asked for the result, it returns the ratio, which is simply the mean Huber loss
 ```
