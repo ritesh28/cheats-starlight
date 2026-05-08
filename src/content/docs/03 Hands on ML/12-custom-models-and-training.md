@@ -363,3 +363,52 @@ class MyLayer(keras.layers.Layer):
 ```
 
 ## Custom Models
+
+- subclass the `keras.models.Model`, create layers and variables in the constructor, and implement `call()` to do whatever you want the model to do
+- The `Model` class is actually a subclass of the `Layer` class, so models can be defined and used exactly like layers:
+  - But a model also has some extra functionalities - compile(), fit(), evaluate() and predict() methods
+  - DO NOT define every layer as a model since its cleaner to distinguish the internal components of your model (layers or reusable blocks of layers) from the model itself
+
+![custom model ex](./12-custom-model-example.png)
+
+```py title='custom model example'
+# Here we are implementing the above image custom model
+# If you want to save-load model, you must implement the get_config() method (as we did earlier) in both the ResidualBlock class and the ResidualRegressor class
+# Alternatively, you can just save and load the weights using the save_weights() and load_weights() methods
+class ResidualBlock(keras.layers.Layer):
+    def __init__(self, n_layers, n_neurons, **kwargs):
+        # Likewise Model, We create the layers in the constructor, and use them in the call() method
+        super().__init__(**kwargs)
+        self.hidden = [
+            keras.layers.Dense(
+                n_neurons, activation="elu", kernel_initializer="he_normal"
+            )
+            for _ in range(n_layers)
+        ]
+
+    def call(self, inputs):
+        Z = inputs
+        for layer in self.hidden:
+            Z = layer(Z)
+        return inputs + Z
+
+class ResidualRegressor(keras.models.Model):
+    def __init__(self, output_dim, **kwargs):
+        # We create the layers in the constructor, and use them in the call() method
+        super().__init__(**kwargs)
+        self.hidden1 = keras.layers.Dense(
+            30, activation="elu", kernel_initializer="he_normal"
+        )
+        self.block1 = ResidualBlock(2, 30)
+        self.block2 = ResidualBlock(2, 30)
+        self.out = keras.layers.Dense(output_dim)
+
+    def call(self, inputs):
+        Z = self.hidden1(inputs)
+        for _ in range(1 + 3):
+            Z = self.block1(Z)
+        Z = self.block2(Z)
+        return self.out(Z)
+```
+
+## Losses and Metrics Based on Model Internals
