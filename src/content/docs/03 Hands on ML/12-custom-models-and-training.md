@@ -216,6 +216,10 @@ class MyL1Regularizer(keras.regularizers.Regularizer):
     - This is precisely what `keras.metrics.Precision` class does (REFER CODE 'precision')
     - This is called **streaming metric** (or **stateful metric**), as it is gradually updated, batch after batch
 - To create a streaming metric, write a subclass of the `keras.metrics.Metric` class
+- Conclusion from the code 'precision' & 'custom metric subclass':
+  - When you define a metric using a simple function, Keras automatically calls it for each batch, and it keeps track of the mean during each epoch, just like we did manually
+  - Only benefit of our HuberMetric class is that the threshold will be saved
+  - But of course, some metrics, like precision, cannot simply be averaged over batches: in those cases, there’s no other option than to implement a streaming metric
 
 ```py title='precision'
 precision = keras.metrics.Precision()
@@ -244,4 +248,42 @@ precision.variables
 ```py title='custom metric subclass'
 # This example keeps track of total Huber loss and number of instances seen so far
 # When asked for the result, it returns the ratio, which is simply the mean Huber loss
+class HuberMetric(keras.metrics.Metric):
+    def __init__(self, threshold=1.0, **kwargs):
+        super().__init__(**kwargs)  # handles base args (e.g., dtype)
+        self.threshold = threshold
+        self.huber_fn = create_huber(threshold)
+        self.total = self.add_weight("total", initializer="zeros")
+        # add_weight() is not same as Layer.add_weight() - it does not create a trainable variable, but rather a 'stateful' variable that is updated during metric calculation
+        # add_weight() basically calls self.add_variable(). Instead, you could have used tf.Variable() directly, but add_weight() is the recommended way
+        # Keras will take care of variable persistence seamlessly, no action is required
+        # add_weight() keeps track of the variable across batches and epochs
+        self.count = self.add_weight("count", initializer="zeros")
+
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        # This is called when you use an instance of this class as a function (as we did with the Precision object)
+        # It updates the variables given the labels and predictions for one batch (and sample weights, but in this case we just ignore them)
+        metric = self.huber_fn(y_true, y_pred)
+        self.total.assign_add(tf.reduce_sum(metric))
+        self.count.assign_add(tf.cast(tf.size(y_true), tf.float32))
+
+    def result(self):
+        # This computes and returns the final result, in this case just the mean Huber metric over all instances
+        # When you use the metric as a function, update_state() gets called first, then the result() is called, and its output is returned
+        return self.total / self.count
+
+    def get_config(self):
+        # This ensures the threshold gets saved along with the model
+        base_config = super().get_config()
+        return {**base_config, "threshold": self.threshold}
+
+    def reset_states(self):
+        # The default implementation of the reset_states() method just resets all variables to 0.0 (but you can override it if needed)
+        pass
 ```
+
+## Custom Layers
+
+- Usage E.x: if the model is sequence of layers A, B, C, A, B, C, A, B, C, then define a custom layer D containing layers A, B, C, and your model would then simply be D, D, D
+- Layer with no weight:
+  - a
