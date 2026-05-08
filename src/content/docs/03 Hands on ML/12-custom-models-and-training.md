@@ -286,4 +286,80 @@ class HuberMetric(keras.metrics.Metric):
 
 - Usage E.x: if the model is sequence of layers A, B, C, A, B, C, A, B, C, then define a custom layer D containing layers A, B, C, and your model would then simply be D, D, D
 - Layer with no weight:
-  - a
+  - E.x.: `keras.layers.Flatten`, `keras.layers.ReLU`
+  - Custom layer without weights: simplest option is to wrap a function in a `keras.layers.Lambda` layer - `exponential_layer = keras.layers.Lambda(lambda x: tf.exp(x))`
+    - The exponential layer is sometimes used in the output layer of a regression model when the values to predict have very different scales (e.g., 0.001, 10., 1000.)
+    - Exponential can also be used as an activation function: `activation=tf.exp` or `activation=keras.activations.exponential` or `activation="exponential"`
+- **Stateful Layer**: A layer with weights
+
+```py title='custom dense layer'
+# This class implements a simplified version of the Dense layer
+class MyDense(keras.layers.Layer):
+    def __init__(self, units, activation=None, **kwargs):
+        # constructor takes all the hyperparameters as arguments (in this example: units and activation)
+        # kwargs: this takes care of standard arguments such as input_shape, trainable, name, and so on
+        super().__init__(**kwargs)
+        self.units = units
+        self.activation = keras.activations.get(activation)
+        # get() converts the activation argument to the appropriate activation function
+        # get() accepts functions, standard strings like "relu" or "selu", or simply None
+
+    def build(self, batch_input_shape):
+        # This function role is to create the layer’s variables, by calling the add_weight()
+        # batch_input_shape: this is the shape of the input data, including the batch size. It is passed to build() by Keras when it first calls the layer on some input data
+        # we need to know the number of neurons in the previous layer in order to create the connection weights matrix (i.e., the "kernel")
+        self.kernel = self.add_weight(name="kernel", shape=[batch_input_shape[-1], self.units], initializer="glorot_normal")
+        self.bias = self.add_weight(name="bias", shape=[self.units], initializer="zeros")
+        super().build(batch_input_shape)  # NOTE: must be at the end. this tells Keras that the layer is built (it just sets self.built = True)
+
+    def call(self, X):
+        # This function actually performs the desired operations
+        # In this case, we compute matrix multiplication of inputs X and layer’s kernel, add bias vector
+        # apply activation function to the result, and this gives us the output of the layer
+        return self.activation(X @ self.kernel + self.bias)
+
+    def compute_output_shape(self, batch_input_shape):
+        # This simply returns the shape of this layer’s outputs
+        # In this case, it is the same shape as the inputs, except the last dimension is replaced with the number of neurons in the layer
+        # Note: in tf.keras, shapes are instances of the tf.TensorShape class, which you can convert to Python lists using as_list()
+        return tf.TensorShape(batch_input_shape.as_list()[:-1] + [self.units])
+
+    def get_config(self):
+        base_config = super().get_config()
+        return {
+            **base_config,
+            "units": self.units,
+            "activation": keras.activations.serialize(self.activation)  # we save the activation function’s full configuration
+        }
+```
+
+```py title='multiple input & multiple output'
+# E.x. of layer taking multiple inputs - Concatenate()
+# This class layer takes two inputs and returns three output
+class MyMultiLayer(keras.layers.Layer):
+  def call(self, X):
+    # X: a tuple containing all the inputs
+    # Since this layer returns 3 output - this function should return the list of outputs
+    X1, X2 = X
+    return [X1 + X2, X1 * X2, X1 / X2]
+
+  def compute_output_shape(self, batch_input_shape):
+    # batch_input_shape: a tuple containing each input’s batch shape
+    # Since this layer returns 3 output - should return the list of batch output shapes (one per output)
+    b1, b2 = batch_input_shape
+    return [b1, b1, b1] # should probably handle broadcasting rules
+```
+
+```py title='different behavior for training & testing'
+# If your layer needs to have a different behavior during training and during testing (e.g., if it uses Dropout or BatchNormalization layers)
+class MyLayer(keras.layers.Layer):
+  ...
+  def call(self, X, training=None):
+    # add a train ing argument to the call() method and use this argument to decide what to do
+    if training:
+      pass
+    else:
+      pass
+```
+
+## Custom Models
