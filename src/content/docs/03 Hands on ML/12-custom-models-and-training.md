@@ -224,7 +224,7 @@ class MyL1Regularizer(keras.regularizers.Regularizer):
 ```py title='precision'
 precision = keras.metrics.Precision()
 
-# FIRST BATCH: passing labels and predictions
+# FIRST BATCH: passing labels and predictions (note that we could also have passed sample weights - weight assigned directly to the sample depending on their importance/origin)
 precision([0, 1, 1, 1, 0, 1, 0, 1], [1, 1, 0, 1, 0, 1, 0, 1]) # <tf.Tensor: shape=(), dtype=float32, numpy=0.8>
 # SECOND BATCH: it returns 50% which is the overall precision so far, not the second batch’s precision
 # This is called a streaming metric (or stateful metric), as it is gradually updated, batch after batch
@@ -263,6 +263,7 @@ class HuberMetric(keras.metrics.Metric):
     def update_state(self, y_true, y_pred, sample_weight=None):
         # This is called when you use an instance of this class as a function (as we did with the Precision object)
         # It updates the variables given the labels and predictions for one batch (and sample weights, but in this case we just ignore them)
+        # sample_weight: weight assigned directly to the sample depending on their importance/origin. In this case we just ignore them
         metric = self.huber_fn(y_true, y_pred)
         self.total.assign_add(tf.reduce_sum(metric))
         self.count.assign_add(tf.cast(tf.size(y_true), tf.float32))
@@ -412,3 +413,206 @@ class ResidualRegressor(keras.models.Model):
 ```
 
 ## Losses and Metrics Based on Model Internals
+
+- Normally, custom losses and metrics are based on the labels and the predictions (and optionally sample weights)
+- Custom Loss based on model internal:
+  - You will occasionally want to define losses based on other parts of your model, such as the weights or activations of its hidden layers
+  - This may be useful for regularization purposes, or to monitor some internal aspect of your model
+  - To define a custom loss based on model internals, just compute it based on any part of the model you want, then pass the result to the `add_loss()`
+  - Rule of thumb for custom loss based on model internals:
+    - Since this custom loss is normally used for regularization purpose, use it only in training inside `call(self, X, training=None)`
+    - Scale down the reconstruction loss, to ensure the main loss dominates. e.g. `self.add_loss(0.05 * recon_loss)`
+- Custom metric based on model internals:
+  - Create metric object (e.g. `keras.metrics.Mean()`) in constructor, then call it in `call()`, passing it the metric value, and finally add it to model by calling `add_metric()`
+
+## Computing Gradients Using Autodiff
+
+- Consider example: $f(w_1, w_2) = 3w_1^2 + 2w_1w_2$
+  - Partial derivative of this function with regards to $w_1$ is $6w_1 + 2w_2$
+  - Partial derivative of this function with regards to $w_2$ is $2w_1$
+  - At the point $(w_1,w_2) = (5,3)$, these partial derivatives are equal to 36 & 10, respectively, so the gradient vector at this point is (36, 10)
+  - Problem: NN has tens of thousands of parameters, and finding the partial derivatives analytically by hand would be an almost impossible task
+  - Solution #1: compute approximation of each partial derivative by measuring how much the function’s output changes when you tweak the corresponding parameter
+    - `w1, w2 = 5, 3`
+    - `eps = 1e-6`
+    - `(f(w1 + eps, w2) - f(w1, w2)) / eps`; o/p => 36.000003007075065
+    - `(f(w1, w2 + eps) - f(w1, w2)) / eps`; o/p => 10.000000003174137
+    - Problem with Solution #1 is that we have to call `f()` for every parameter
+  - Solution #2:
+    - Use **autodiff**: this automatically calls `f()` for every parameter
+    - TensorFlow makes this pretty simple by using `tf.GradientTape` context which automatically record every operation that involves a variable
+
+```py title='Gradient Tape'
+def f(w1, w2):
+    return 3 * w1**2 + 2 * w1 * w2
+
+w1, w2 = tf.Variable(5.0), tf.Variable(3.0)
+with tf.GradientTape() as tape:
+    # this context that will automatically record every operation that involves a variable
+    # NOTE: put the strict minimum inside the tf.GradientTape() block, to save memory
+    z = f(w1, w2)
+
+gradients = tape.gradient(z, [w1, w2])  # computes the gradients of the result 'z' with regards to both variables [w1, w2]
+# gradients => [<tf.Tensor: shape=(), dtype=float32, numpy=36.0>,  <tf.Tensor: shape=(), dtype=float32, numpy=10.0>]
+
+# The tape is automatically erased immediately after you call its gradient() method
+# You will get an exception if you try to call gradient() twice
+tape.gradient(z, w1)  # RuntimeError: A non-persistent GradientTape can only be used to compute one set of gradients
+```
+
+```py title='Persistent Gradient Tape'
+# If you need to call gradient() more than once, you must make the tape persistent, and delete it when you are done with it to free resources
+with tf.GradientTape(persistent=True) as tape:
+    z = f(w1, w2)
+
+dz_dw1 = tape.gradient(z, w1)  # <tf.Tensor: shape=(), dtype=float32, numpy=36.0>
+dz_dw2 = tape.gradient(z, w2)  # <tf.Tensor: shape=(), dtype=float32, numpy=10.0>
+del tape
+```
+
+```py title='Watch Tensor Gradient Tape'
+# By default, the tape will only track operations involving variables
+# If you try to compute the gradient of z with regards to anything else than a variable, the result will be None
+c1, c2 = tf.constant(5.), tf.constant(3.)
+with tf.GradientTape() as tape:
+  z = f(c1, c2)
+gradients = tape.gradient(z, [c1, c2]) # returns [None, None]
+
+# However, you can force the tape to watch any tensors you like, to record every operation that involves them
+# You can then compute gradients with regards to these tensors, as if they were variables
+with tf.GradientTape() as tape:
+  tape.watch(c1)
+  tape.watch(c2)
+  z = f(c1, c2)
+gradients = tape.gradient(z, [c1, c2]) # returns [tensor 36., tensor 10.]
+```
+
+```py title='second order partial derivatives'
+# Jacobians: first order partial derivatives
+# Hessians: second order partial derivatives
+with tf.GradientTape(persistent=True) as hessian_tape:
+  with tf.GradientTape() as jacobian_tape:
+    z = f(w1, w2)
+  jacobians = jacobian_tape.gradient(z, [w1, w2])
+hessians = [hessian_tape.gradient(jacobian, [w1, w2]) for jacobian in jacobians]
+del hessian_tape
+# hessians
+# return dz_dw1_dw1, dz_dw1_dw2, dz_dw2_dw1, dz_dw2_dw2
+# returns [tensor 6., tensor 2., tensor 2., None]
+```
+
+## Custom Training Loops
+
+- Usage: `fit()` only accepts one optimizer. We need custom training loop when we want to use multiple optimizer for different path/layer
+
+```py title='simple custom training loop'
+# This training loop does not handle layers that behave differently during training and testing (e.g., BatchNormalization or Dropout)
+# To handle these, you need to call the model with training=True and make sure it propagates this to every layer that needs it
+
+# Step 1: Build a simple model. No need to compile it, since we will handle the training loop manually
+l2_reg = keras.regularizers.l2(0.05)
+model = keras.models.Sequential(
+    [
+        keras.layers.Dense(30, activation="elu", kernel_initializer="he_normal", kernel_regularizer=l2_reg),
+        keras.layers.Dense(1, kernel_regularizer=l2_reg),
+    ]
+)
+
+# Step 2: Create a tiny function that will randomly sample a batch of instances from the training set
+def random_batch(X, y, batch_size=32):
+    idx = np.random.randint(len(X), size=batch_size)
+    return X[idx], y[idx]
+
+# Step 3: Define a function that will display the training status - step counter, total steps, mean loss since the start of epoch, and other metrics
+def print_status_bar(iteration, total, loss, metrics=None):
+    metrics = " - ".join([f"{m.name}: {m.result():.4f}" for m in [loss] + (metrics or [])])
+    end = "" if iteration < total else "\n"
+    print(f"\r{iteration}/{total} - " + metrics, end=end)
+
+# Step 4: Define some hyperparameters, choose the optimizer, the loss function and the metrics
+n_epochs = 5
+batch_size = 32
+n_steps = len(X_train) // batch_size
+optimizer = keras.optimizers.Nadam(lr=0.01)
+loss_fn = keras.losses.mean_squared_error
+mean_loss = keras.metrics.Mean()
+metrics = [keras.metrics.MeanAbsoluteError()] # unlike loss, no need for mean metric - MeanAbsoluteError() already takes care of it
+
+# Step 5: Build the custom loop!
+
+# create two nested loops: one for the epochs, the other for the batches within an epoch
+for epoch in range(1, n_epochs + 1):
+    print(f"Epoch {epoch}/{n_epochs}")
+    for step in range(1, n_steps + 1):
+        # Sample a random batch from the training set
+        X_batch, y_batch = random_batch(X_train_scaled, y_train)
+
+        with tf.GradientTape() as tape:
+            y_pred = model(X_batch, training=True)
+            # Compute the main loss (the one minimized by the optimizer) and add to it any other loss (e.g. regularization losses) that may be present in the model
+            # mean_squared_error() function returns one loss per instance, we compute the mean over the batch using tf.reduce_mean()
+            # tf.add_n: Returns the element-wise sum of a list of tensors
+            main_loss = tf.reduce_mean(loss_fn(y_batch, y_pred))
+            loss = tf.add_n([main_loss] + model.losses)
+
+        # compute the gradient of the loss with regards to each trainable variable (not all variables!)
+        gradients = tape.gradient(loss, model.trainable_variables)
+        # If you want to apply any other transformation to the gradients, simply do so before calling the apply_gradients()
+        # e.x. gradient clipping: gradients = [tf.clip_by_norm(g, 1.0) for g in gradients]
+        # If you set the optimizer’s clipnorm or clipvalue hyperparameters, it will take care of this for you - you don't need to do it manually
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        # If you add weight constraints to your model (e.g., by setting kernel_constraint or bias_constraint when creating a layer), apply these constraints just after apply_gradients()
+        # for variable in model.variables:
+        #     if variable.constraint is not None:
+        #         variable.assign(variable.constraint(variable))
+
+        # Update the mean loss and the metrics (over the current epoch), and we display the status bar
+        mean_loss(loss)
+        for metric in metrics:
+            metric(y_batch, y_pred)
+        print_status_bar(step * batch_size, len(y_train), mean_loss, metrics)
+
+    # At the end of each epoch, we display the status bar again to make it look complete and to print a line feed
+    print_status_bar(len(y_train), len(y_train), mean_loss, metrics)
+
+    # Reset the states of the mean loss and the metrics
+    for metric in [mean_loss] + metrics:
+        metric.reset_states()
+```
+
+## TensorFlow Functions and Graphs
+
+- A TensorFlow Computation Graph is a data structure that represents a set of computations as a directed map. In this graph:
+  - Nodes represent mathematical operations (like adding numbers or multiplying matrices)
+  - Edges represent the data (Tensors) that flow between these operations
+- Why Tensorflow generates computation graph:
+  - Speed & Optimization: TensorFlow can optimize a graph by removing unnecessary steps or combining operations to make them run faster
+  - Parallelism: The graph structure makes it easy for TensorFlow to run independent parts of your computation simultaneously across multiple CPUs or GPUs
+- In modern TensorFlow, you don't usually build graphs manually
+- Use `tf.function` as function or decorator to automatically convert a regular Python function into a TensorFlow function
+  - This TF Function can then be used exactly like the original Python function, and it will return the same result (but as tensors)
+  - Under the hood, `tf.function` analyze the computations performed by the original Python function and generated an equivalent computation graph
+- Keras automatically converts your custom function (e.g. loss, metric), when used inside a Keras model, into a TF Function - so no need to use `tf.function()`
+- TF Function generates a new graph for every unique set of input shapes and data types, and it caches it for subsequent calls
+  - If you call `tf_cube(tf.constant(10))`, a graph will be generated for `int32` tensors of shape `[]`
+  - Then if you call `tf_cube(tf.constant(20))`, the same graph will be reused
+  - But if you then call `tf_cube(tf.constant([10, 20]))`, a new graph will be generated for `int32` tensors of shape `[2]`
+  - However, this is only true for tensor arguments: if you pass numerical Python values (`tf_cube(10)`) to a TF Function, a new graph will be generated for every distinct value
+- TF Function Rules:
+  - Use TensorFlow Ops Only: Use `tf.reduce_sum()` instead of `np.sum()`
+  - Beware of Static Randomness: If you use `np.random`, a random value is generated only once. To get a new random number every time the graph runs, use `tf.random`
+  - Python Side-Effects are Lost: Code that performs side-effects (like logging or incrementing a Python counter) will only execute once, not every time the function is called
+  - Nested Functions: You can call other functions within a TF Function, but they must follow these same rules to be correctly captured in the graph:
+    - Note that these other functions do not need to be decorated with `@tf.function`
+  - Loop Capturing: use for `i in tf.range(10)` rather than for `i in range(10)`, or else the loop will not be captured in the graph:
+    - As always, for performance reasons, you should prefer a vectorized implementation whenever you can, rather than using loops
+
+```py title='tf.function'
+@tf.function
+def cube(x):
+  return x ** 3
+# Either decoration or `tf_cube = tf.function(cube)`
+
+tf_cube(2) # <tf.Tensor: shape=(), dtype=int32, numpy=8>
+tf_cube(tf.constant(2.0)) # <tf.Tensor: shape=(), dtype=float32, numpy=8.0>
+```
