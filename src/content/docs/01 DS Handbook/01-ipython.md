@@ -4,6 +4,23 @@ title: IPython
 
 ![ipython Image](./01-ipython.drawio.svg)
 
+- `pip install jupyterlab`:
+  - JupyterLab is the user interface (the IDE)
+  - Provides a workspace to write, view, and organize notebooks, files, and terminals
+  - Language-agnostic (supports Python, R, Julia, etc.)
+- `pip install ipykernel`: ipykernel is the engine that runs Python code within JupyterLab interface
+
+## Jupiter in VS Code - No pyproject.toml or uv.lock
+
+- Run below commands in terminal to set up the environment:
+  - `uv venv --seed`
+  - `source .venv/bin/activate`
+  - `which python`
+  - `uv pip install ipykernel`
+- open notebook and set the .venv/bin/python as the kernel
+- use `uv pip install <package_name>` directly in the notebook to install any additional packages in the virtual environment
+- (optional) once done - delete the .venv folder to clean up the environment
+
 ## Shortcuts
 
 Notebook maintains list of input (code which you enter in the cell) and output (result of execution of the cell) in `In` and `Out` object, respectively.
