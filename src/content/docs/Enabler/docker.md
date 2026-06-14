@@ -3,7 +3,13 @@ title: Docker
 ---
 
 - Docker helps you create a **reproducible** environment. you can run your application in **isolation** inside of that environment.
-- Virtual MAchine Vs Docker
+- Virtual Machine Vs Docker
+- Main Objects:
+  1. Image: Read-only templates that contain instructions (code, runtime, environment variables) needed to create a Docker container. You can think of them as the blueprint
+  2. Container: The running instance of an Image
+  3. Volume: The persistent storage mechanism for Docker data, ensuring data isn't lost when a container is destroyed
+  4. Network
+  5. Dockerfile
 
 ## Image & Container
 
