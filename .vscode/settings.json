@@ -16,6 +16,7 @@
     "dtype",
     "eigen",
     "Glorot",
+    "healthcheck",
     "hyperparameters",
     "Isomap",
     "isort",
