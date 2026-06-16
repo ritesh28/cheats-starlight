@@ -2,8 +2,10 @@
 title: Docker
 ---
 
+![overview](./docker.drawio.svg)
+
 - Docker helps you create a **reproducible** environment. you can run your application in **isolation** inside of that environment
-- Virtual Machine Vs Docker
+- Virtual Machine Vs Docker: REFER INFOGRAPHIC
 - To dockerize, we need to:
   1. Define a Dockerfile: Base OS image, libraries to install, env variables , ports that need opening and lastly how to start up our service
   2. Build an image or pull down an existing image from Docker Hub
