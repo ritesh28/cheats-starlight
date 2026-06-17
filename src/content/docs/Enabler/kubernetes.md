@@ -13,21 +13,90 @@ title: Kubernetes
 - kubectl: a command-line tool used to control and communicate with a Kubernetes cluster
 - k8s objects:
   1. Cluster: A set of machines (nodes) managed together as a unit. Consists of master (control plane) nodes (plural; others act as backup) and worker nodes
-     - Master decides what will run on the nodes
-  2. Node: A physical or virtual machine that is part of the cluster. Each node runs the Kubelet agent and container runtime
-  3. Pod
-  4. Deployment
-  5. Job
+  2. Node: A physical or virtual machine that is part of the cluster. Types: Master Node (control plane) & Worker Node
+     - Worker Node contains kubelet, kube-proxy, container runtime and pods
+  3. Pod: A smallest deployable unit which runs on a Node. Contains containerized apps and shared resources for those containers
+- API objects:
+  1. Service: Its an abstraction which defines a logical set of Pods and a policy by which to access them
+  2. ReplicaSet: Its an artifact/object that can drive the cluster back to desired state via the creation of new Pods to keep your application running
+  3. Deployment
+  4. Job
 - Behind-the-Scenes Workflow for `kubectl create deployment`:
   1. Scheduling: The Kubernetes Scheduler searches for a suitable node. Since Minikube only has one node, it chooses that one
   2. Deployment Tracking: The Deployment controller notes that your application must always have 1 instance running
   3. Execution: The kubelet on that chosen node downloads your container image and spins up the container using container runtime
   4. Rescheduling Protection: Because it is managed by a Deployment, if that node crashes or fails, k8s instantly recreate that instance on a new node the moment one becomes available
 
+## Node
+
+- Can have multiple master nodes. But at a given time, only one is active and others as used as backup (if the active master node goes down)
+- Relationship: 1 active master node and multiple worker nodes
+- Master Node **automatically** handles scheduling the Pods across the Nodes in the cluster
+- Master Node modules:
+  1. API server: Every request—whether from you (`kubectl`), a configuration file, or another system—comes through here first
+  2. Scheduler: When you say “I want to deploy my application,” someone needs to decide which worker node it should run on. That’s the Scheduler’s job
+  3. Controller Manager: It constantly watches the cluster and fixes problems. If a Pod crashes, it restarts it. If a Deployment says 3 replicas, it scaleup/down to match total pods
+  4. Etcd (Linux `/etc` directory): Its a a database that stores all cluster information — configurations, state, secrets, everything
+- Worker Node modules:
+  1. Kubelet: It’s the bridge between the Control Plane and the actual containers on that node
+     - Receives Pod specifications from the API Server
+     - Talks to the Container Runtime to start containers
+     - Monitors container health and reports back to the Control Plane if something is wrong
+     - Restarts containers if they crash
+  2. Kube Proxy: It manages network rules for **all pods across all nodes**. It ensures that requests reach the right Pod and distributes load across multiple Pods.
+     - kube-proxy reads cluster-wide network information (every pod IP across all nodes) to build its local routing tables
+     - Unlike kube-proxy, kubelet only looks inward, managing the lifecycle of containers running locally on its own hardware
+  3. Container Runtime (like Docker): Its the software that actually runs your containers. It pulls images and run them
+- Why kube-proxy on worker node and not on master node:
+  - Network traffic interception must happen exactly where the application workloads are running
+  - Bottleneck: every network packet traveling b/t apps would have to travel out of its worker node, jump to master node, and then jump back to destination worker node
+  - Availability: because kube-proxy lives on the worker nodes, pods can still talk to each other through Services even if the master node completely goes offline
+
 ## Pod
 
 - **Smallest deployable unit** in Kubernetes (compared to containers in Docker)
-- Usually contains a single container, but can contain multiple tightly-coupled containers
+- A Pod is an abstraction that represents a group of one or more containers and some shared resources for those containers. Those resources include:
+  - Shared storage, as Volumes
+  - Networking, as a unique cluster IP address
+  - Information about how to run each container, such as the container image version or specific ports to use
+- Each Pod in a Kubernetes cluster has a unique IP address, even Pods on the same Node
+- Multi-container pod:
+  - init containers: special containers that run sequentially before the main container. Role: prepare environment, set up configurations, or perform database migrations
+  - multi-container (sidecar pattern): sidecars provide logging, monitoring, or proxy functionality alongside the main application container
+- Pods runs in a private isolated network:
+  - visible from other Pods and services
+  - By default, it cannot be accessed from outside the network. This can be changed via multiple ways
+  - One way to access from outside is to use a proxy - `kubectl proxy` - which will expose `kubectl` as an API
+    - The API Server inside of Kubernetes have created an endpoint for each pod by its pod name
+    - `curl http://localhost:8001/api/v1/namespaces/default/pods/$POD_NAME`
+    - `curl 127.0.0.1:8001` list all valid paths
+- 5-phase Pod life cycle:
+  1. Pending: It has been accepted by master node but is waiting for resources to become available. K8s decides on which node it should run and pulls the required container images
+     - It pulls the images just to be efficient
+  2. Running: All containers in the Pod have been started, and the application is executing its workload
+  3. Succeeded: When all its containers have completed successfully. This is common for batch jobs or one-time tasks where completion is the goal
+  4. Failed: At least one container terminates with an error and won’t be restarted
+  5. Unknown: It indicates that the state of the Pod cannot be determined, often due to communication issues with the node
+
+## Service
+
+- A Service in Kubernetes is an abstraction which defines a logical set of Pods and a policy by which to access them
+- Service & Label:
+  - The set of Pods targeted by a Service is determined by a `LabelSelector`
+  - By applying labels, e.x. frontend, db - high-level domain language - to Pods, we are able to refer to Pods by their logical name rather than their specifics, i.e IP number
+- Service & Traffic:
+  - Services allow your applications to receive traffic from inside (default) and outside the cluster
+  - Services can be exposed in different ways by specifying a `type` in `ServiceSpec` (service specification):
+    - `ClusterIP` (default): Exposes the Service on an internal IP in the cluster. This type makes the Service only reachable from within the cluster
+    - `NodePort`: Exposes the Service on the same port of each selected Node in the cluster using NAT. Makes a Service accessible from outside the cluster using :. Superset of ClusterIP.
+
+LoadBalancer - Creates an external load balancer in the current cloud (if supported) and assigns a fixed, external IP to the Service. Superset of NodePort.
+ExternalName - Exposes the Service using an arbitrary name (specified by externalName in the spec) by returning a CNAME record with the name. No proxy is used. This type requires v1.7 or higher of kube-dns.
+
+## ReplicaSet
+
+- Its an artifact/object that can drive the cluster back to **desired state** via the creation of new Pods to keep your application running
+- Desired State: You need to specify how many containers you want of each kind, at all times - like 4 database containers or 3 services
 
 ## CLI
 
@@ -37,7 +106,10 @@ title: Kubernetes
 |        | `kubectl run kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080`               |               |
 |        | `kubectl create deployment kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080` |               |
 | Pod    | `kubectl get pods`                                                                                                | get all pods  |
+|        | `kubectl logs [pod-name]`                                                                                         |               |
+|        | `kubectl exec -it [pod-name] -- bash` ('--' not present in docker cli)                                            |               |
 |        | `kubectl get deployments`                                                                                         |               |
+|        | `kubectl proxy`                                                                                                   |               |
 
 ## TODO
 
