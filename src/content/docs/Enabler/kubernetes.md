@@ -21,11 +21,6 @@ title: Kubernetes
   2. ReplicaSet: Its an artifact/object that can drive the cluster back to desired state via the creation of new Pods to keep your application running
   3. Deployment
   4. Job
-- Behind-the-Scenes Workflow for `kubectl create deployment`:
-  1. Scheduling: The Kubernetes Scheduler searches for a suitable node. Since Minikube only has one node, it chooses that one
-  2. Deployment Tracking: The Deployment controller notes that your application must always have 1 instance running
-  3. Execution: The kubelet on that chosen node downloads your container image and spins up the container using container runtime
-  4. Rescheduling Protection: Because it is managed by a Deployment, if that node crashes or fails, k8s instantly recreate that instance on a new node the moment one becomes available
 
 ## Node
 
@@ -81,71 +76,77 @@ title: Kubernetes
 ## Service
 
 - A Service in Kubernetes is an abstraction which defines a logical set of Pods and a policy by which to access them
-- Service & Label:
-  - The set of Pods targeted by a Service is determined by a `LabelSelector`
-  - By applying labels, e.x. frontend, db - high-level domain language - to Pods, we are able to refer to Pods by their logical name rather than their specifics, i.e IP number
-- Service & Traffic:
-  - Services allow your applications to receive traffic from inside (default) and outside the cluster
-  - Services can be exposed in different ways by specifying a `type` in `ServiceSpec` (service specification):
-    - `ClusterIP` (default): Exposes the Service on an internal IP in the cluster. This type makes the Service only reachable from within the cluster
-    - `NodePort`: Exposes the Service on the same port of each selected Node in the cluster using NAT. Makes a Service accessible from outside the cluster using :. Superset of ClusterIP.
 
-LoadBalancer - Creates an external load balancer in the current cloud (if supported) and assigns a fixed, external IP to the Service. Superset of NodePort.
-ExternalName - Exposes the Service using an arbitrary name (specified by externalName in the spec) by returning a CNAME record with the name. No proxy is used. This type requires v1.7 or higher of kube-dns.
+### Service & Label:
+
+- The set of Pods targeted by a Service is determined by a `LabelSelector`
+- By applying labels, e.x. frontend, db - high-level domain language - to Pods, we are able to refer to Pods by their logical name rather than their specifics, i.e IP number
+- Labels are key/value pairs attached to objects at creation time or later on. They can be modified at any time
+
+### Service & Traffic:
+
+- Services allow your applications to receive traffic from inside (default) and outside the cluster
+- Services can be exposed in different ways by specifying a `type` in `ServiceSpec` (service specification):
+  1. `ClusterIP` (Default / Internal Only): This type gives your Service a **permanent IP** address that is only valid inside the cluster
+     - Base use case: Databases, cache layers, or backend microservices that should never be exposed to the public internet
+  2. `NodePort` (External Gateway): This type opens a specific, identical **port** on every single server node in your cluster
+     - Kubernetes forward any traffic hitting `<Any-Node-IP>:<NodePort>` straight to your underlying Pods
+     - Superset of ClusterIP: Kubernetes automatically creates a ClusterIP behind the scenes
+     - Best use case: Good for testing, development, or environments where you do not have a cloud provider to automatically give you a load balancer
+  3. `LoadBalancer` (The Cloud Standard): This type connects your Kubernetes cluster directly to your cloud provider's infrastructure (like AWS, Google Cloud, or Azure)
+     - Kubernetes tells your cloud provider to spin up a physical, external load balancer appliance. The cloud provider assigns a **public IP address** to it
+     - Anyone on the internet can hit this public IP, and the cloud infrastructure will route the traffic to those NodePorts
+     - Superset of NodePort: Kubernetes automatically creates a NodePort and a ClusterIP behind the scenes
+  4. `ExternalName` (Internal Alias/Shortcut): Its different from the other 3. It does not route traffic to Pods, and it does not use a proxy (`kube-proxy`)
+     - It acts as a simple DNS shortcut (a CNAME record). It maps an internal Kubernetes DNS name to an external domain name
+     - Example:
+       - If your app inside Kubernetes needs to talk to an external database hosted at `://amazon.com`, you can create an ExternalName service called `my-database`
+       - When your code looks up `my-database`, Kubernetes instantly tells it to go to `://amazon.com` instead
+     - Best use case: linking your internal containers to external, third-party APIs and legacy databases
+- Create Service: `kubectl expose deployment/kubernetes-first-app --type="NodePort" --port 8080`:
+  - Here we are just targeting one of the deployment `kubernetes-first-app` and referring to it with `<type>/<name>`
+  - Expose it as service of type NodePort and finally, we choose to expose it at port 8080
+  - On running `kubectl get services/kubernetes-first-app`, I got port as `8080:31468/TCP`: (opposite to Docker port mapping)
+    - 31468: NodePort (External Entry Point). To access from outside, use `curl http://<YOUR-NODE-IP>:31468`
+    - 8080: Cluster Port (Internal Entry Point). To access from within th cluster, use `curl <SERVICE-CLUSTER-IP>:8080`
 
 ## ReplicaSet
 
 - Its an artifact/object that can drive the cluster back to **desired state** via the creation of new Pods to keep your application running
 - Desired State: You need to specify how many containers you want of each kind, at all times - like 4 database containers or 3 services
 
+## Deployment
+
+- Behind-the-Scenes Workflow for `kubectl create deployment`:
+  1. Scheduling: The Kubernetes Scheduler searches for a suitable node. Since Minikube only has one node, it chooses that one
+  2. Deployment Tracking: The Deployment controller notes that your application must always have 1 instance running
+  3. Execution: The kubelet on that chosen node downloads your container image and spins up the container using container runtime
+  4. Rescheduling Protection: Because it is managed by a Deployment, if that node crashes or fails, k8s instantly recreate that instance on a new node the moment one becomes available
+
 ## CLI
 
-| Object | Command                                                                                                           | Usage         |
-| ------ | ----------------------------------------------------------------------------------------------------------------- | ------------- |
-| Node   | `kubectl get nodes`                                                                                               | get all nodes |
-|        | `kubectl run kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080`               |               |
-|        | `kubectl create deployment kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080` |               |
-| Pod    | `kubectl get pods`                                                                                                | get all pods  |
-|        | `kubectl logs [pod-name]`                                                                                         |               |
-|        | `kubectl exec -it [pod-name] -- bash` ('--' not present in docker cli)                                            |               |
-|        | `kubectl get deployments`                                                                                         |               |
-|        | `kubectl proxy`                                                                                                   |               |
+| Object     | Command                                                                                                           | Usage                         |
+| ---------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| Node       | `kubectl get nodes`                                                                                               | get all nodes                 |
+|            | `kubectl run kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080`               |                               |
+|            | `kubectl create deployment kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080` |                               |
+| Pod        | `kubectl get pods [-l <key>=<value>]`                                                                             | get all pods. `-l`: label     |
+| Pod        | `kubectl logs <pod-name>`                                                                                         |                               |
+| Pod        | `kubectl exec -it <pod-name> -- bash` ('--' not present in docker cli)                                            |                               |
+| Label+Pod  | `kubectl label pod <pod-name> app=v1`                                                                             | add/apply new label           |
+| Deployment | `kubectl get deployments`                                                                                         |                               |
+| Service    | `kubectl expose deployment/kubernetes-first-app --type="NodePort" --port 8080`                                    | create service                |
+| Service    | `kubectl get services [-l <key>=<value>]`                                                                         | get all services. `-l`: label |
+| Service    | `kubectl delete service [-l <key>=<value>]`                                                                       | delete based on label         |
+|            | `kubectl proxy`                                                                                                   |                               |
+| Misc       | `kubectl describe deployment/kubernetes-first-app`                                                                |                               |
 
 ## TODO
 
 - To wait for a container to finish or become ready before starting another one in Kubernetes, you should use Init Containers ======ELABORATE=========
 - Scheduled workload
-- Pod
-  - All containers in a pod share:
-    - Network namespace (same IP address, port space)
-    - Storage (volumes)
-    - Specifications on how to run the containers
-  - Pods are ephemeral - they are created and destroyed dynamically
-
-## Architecture Overview
-
-- **Master/Control Plane**: Manages the cluster state and makes decisions
-  - **API Server**: Entry point for all cluster operations
-  - **etcd**: Key-value store that stores cluster state
-  - **Scheduler**: Assigns pods to nodes based on resource requirements
-  - **Controller Manager**: Runs controller processes (manages desired state)
-- **Worker Nodes**: Run containerized applications
-  - **Kubelet**: Agent on each node that ensures containers run in pods
-  - **Container Runtime**: (Docker, containerd, etc.) runs the containers
-  - **kube-proxy**: Manages network routing for services
 
 ## Core Concepts
-
-### Label
-
-- Key-value pairs attached to Kubernetes objects
-- Used for organizing and selecting subsets of objects
-- Example: `app: nginx`, `version: v1`, `environment: production`
-
-### Selector
-
-- Query mechanism to identify a set of objects by their labels
-- Example: `app=nginx` selects all objects with label `app: nginx`
 
 ## Kubernetes Objects
 
@@ -208,15 +209,6 @@ spec:
 ```
 
 ### Service
-
-- Exposes a set of pods as a network service
-- Provides a stable DNS name and load balancing across pod replicas
-- Acts like Docker's network bridges but at cluster level
-- Types:
-  1. **ClusterIP** (default): Exposes service only within the cluster
-  2. **NodePort**: Exposes service on a specific port on each node (accessible from outside)
-  3. **LoadBalancer**: Exposes service using cloud provider's load balancer (external IP)
-  4. **ExternalName**: Maps service to an external DNS name
 
 ```yaml title="Service example"
 apiVersion: v1
