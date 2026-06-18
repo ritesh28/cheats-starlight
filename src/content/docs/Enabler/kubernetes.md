@@ -19,7 +19,7 @@ title: Kubernetes
 - API objects:
   1. Service: Its an abstraction which defines a logical set of Pods and a policy by which to access them
   2. ReplicaSet: Its an artifact/object that can drive the cluster back to desired state via the creation of new Pods to keep your application running
-  3. Deployment
+  3. Deployment: It instructs Kubernetes how to create and update instances of your application
   4. Job
 
 ## Node
@@ -77,15 +77,17 @@ title: Kubernetes
 
 - A Service in Kubernetes is an abstraction which defines a logical set of Pods and a policy by which to access them
 
-### Service & Label:
+### Service & Label
 
 - The set of Pods targeted by a Service is determined by a `LabelSelector`
 - By applying labels, e.x. frontend, db - high-level domain language - to Pods, we are able to refer to Pods by their logical name rather than their specifics, i.e IP number
 - Labels are key/value pairs attached to objects at creation time or later on. They can be modified at any time
 
-### Service & Traffic:
+### Service & Traffic
 
 - Services allow your applications to receive traffic from inside (default) and outside the cluster
+- Services have an integrated load-balancer that will distribute network traffic to all Pods of an exposed Deployment
+- Services will monitor continuously the running Pods using endpoints, to ensure the traffic is sent only to available Pods
 - Services can be exposed in different ways by specifying a `type` in `ServiceSpec` (service specification):
   1. `ClusterIP` (Default / Internal Only): This type gives your Service a **permanent IP** address that is only valid inside the cluster
      - Base use case: Databases, cache layers, or backend microservices that should never be exposed to the public internet
@@ -114,6 +116,7 @@ title: Kubernetes
 
 - Its an artifact/object that can drive the cluster back to **desired state** via the creation of new Pods to keep your application running
 - Desired State: You need to specify how many containers you want of each kind, at all times - like 4 database containers or 3 services
+- ReplicaSet name format: `[DEPLOYMENT-NAME]-[RANDOM-STRING]`
 
 ## Deployment
 
@@ -122,24 +125,55 @@ title: Kubernetes
   2. Deployment Tracking: The Deployment controller notes that your application must always have 1 instance running
   3. Execution: The kubelet on that chosen node downloads your container image and spins up the container using container runtime
   4. Rescheduling Protection: Because it is managed by a Deployment, if that node crashes or fails, k8s instantly recreate that instance on a new node the moment one becomes available
+- `kubectl get deployments` returns following important columns:
+  - `READY`: format: `Current-Healthy-Pods / Desired-Total-Pods`
+  - `UP-TO-DATE`: tells how many Pods have the **most recent version** of the configuration blueprint/specs
+    - Why it matters: When app's code is changed, K8s doesn't kill all old apps at once. It does a "rolling update" — gradually spinning up new pods while terminating old ones
+  - `AVAILABLE`: tells how many Pods are fully operational and have been accessible to users for a safe amount of time (configured via a setting `minReadySeconds`)
+    - vs `READY`: A Pod might be "Ready" the exact millisecond its container starts up, but it might take a few seconds to load data or initialize
+    - "Available" confirms the Pod is stable, has passed its health checks, and is reliably serving users
+
+### Deployment & Scale
+
+- Scaling is accomplished by changing the number of replicas in a Deployment
+- When scaled, kubernetes is ready to **load balance** any incoming requests - given that a **service is already attached** to the said deployment
+- Self-healing: Its Kubernetes way of ensuring that the desired state is maintained - `kubectl scale ... --replicas=4`
+- Auto-scaling: We don't set the number of replicas but rather rely on K8s to create the number of replicas it thinks it needs by specifying CPU utilization or other metrics
+- General Horizontal Scaling Vs Vertical Scaling:
+  - Horizontal Scaling (Scaling Out): means adding more machines to your infrastructure to distribute the workload
+  - Vertical Scaling (Scaling Up): means adding more power (such as CPU, RAM, or storage) to an existing single machine
+- Horizontal auto-scaling (HPA - horizontal pod auto-scaler):
+  - It consists of two parts a `resource` and a `controller`
+  - `controller` checks utilization, or whatever metric you decided, to ensure that the number of replicas matches your specification
+  - The default is checking every 15 seconds but you can change that by setting `--horizontal-pod-autoscaler-sync-period`
+  - Equation for deciding number of replicas: `desiredReplicas = ceil[currentReplicas * ( currentMetricValue / desiredMetricValue )]`
+  - 2 things we need to specify when we do autoscaling:
+    1. min/max: set a minimum and maximum in terms of how many Pods we want
+    2. metric: for e.x. set a certain CPU utilization percentage. If CPU value greater than the threshold, k8s scale out. IF CPU value is lower, k8s matches min value
+  - `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`: If CPU load is >= 50% create a new Pod. Maximum 10 Pods. If load is low go back gradually to 1 Pod
 
 ## CLI
 
-| Object     | Command                                                                                                           | Usage                         |
-| ---------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| Node       | `kubectl get nodes`                                                                                               | get all nodes                 |
-|            | `kubectl run kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080`               |                               |
-|            | `kubectl create deployment kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080` |                               |
-| Pod        | `kubectl get pods [-l <key>=<value>]`                                                                             | get all pods. `-l`: label     |
-| Pod        | `kubectl logs <pod-name>`                                                                                         |                               |
-| Pod        | `kubectl exec -it <pod-name> -- bash` ('--' not present in docker cli)                                            |                               |
-| Label+Pod  | `kubectl label pod <pod-name> app=v1`                                                                             | add/apply new label           |
-| Deployment | `kubectl get deployments`                                                                                         |                               |
-| Service    | `kubectl expose deployment/kubernetes-first-app --type="NodePort" --port 8080`                                    | create service                |
-| Service    | `kubectl get services [-l <key>=<value>]`                                                                         | get all services. `-l`: label |
-| Service    | `kubectl delete service [-l <key>=<value>]`                                                                       | delete based on label         |
-|            | `kubectl proxy`                                                                                                   |                               |
-| Misc       | `kubectl describe deployment/kubernetes-first-app`                                                                |                               |
+| Object     | Command                                                                                                           | Usage                                 |
+| ---------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Node       | `kubectl get nodes`                                                                                               | get all nodes                         |
+|            | `kubectl run kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080`               |                                       |
+|            | `kubectl create deployment kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080` |                                       |
+| Pod        | `kubectl get pods [-l <key>=<value>] [-o wide]`                                                                   | get all pods. `-l`:label. `-o`:output |
+| Pod        | `kubectl logs <pod-name>`                                                                                         |                                       |
+| Pod        | `kubectl exec -it <pod-name> -- bash` ('--' not present in docker cli)                                            |                                       |
+| Pod        | `kubectl delete pods <pod-name>`                                                                                  |                                       |
+| Label+Pod  | `kubectl label pod <pod-name> app=v1`                                                                             | add/apply new label                   |
+| Deployment | `kubectl get deployments`                                                                                         |                                       |
+| Scale      | `kubectl scale deployment/kubernetes-first-app --replicas=4`                                                      |                                       |
+| Autoscale  | `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`                                               |                                       |
+| ReplicaSet | `kubectl get rs`                                                                                                  |                                       |
+| Service    | `kubectl expose deployment/kubernetes-first-app --type="NodePort" --port 8080`                                    | create service                        |
+| Service    | `kubectl get services [-l <key>=<value>]`                                                                         | get all services. `-l`:label          |
+| Service    | `kubectl delete service [-l <key>=<value>]`                                                                       | delete based on label                 |
+|            | `kubectl proxy`                                                                                                   |                                       |
+|            | `kubectl get hpa`                                                                                                 |                                       |
+| Misc       | `kubectl describe deployment/kubernetes-first-app`                                                                |                                       |
 
 ## TODO
 
