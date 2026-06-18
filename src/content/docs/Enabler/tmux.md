@@ -51,7 +51,7 @@ tmux ls
 | `0-9`          | Jump directly to a window by its number              |
 | `&`            | Close (kill) the current window                      |
 
-## Prefix + Pane Layer
+## Prefix + Pane(Split) Layer
 
 | `Ctrl+b` + cmd | usage                                                    |
 | -------------- | -------------------------------------------------------- |
@@ -61,3 +61,9 @@ tmux ls
 | `z`            | Zoom (maximize) the current pane; press again to restore |
 | `x`            | Close the current pane                                   |
 | `Space`        | Cycle through preset pane layouts                        |
+
+## Prefix + Misc
+
+| `Ctrl+b` + cmd | usage                                                                         |
+| -------------- | ----------------------------------------------------------------------------- |
+| `[`            | Copy Mode - allow scrolling & selecting text. Press `q` to exit the copy mode |
