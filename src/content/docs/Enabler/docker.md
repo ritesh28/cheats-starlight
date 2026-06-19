@@ -22,6 +22,11 @@ title: Docker
 - Image name format: `[<registry>/][<project>/]<image>[:<tag>|@<digest>]`. e.g. docker.io/my-proj/redis:5@sha256:0ed5d5928
 - Each container gets its own CPU, memory and network resources and does not depend on a specific operating system or kernel.
 
+| Aspect     | Images                            | Containers                         |
+| ---------- | --------------------------------- | ---------------------------------- |
+| Definition | Blueprint for creating containers | Running instance of a Docker image |
+| State      | Static (read-only)                | Dynamic (read-write)               |
+
 ## Volume
 
 - Volumes or data volumes is a way for us to create a place in the host machine where we can write files so they are **persisted**
