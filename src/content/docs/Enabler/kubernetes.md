@@ -22,11 +22,12 @@ title: Kubernetes
   1. Service: Its an abstraction which defines a logical set of Pods and a policy by which to access them
   2. ReplicaSet: Its an artifact/object that ensures that the right number of identical Pods are running
   3. Deployment: It instructs Kubernetes how to create and update instances of your application
-  4. ConfigMap: Its an object that stores configuration settings (or env variables) separately from the application
-  5. Secret: Its an object that stores sensitive data like password, token, or API key
-  6. Persistent Volume (PV): Its a storage object in the cluster that you can use to store data and it doesn’t get deleted when a Pod is removed or restarted
+  4. Job: It is designed for short-lived, batch processing tasks
+  5. ConfigMap: Its an object that stores configuration settings (or env variables) separately from the application
+  6. Secret: Its an object that stores sensitive data like password, token, or API key
+  7. Persistent Volume (PV): Its a storage object in the cluster that you can use to store data and it doesn’t get deleted when a Pod is removed or restarted
 - Manifest/Declarative/Spec YAML file: must contain four required root-level fields to describe the desired state of a cluster resource:
-  1. apiVersion:
+  1. apiVersion: API version (v1, apps/v1, etc.)
   2. kind: The type of object you want to spin up (e.g., Pod, Deployment, Service)
   3. metadata: Data that uniquely identifies the object, such as its name, namespace, and labels
   4. spec: The technical specification describing your desired end-state for the object
@@ -82,7 +83,7 @@ title: Kubernetes
   4. Failed: At least one container terminates with an error and won’t be restarted
   5. Unknown: It indicates that the state of the Pod cannot be determined, often due to communication issues with the node
 
-```yaml title="Pod example"
+```yaml title="Web Server Pod"
 apiVersion: v1
 kind: Pod
 metadata:
@@ -181,36 +182,77 @@ spec:
     2. metric: for e.x. set a certain CPU utilization percentage. If CPU value greater than the threshold, k8s scale out. IF CPU value is lower, k8s matches min value
   - `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`: If CPU load is >= 50% create a new Pod. Maximum 10 Pods. If load is low go back gradually to 1 Pod
 
+## Job
+
+- Job, unlike Deployment, is designed for short-lived, batch processing tasks. The primary purpose is to execute a task and exit with code 0
+- Job will create a pod, monitor the task, and recreate another one if that pod fails for some reason. Upon completion of the task, it will terminate the pod
+- When a job is suspended, all of its active Pods are deleted until the job is restarted
+- A CronJob is the same as a regular Job, only it creates jobs on a schedule
+- Example:
+  - Database Migrations: Upgrading database schemas before launching a new application version
+  - Data Seeding: Populating a database or cache with initial dummy data
+  - Batch Processing: Running nightly data backups, reports, or file conversions
+  - Automated Testing: Running a test suite inside a staging environment
+
+```yaml title='PI Calculator'
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pi-calculator
+spec:
+  # Scaling and Control Configurations
+  completions: 10 # Kubernetes will not mark this Job as complete until it registers 10 successful Pod runs
+  parallelism: 2 # Process exactly 2 pods at the same time
+  backoffLimit: 4 # Max retry attempts before failing the entire job
+  activeDeadlineSeconds: 60 # Kill the entire job if it takes longer than 1 minute
+
+  template:
+    spec:
+      containers:
+        - name: pi
+          image: perl:5.34
+          command: ["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+      restartPolicy: Never # Required for Jobs. Alternatives: 'OnFailure'
+```
+
 ## CLI
 
-| Object     | Command                                                                                                           | Usage                                               |
-| ---------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| Node       | `kubectl get nodes`                                                                                               | get all nodes                                       |
-|            | `kubectl run kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080`               |                                                     |
-|            | `kubectl create deployment kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080` |                                                     |
-| Pod        | `kubectl get pods [-l <key>=<value>] [-o wide]`                                                                   | get all pods. `-l`:label. `-o`:output               |
-| Pod        | `kubectl logs <pod-name>`                                                                                         |                                                     |
-| Pod        | `kubectl exec -it <pod-name> -- bash` ('--' not present in docker cli)                                            |                                                     |
-| Pod        | `kubectl delete pods <pod-name>`                                                                                  |                                                     |
-| Label+Pod  | `kubectl label pod <pod-name> app=v1`                                                                             | add/apply new label                                 |
-| Deployment | `kubectl get deployments`                                                                                         |                                                     |
-| Scale      | `kubectl scale deployment/kubernetes-first-app --replicas=4`                                                      |                                                     |
-| Autoscale  | `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`                                               |                                                     |
-| ReplicaSet | `kubectl get rs`                                                                                                  |                                                     |
-| Service    | `kubectl expose deployment/kubernetes-first-app --type="NodePort" --port 8080`                                    | create service                                      |
-| Service    | `kubectl get services [-l <key>=<value>]`                                                                         | get all services. `-l`:label                        |
-| Service    | `kubectl delete service [-l <key>=<value>]`                                                                       | delete based on label                               |
-|            | `kubectl proxy`                                                                                                   |                                                     |
-|            | `kubectl get hpa`                                                                                                 |                                                     |
-| Manifest   | `kubectl run nginx --image=nginx --dry-run=client -o yaml`                                                        | Generate boilerplate YAML                           |
-| Manifest   | `kubectl get deployment my-app -o yaml > deployment.yaml`                                                         | Export YAML from a running resource                 |
-| Manifest   | `kubectl apply -f manifest.yaml [--dry-run=server]`                                                               | Apply a manifest file. `--dry-run`: validate syntax |
-| Misc       | `kubectl describe deployment/kubernetes-first-app`                                                                |                                                     |
+- Image Naming Format: `[<registry>/][<project>/]<image>[:<tag>|@<digest>]` e.g. gcr.io/google-samples/kubernetes-bootcamp:v1
+- K8s Specific Object Command: `kubectl <cmd> <object-type>/<object-name> ...`
+
+| Object     | Command                                                                         | Usage                                                         |
+| ---------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Node       | `kubectl get nodes`                                                             | get all nodes                                                 |
+|            | `kubectl run kubernetes-first-app --image=<img-name> --port=8080`               |                                                               |
+|            | `kubectl create deployment kubernetes-first-app --image=<img-name> --port=8080` |                                                               |
+| Pod        | `kubectl get pods [-l <key>=<value>] [-o wide]`                                 | get all pods. `-l`:label. `-o`:output                         |
+| Pod        | `kubectl logs <pod-name> [-n prod] [-c server] [-f] [--tail=50] [--since=1h]`   | get logs. `-n`: namespace. `-c`: container. `-f`: follow/live |
+| Pod        | `kubectl exec -it <pod-name> -- bash` ('--' not present in docker cli)          |                                                               |
+| Pod        | `kubectl delete pods <pod-name>`                                                |                                                               |
+| Label+Pod  | `kubectl label pod <pod-name> app=v1`                                           | add/apply new label                                           |
+| Deployment | `kubectl get deployments`                                                       |                                                               |
+| Scale      | `kubectl scale deployment/kubernetes-first-app --replicas=4`                    |                                                               |
+| Autoscale  | `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`             |                                                               |
+| ReplicaSet | `kubectl get rs`                                                                |                                                               |
+| Service    | `kubectl expose deployment/kubernetes-first-app --type="NodePort" --port 8080`  | create service                                                |
+| Service    | `kubectl get services [-l <key>=<value>]`                                       | get all services. `-l`:label                                  |
+| Service    | `kubectl delete service [-l <key>=<value>]`                                     | delete based on label                                         |
+|            | `kubectl proxy`                                                                 |                                                               |
+|            | `kubectl get hpa`                                                               |                                                               |
+|            | `kubectl get jobs`                                                              |                                                               |
+|            | `kubectl delete job/ping`                                                       |                                                               |
+| Manifest   | `kubectl run nginx --image=nginx --dry-run=client -o yaml`                      | generate boilerplate YAML                                     |
+| Manifest   | `kubectl get deployment my-app -o yaml > deployment.yaml`                       | export YAML from a running resource                           |
+| Manifest   | `kubectl apply -f manifest.yaml [--dry-run=server]`                             | apply a manifest file. `--dry-run`: validate syntax           |
+| Misc       | `kubectl describe deployment/kubernetes-first-app`                              |                                                               |
+| Misc       | `kubectl .... --help`                                                           | get help                                                      |
 
 ## TODO
 
 - To wait for a container to finish or become ready before starting another one in Kubernetes, you should use Init Containers ======ELABORATE=========
 - Scheduled workload
+- StatefulSet k8s object
+- DaemonSets k8s object
 
 ## Core Concepts
 
@@ -367,17 +409,6 @@ spec:
 - Used for node-level services (monitoring, logging, network plugins)
 - Example: Running Prometheus node exporter on all nodes
 
-### Job
-
-- Creates one or more pods to run a task to completion
-- Pod runs until successful completion (exit code 0)
-- Used for batch processing, one-off tasks
-
-### CronJob
-
-- Runs jobs on a schedule (like cron jobs in Linux)
-- Example: Running database backups every night
-
 ## Networking
 
 - Each pod gets its own IP address (unlike Docker where containers share host networking)
@@ -415,102 +446,6 @@ spec:
   - `ReadOnlyMany (ROX)`: Volume can be mounted by multiple nodes in read-only mode
   - `ReadWriteMany (RWX)`: Volume can be mounted by multiple nodes in read-write mode
   - `ReadWriteOncePod`: Volume can be mounted by a single pod
-
-## CLI Commands
-
-| Object        | Command                                                                                                               | Purpose                                             |
-| ------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| Cluster       | `kubectl cluster-info`                                                                                                | Get information about cluster                       |
-| Cluster       | `kubectl get nodes`                                                                                                   | List all nodes in cluster                           |
-| Node          | `kubectl describe node <node-name>`                                                                                   | Get detailed info about a specific node             |
-| Namespace     | `kubectl get namespaces` or `kubectl get ns`                                                                          | List all namespaces                                 |
-| Namespace     | `kubectl create namespace <name>`                                                                                     | Create a new namespace                              |
-| Namespace     | `kubectl -n <namespace> get pods`                                                                                     | Get resources in specific namespace (use `-n` flag) |
-| Pod           | `kubectl get pods` or `kubectl get po`                                                                                | List all pods in current namespace                  |
-| Pod           | `kubectl get pods -A`                                                                                                 | List all pods in all namespaces                     |
-| Pod           | `kubectl describe pod <name>`                                                                                         | Get detailed info about a pod                       |
-| Pod           | `kubectl logs <pod-name>`                                                                                             | Get logs from a pod                                 |
-| Pod           | `kubectl logs <pod-name> -f`                                                                                          | Stream pod logs in real-time                        |
-| Pod           | `kubectl exec -it <pod-name> bash`                                                                                    | Execute command inside pod (interactive shell)      |
-| Pod           | `kubectl port-forward <pod-name> 8000:3000`                                                                           | Forward local port to pod's port                    |
-| Pod           | `kubectl delete pod <name>`                                                                                           | Delete a pod                                        |
-| Deployment    | `kubectl get deployments` or `kubectl get deploy`                                                                     | List all deployments                                |
-| Deployment    | `kubectl describe deployment <name>`                                                                                  | Get detailed info about a deployment                |
-| Deployment    | `kubectl apply -f deployment.yaml`                                                                                    | Create/Update deployment from YAML file             |
-| Deployment    | `kubectl set image deployment/<name> <container-name>=<new-image>`                                                    | Update deployment image (rolling update)            |
-| Deployment    | `kubectl rollout status deployment/<name>`                                                                            | Check rollout status                                |
-| Deployment    | `kubectl rollout history deployment/<name>`                                                                           | View rollout history                                |
-| Deployment    | `kubectl rollout undo deployment/<name>`                                                                              | Rollback to previous deployment version             |
-| Deployment    | `kubectl scale deployment/<name> --replicas=5`                                                                        | Scale deployment to N replicas                      |
-| Deployment    | `kubectl delete deployment <name>`                                                                                    | Delete a deployment (also deletes its pods)         |
-| Service       | `kubectl get services` or `kubectl get svc`                                                                           | List all services                                   |
-| Service       | `kubectl describe service <name>`                                                                                     | Get detailed info about a service                   |
-| Service       | `kubectl port-forward svc/<service-name> 8000:80`                                                                     | Forward local port to service's port                |
-| ConfigMap     | `kubectl get configmaps` or `kubectl get cm`                                                                          | List all ConfigMaps                                 |
-| ConfigMap     | `kubectl create configmap <name> --from-literal=KEY=VALUE`                                                            | Create ConfigMap from literal values                |
-| ConfigMap     | `kubectl create configmap <name> --from-file=<file-path>`                                                             | Create ConfigMap from file                          |
-| Secret        | `kubectl get secrets`                                                                                                 | List all Secrets                                    |
-| Secret        | `kubectl create secret generic <name> --from-literal=PASSWORD=pwd`                                                    | Create Secret                                       |
-| Secret        | `kubectl create secret docker-registry <name> --docker-server=docker.io --docker-username=user --docker-password=pwd` | Create Docker registry secret                       |
-| PVC           | `kubectl get persistentvolumeclaims` or `kubectl get pvc`                                                             | List all PVCs                                       |
-| PVC           | `kubectl describe pvc <name>`                                                                                         | Get detailed info about a PVC                       |
-| Storage       | `kubectl get persistentvolumes` or `kubectl get pv`                                                                   | List all PVs                                        |
-| PV            | `kubectl describe pv <name>`                                                                                          | Get detailed info about a PV                        |
-| StatefulSet   | `kubectl get statefulsets` or `kubectl get sts`                                                                       | List all StatefulSets                               |
-| DaemonSet     | `kubectl get daemonsets` or `kubectl get ds`                                                                          | List all DaemonSets                                 |
-| Job           | `kubectl get jobs`                                                                                                    | List all Jobs                                       |
-| Job           | `kubectl describe job <name>`                                                                                         | Get detailed info about a job                       |
-| CronJob       | `kubectl get cronjobs` or `kubectl get cj`                                                                            | List all CronJobs                                   |
-| Event         | `kubectl get events`                                                                                                  | List recent cluster events                          |
-| All Resources | `kubectl get all`                                                                                                     | Get all resources in current namespace              |
-| Resource      | `kubectl apply -f <file.yaml>`                                                                                        | Create/Update resource from YAML file (declarative) |
-| Resource      | `kubectl create -f <file.yaml>`                                                                                       | Create resource from YAML file (imperative)         |
-| Resource      | `kubectl delete -f <file.yaml>`                                                                                       | Delete resources from YAML file                     |
-| Resource      | `kubectl delete <resource-type> <name>`                                                                               | Delete a specific resource                          |
-| Resource      | `kubectl label <resource-type> <name> key=value`                                                                      | Add/Update label on resource                        |
-| Resource      | `kubectl annotate <resource-type> <name> key=value`                                                                   | Add/Update annotation on resource                   |
-| Resource      | `kubectl edit <resource-type> <name>`                                                                                 | Edit resource interactively                         |
-| Context       | `kubectl config get-contexts`                                                                                         | List available contexts (cluster configurations)    |
-| Context       | `kubectl config use-context <context-name>`                                                                           | Switch to a different context/cluster               |
-| Context       | `kubectl config current-context`                                                                                      | Show current context                                |
-| Info          | `kubectl version`                                                                                                     | Get client and server version                       |
-
-## Manifest Structure
-
-Most Kubernetes manifests follow this structure:
-
-```yaml title="Generic Kubernetes manifest"
-apiVersion: v1 # API version (v1, apps/v1, etc.)
-kind: Pod # Type of resource (Pod, Deployment, Service, etc.)
-metadata:
-  name: my-pod # Name of the resource
-  namespace: default # Namespace (optional, defaults to 'default')
-  labels: # Key-value pairs for organization
-    app: myapp
-    version: v1
-  annotations: # Additional metadata (not for selection)
-    description: "My pod"
-spec: # Specification/configuration of the resource
-  containers:
-    - name: app
-      image: myapp:latest
-      ports:
-        - containerPort: 8080
-```
-
-## Comparison with Docker Compose
-
-| Aspect            | Docker Compose             | Kubernetes                       |
-| ----------------- | -------------------------- | -------------------------------- |
-| Scope             | Single host                | Multiple hosts/cluster           |
-| Scale             | Vertical (on one machine)  | Horizontal (across machines)     |
-| Service discovery | hostname (container name)  | DNS (service name)               |
-| Load balancing    | Basic port mapping         | Built-in (Service)               |
-| Orchestration     | Basic (manual restart)     | Advanced (auto-healing, scaling) |
-| Configuration     | docker-compose.yaml        | Multiple YAML manifests          |
-| Storage           | Volumes                    | PersistentVolumes                |
-| Networking        | Single network per compose | Multiple networks, Ingress       |
-| Use case          | Development, small apps    | Production, enterprise           |
 
 ## Best Practices
 
