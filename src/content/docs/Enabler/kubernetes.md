@@ -6,6 +6,7 @@ title: Kubernetes
 
 - Kubernetes (K8s) is a **container orchestration platform** that automates deployment, scaling, distributing loads and management of containerized applications
 - When using k8s, do not use Docker Volume, Docker Network or docker-compose.yaml
+- Kubernetes add-ons are plug-ins that enhance the cluster's functionality
 - Minikube: a tool that lets you run/create a **single-node k8s cluster** locally on your own computer. Basic commands: `minikube start|status|dashboard|stop`
   - In Minikube's single-node setup, that one single machine acts simultaneously as the master node (control plane) and the worker node
   - While it defaults to a single node, you can force Minikube to spin up distinct worker nodes if you want to test how your apps behave across multiple machines
@@ -14,13 +15,21 @@ title: Kubernetes
 - k8s objects:
   1. Cluster: A set of machines (nodes) managed together as a unit. Consists of master (control plane) nodes (plural; others act as backup) and worker nodes
   2. Node: A physical or virtual machine that is part of the cluster. Types: Master Node (control plane) & Worker Node
+     - Master Node contains API Server, Scheduler, Controller Manager, and Etcd
      - Worker Node contains kubelet, kube-proxy, container runtime and pods
   3. Pod: A smallest deployable unit which runs on a Node. Contains containerized apps and shared resources for those containers
-- API objects:
+- API objects/resources:
   1. Service: Its an abstraction which defines a logical set of Pods and a policy by which to access them
-  2. ReplicaSet: Its an artifact/object that can drive the cluster back to desired state via the creation of new Pods to keep your application running
+  2. ReplicaSet: Its an artifact/object that ensures that the right number of identical Pods are running
   3. Deployment: It instructs Kubernetes how to create and update instances of your application
-  4. Job
+  4. ConfigMap: Its an object that stores configuration settings (or env variables) separately from the application
+  5. Secret: Its an object that stores sensitive data like password, token, or API key
+  6. Persistent Volume (PV): Its a storage object in the cluster that you can use to store data and it doesn’t get deleted when a Pod is removed or restarted
+- Manifest/Declarative/Spec YAML file: must contain four required root-level fields to describe the desired state of a cluster resource:
+  1. apiVersion:
+  2. kind: The type of object you want to spin up (e.g., Pod, Deployment, Service)
+  3. metadata: Data that uniquely identifies the object, such as its name, namespace, and labels
+  4. spec: The technical specification describing your desired end-state for the object
 
 ## Node
 
@@ -28,7 +37,7 @@ title: Kubernetes
 - Relationship: 1 active master node and multiple worker nodes
 - Master Node **automatically** handles scheduling the Pods across the Nodes in the cluster
 - Master Node modules:
-  1. API server: Every request—whether from you (`kubectl`), a configuration file, or another system—comes through here first
+  1. API server: Every request—whether from you (`kubectl`), a configuration file, or another system—comes through here **first**
   2. Scheduler: When you say “I want to deploy my application,” someone needs to decide which worker node it should run on. That’s the Scheduler’s job
   3. Controller Manager: It constantly watches the cluster and fixes problems. If a Pod crashes, it restarts it. If a Deployment says 3 replicas, it scaleup/down to match total pods
   4. Etcd (Linux `/etc` directory): Its a a database that stores all cluster information — configurations, state, secrets, everything
@@ -73,9 +82,27 @@ title: Kubernetes
   4. Failed: At least one container terminates with an error and won’t be restarted
   5. Unknown: It indicates that the state of the Pod cannot be determined, often due to communication issues with the node
 
+```yaml title="Pod example"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-server-pod
+  namespace: production
+  labels:
+    app: frontend
+    environment: production
+spec:
+  containers:
+    - name: nginx-container
+      image: nginx:1.25
+      ports:
+        - containerPort: 80
+```
+
 ## Service
 
 - A Service in Kubernetes is an abstraction which defines a logical set of Pods and a policy by which to access them
+- We need service because pod IP address keep changing (every time pod is restarted)
 
 ### Service & Label
 
@@ -120,6 +147,8 @@ title: Kubernetes
 
 ## Deployment
 
+- A Deployment is a Kubernetes object used to manage a set of Pods running your containerized applications
+- It provides declarative updates, meaning you tell Kubernetes what you want, and it figures out how to get there
 - Behind-the-Scenes Workflow for `kubectl create deployment`:
   1. Scheduling: The Kubernetes Scheduler searches for a suitable node. Since Minikube only has one node, it chooses that one
   2. Deployment Tracking: The Deployment controller notes that your application must always have 1 instance running
@@ -154,26 +183,29 @@ title: Kubernetes
 
 ## CLI
 
-| Object     | Command                                                                                                           | Usage                                 |
-| ---------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Node       | `kubectl get nodes`                                                                                               | get all nodes                         |
-|            | `kubectl run kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080`               |                                       |
-|            | `kubectl create deployment kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080` |                                       |
-| Pod        | `kubectl get pods [-l <key>=<value>] [-o wide]`                                                                   | get all pods. `-l`:label. `-o`:output |
-| Pod        | `kubectl logs <pod-name>`                                                                                         |                                       |
-| Pod        | `kubectl exec -it <pod-name> -- bash` ('--' not present in docker cli)                                            |                                       |
-| Pod        | `kubectl delete pods <pod-name>`                                                                                  |                                       |
-| Label+Pod  | `kubectl label pod <pod-name> app=v1`                                                                             | add/apply new label                   |
-| Deployment | `kubectl get deployments`                                                                                         |                                       |
-| Scale      | `kubectl scale deployment/kubernetes-first-app --replicas=4`                                                      |                                       |
-| Autoscale  | `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`                                               |                                       |
-| ReplicaSet | `kubectl get rs`                                                                                                  |                                       |
-| Service    | `kubectl expose deployment/kubernetes-first-app --type="NodePort" --port 8080`                                    | create service                        |
-| Service    | `kubectl get services [-l <key>=<value>]`                                                                         | get all services. `-l`:label          |
-| Service    | `kubectl delete service [-l <key>=<value>]`                                                                       | delete based on label                 |
-|            | `kubectl proxy`                                                                                                   |                                       |
-|            | `kubectl get hpa`                                                                                                 |                                       |
-| Misc       | `kubectl describe deployment/kubernetes-first-app`                                                                |                                       |
+| Object     | Command                                                                                                           | Usage                                               |
+| ---------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Node       | `kubectl get nodes`                                                                                               | get all nodes                                       |
+|            | `kubectl run kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080`               |                                                     |
+|            | `kubectl create deployment kubernetes-first-app --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080` |                                                     |
+| Pod        | `kubectl get pods [-l <key>=<value>] [-o wide]`                                                                   | get all pods. `-l`:label. `-o`:output               |
+| Pod        | `kubectl logs <pod-name>`                                                                                         |                                                     |
+| Pod        | `kubectl exec -it <pod-name> -- bash` ('--' not present in docker cli)                                            |                                                     |
+| Pod        | `kubectl delete pods <pod-name>`                                                                                  |                                                     |
+| Label+Pod  | `kubectl label pod <pod-name> app=v1`                                                                             | add/apply new label                                 |
+| Deployment | `kubectl get deployments`                                                                                         |                                                     |
+| Scale      | `kubectl scale deployment/kubernetes-first-app --replicas=4`                                                      |                                                     |
+| Autoscale  | `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`                                               |                                                     |
+| ReplicaSet | `kubectl get rs`                                                                                                  |                                                     |
+| Service    | `kubectl expose deployment/kubernetes-first-app --type="NodePort" --port 8080`                                    | create service                                      |
+| Service    | `kubectl get services [-l <key>=<value>]`                                                                         | get all services. `-l`:label                        |
+| Service    | `kubectl delete service [-l <key>=<value>]`                                                                       | delete based on label                               |
+|            | `kubectl proxy`                                                                                                   |                                                     |
+|            | `kubectl get hpa`                                                                                                 |                                                     |
+| Manifest   | `kubectl run nginx --image=nginx --dry-run=client -o yaml`                                                        | Generate boilerplate YAML                           |
+| Manifest   | `kubectl get deployment my-app -o yaml > deployment.yaml`                                                         | Export YAML from a running resource                 |
+| Manifest   | `kubectl apply -f manifest.yaml [--dry-run=server]`                                                               | Apply a manifest file. `--dry-run`: validate syntax |
+| Misc       | `kubectl describe deployment/kubernetes-first-app`                                                                |                                                     |
 
 ## TODO
 
@@ -183,27 +215,6 @@ title: Kubernetes
 ## Core Concepts
 
 ## Kubernetes Objects
-
-### Pod
-
-- The basic unit that houses one or more containers
-- Containers in a pod can share storage and network resources
-- Rarely created directly; usually created by higher-level constructs (Deployments, Jobs)
-
-```yaml title="Pod example"
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx-pod
-  labels:
-    app: nginx
-spec:
-  containers:
-    - name: nginx
-      image: nginx:latest
-      ports:
-        - containerPort: 80
-```
 
 ### Deployment
 
