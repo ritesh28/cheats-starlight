@@ -22,10 +22,11 @@ title: Kubernetes
   1. Service: Its an abstraction which defines a logical set of Pods and a policy by which to access them
   2. ReplicaSet: Its an artifact/object that ensures that the right number of identical Pods are running
   3. Deployment: It instructs Kubernetes how to create and update instances of your application
-  4. Job: It is designed for short-lived, batch processing tasks
-  5. ConfigMap: Its an object that stores configuration settings (or env variables) separately from the application
-  6. Secret: Its an object that stores sensitive data like password, token, or API key
-  7. Persistent Volume (PV): Its a storage object in the cluster that you can use to store data and it doesn’t get deleted when a Pod is removed or restarted
+  4. DaemonSet: Strictly binds one Pod per Node across the cluster. Scales automatically; adding a node spawns a new Pod. Use Case: Infrastructure agents, logging, monitoring
+  5. Job: It is designed for short-lived, batch processing tasks
+  6. ConfigMap: Its an object that stores configuration settings (or env variables) separately from the application
+  7. Secret: Its an object that stores sensitive data like password, token, or API key
+  8. Persistent Volume (PV): Its a storage object in the cluster that you can use to store data and it doesn’t get deleted when a Pod is removed or restarted
 - 3 commonly used controllers for creating Pods are:
   1. Jobs → For batch tasks that run once and complete (ephemeral)
   2. Deployments → For stateless and persistent applications, such as web services
@@ -107,7 +108,7 @@ spec:
     - name: nginx-container
       image: nginx:1.25
       ports:
-        - containerPort: 80
+        - containerPort: 80 # exposes port 80 inside the container so it can receive network traffic
 ```
 
 ## Namespace & Context
@@ -200,6 +201,37 @@ spec:
     - vs `READY`: A Pod might be "Ready" the exact millisecond its container starts up, but it might take a few seconds to load data or initialize
     - "Available" confirms the Pod is stable, has passed its health checks, and is reliably serving users
 
+```yaml title='web app'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app-deployment
+  labels:
+    app: web-app
+spec:
+  replicas: 3 # run exactly three identical instances (Pods) of your application at all times
+  selector: # define how to select pods. It looks for Pods matching the label app: web-app
+    matchLabels:
+      app: web-app
+  template: # defines the blueprint for the Pods that Kubernetes will create
+    metadata:
+      labels: # assigns the label app: web-app to the created Pods. This must match the matchLabels defined in the selector above
+        app: web-app
+    spec:
+      containers:
+        - name: nginx-container
+          image: nginx:1.25.4
+          ports:
+            - containerPort: 80 # exposes port 80 inside the container so it can receive network traffic
+          resources: # controls hardware allocation
+            limits: # set the maximum amount of CPU and memory the container is allowed to consume
+              memory: "256Mi"
+              cpu: "500m"
+            requests: # guarantee the minimum CPU and memory the container needs to start
+              memory: "128Mi"
+              cpu: "250m"
+```
+
 ### Deployment & Scale
 
 - Scaling is accomplished by changing the number of replicas in a Deployment
@@ -218,6 +250,21 @@ spec:
     1. min/max: set a minimum and maximum in terms of how many Pods we want
     2. metric: for e.x. set a certain CPU utilization percentage. If CPU value greater than the threshold, k8s scale out. IF CPU value is lower, k8s matches min value
   - `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`: If CPU load is >= 50% create a new Pod. Maximum 10 Pods. If load is low go back gradually to 1 Pod
+
+### Deployment & Rolling
+
+- Roll back: In kubernetes deployment, you can revert back to the previous version of the application if you find any bugs in the present version
+- Steps for rolling back a deployment:
+  1. List all the revisions and select the version of deployment to which you want to roll back
+  2. Roll back to the previous (or stable) version of the deployment
+- Zero-Downtime Rollouts: By default, Kubernetes deployments use the `RollingUpdate` strategy:
+  - Gradual replacement: It replaces old pods with new ones step-by-step
+  - Continuous availability: Old pods remain online until new pods are ready
+  - Smart traffic routing: The Service component only sends user traffic to healthy, running pods
+- You can pause (`kubectl rollout pause ...`) the deployments which you are updating currently and later resume (`kubectl rollout resume ...`)
+  - Why do this?: This is highly useful if you want to make multiple changes at once without triggering a separate, resource-heavy, time-consuming rollout for every single command
+  - When you pause the rollouts you can update the image using `kubectl set image deployment/webapp-deployment webapp=webapp:2.1`
+  - To actually replace the current version with the new image, you must explicitly resume the deployment
 
 ## Job
 
@@ -286,6 +333,9 @@ spec:
 |            | `kubectl get hpa`                                                             |                                                                                    |
 | Job        | `kubectl get jobs`                                                            |                                                                                    |
 | Job        | `kubectl delete job/ping`                                                     |                                                                                    |
+| Rollout    | `kubectl rollout history deployment/nginx`                                    | get previous rollout revisions. Pass `--revision=3` to view detailed history       |
+| Rollout    | `kubectl rollout undo deployment/nginx --to-revision=1`                       | Roll back to deployment revision 1 (1 means previous version of the deployment)    |
+| Rollout    | `kubectl rollout status deployment/nginx`                                     | Show the status of the rollout. By default it will watch until it's done           |
 | Manifest   | `kubectl run nginx --image=nginx --dry-run=client -o yaml > pod.yaml`         | generate boilerplate YAML                                                          |
 | Manifest   | `kubectl get deployment my-app -o yaml > deployment.yaml`                     | export YAML from a running resource                                                |
 | Manifest   | `kubectl apply -f manifest.yaml [--dry-run=server]`                           | apply a manifest file. `--dry-run`: validate syntax                                |
@@ -295,50 +345,11 @@ spec:
 ## TODO
 
 - To wait for a container to finish or become ready before starting another one in Kubernetes, you should use Init Containers ======ELABORATE=========
-- Deployment - rollout, rollback
 - StatefulSet k8s object
-- DaemonSets k8s object
 
 ## Core Concepts
 
 ## Kubernetes Objects
-
-### Deployment
-
-- Manages replicated pods (multiple identical pod replicas)
-- Provides declarative updates to pods
-- Automatically replaces failed pods
-- Enables rolling updates and rollbacks
-- Most common way to run applications in Kubernetes
-
-```yaml title="Deployment example"
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-deployment
-spec:
-  replicas: 3 # Number of pod replicas
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-        - name: nginx
-          image: nginx:latest
-          ports:
-            - containerPort: 80
-          resources:
-            requests:
-              memory: "64Mi"
-              cpu: "250m"
-            limits:
-              memory: "128Mi"
-              cpu: "500m"
-```
 
 ### Service
 
@@ -432,13 +443,6 @@ spec:
         claimName: my-pvc
 ```
 
-### Namespace
-
-- Virtual cluster partitioning within a single Kubernetes cluster
-- Allows multiple teams/projects to share the same cluster with isolation
-- Resources are namespaced (except cluster-level resources like PV, nodes)
-- Default namespace is `default`
-
 ### StatefulSet
 
 - Manages stateful applications (databases, caches)
@@ -447,39 +451,6 @@ spec:
   - Ordered, graceful pod termination and launch
   - Persistent storage per pod
 - Example: Running a MySQL database cluster
-
-### DaemonSet
-
-- Ensures a pod runs on **every node** in the cluster (or subset of nodes)
-- Used for node-level services (monitoring, logging, network plugins)
-- Example: Running Prometheus node exporter on all nodes
-
-## Networking
-
-- Each pod gets its own IP address (unlike Docker where containers share host networking)
-- Pods on the same node can communicate via IP without port mapping
-- **Service**: Provides stable DNS name and load balancing across pods
-- **Ingress**: Routes external traffic to services based on hostname/path rules
-- Network policies control traffic flow between pods
-
-```yaml title="Ingress example"
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: app-ingress
-spec:
-  rules:
-    - host: app.example.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: nginx-service
-                port:
-                  number: 80
-```
 
 ## Storage
 
