@@ -26,6 +26,10 @@ title: Kubernetes
   5. ConfigMap: Its an object that stores configuration settings (or env variables) separately from the application
   6. Secret: Its an object that stores sensitive data like password, token, or API key
   7. Persistent Volume (PV): Its a storage object in the cluster that you can use to store data and it doesn’t get deleted when a Pod is removed or restarted
+- 3 commonly used controllers for creating Pods are:
+  1. Jobs → For batch tasks that run once and complete (ephemeral)
+  2. Deployments → For stateless and persistent applications, such as web services
+  3. StatefulSets → For stateful and persistent applications, like databases
 - Manifest/Declarative/Spec YAML file: must contain four required root-level fields to describe the desired state of a cluster resource:
   1. apiVersion: API version (v1, apps/v1, etc.)
   2. kind: The type of object you want to spin up (e.g., Pod, Deployment, Service)
@@ -61,11 +65,11 @@ title: Kubernetes
 
 - **Smallest deployable unit** in Kubernetes (compared to containers in Docker)
 - A Pod is an abstraction that represents a group of one or more containers and some shared resources for those containers. Those resources include:
-  - Shared storage, as Volumes
-  - Networking, as a unique cluster IP address
-  - Information about how to run each container, such as the container image version or specific ports to use
+  - Shared Networking: Every Pod is assigned a unique IP address. All containers within that Pod communicate with each other using `localhost`
+  - Shared Storage: Containers within a Pod can share storage volumes, allowing them to have a common filesystem and exchange data seamlessly
 - Each Pod in a Kubernetes cluster has a unique IP address, even Pods on the same Node
 - Multi-container pod:
+  - All containers within a single Pod are guaranteed to be co-located on the same worker node, and they share the same environment
   - init containers: special containers that run sequentially before the main container. Role: prepare environment, set up configurations, or perform database migrations
   - multi-container (sidecar pattern): sidecars provide logging, monitoring, or proxy functionality alongside the main application container
 - Pods runs in a private isolated network:
@@ -82,6 +86,10 @@ title: Kubernetes
   3. Succeeded: When all its containers have completed successfully. This is common for batch jobs or one-time tasks where completion is the goal
   4. Failed: At least one container terminates with an error and won’t be restarted
   5. Unknown: It indicates that the state of the Pod cannot be determined, often due to communication issues with the node
+- Communication between Pods:
+  - Intra-Pod (Same Pod): Containers within same Pod share a single IP address. They communicate with each other via `localhost` using different port numbers
+  - Service-Level Discovery: Pod IPs are temporary. So a Pod talk to the Service, which then load-balances the traffic to the correct Pods
+  - External Access: To reach Pods from outside cluster, use Ingress (app layer, more control) or LoadBalancer (network layer) Service, which maps external traffic to internal cluster
 
 ```yaml title="Web Server Pod"
 apiVersion: v1
@@ -115,7 +123,7 @@ spec:
 
 - Services allow your applications to receive traffic from inside (default) and outside the cluster
 - Services have an integrated load-balancer that will distribute network traffic to all Pods of an exposed Deployment
-- Services will monitor continuously the running Pods using endpoints, to ensure the traffic is sent only to available Pods
+- Services will monitor continuously the running Pods using **endpoints**, to ensure the traffic is sent only to available Pods
 - Services can be exposed in different ways by specifying a `type` in `ServiceSpec` (service specification):
   1. `ClusterIP` (Default / Internal Only): This type gives your Service a **permanent IP** address that is only valid inside the cluster
      - Base use case: Databases, cache layers, or backend microservices that should never be exposed to the public internet
@@ -139,6 +147,17 @@ spec:
   - On running `kubectl get services/kubernetes-first-app`, I got port as `8080:31468/TCP`: (opposite to Docker port mapping)
     - 31468: NodePort (External Entry Point). To access from outside, use `curl http://<YOUR-NODE-IP>:31468`
     - 8080: Cluster Port (Internal Entry Point). To access from within th cluster, use `curl <SERVICE-CLUSTER-IP>:8080`
+
+## Label & Selector
+
+- Labels are key/value pairs. They are the primary way to organize your resources
+- Selectors are how you find and filter those objects based on the labels
+- Types of selectors:
+  1. Equality-Based: Exact match. Operators: `=, ==, and !=`. No difference between '=' & '=='.
+     - `kubectl get pods -l 'tier=backend,environment=production'`: Find the Pod that is both backend and production
+  2. Set-Based: More flexible. Operators: `in, notin, and exists`
+     - `kubectl get pods -l 'environment in (development,staging)'`: Find all Pods in either the development or staging environment
+     - `kubectl get pods -l 'app'`: Find all Pods that have an app label, regardless of its value (the `exists` operator)
 
 ## ReplicaSet
 
@@ -219,33 +238,37 @@ spec:
 
 - Image Naming Format: `[<registry>/][<project>/]<image>[:<tag>|@<digest>]` e.g. gcr.io/google-samples/kubernetes-bootcamp:v1
 - K8s Specific Object Command: `kubectl <cmd> <object-type>/<object-name> ...`
+- `kubectl apply -f ...`:
+  - **Declarative approach**, meaning it tells Kubernetes to make the cluster's live state match the state defined in the file
+  - For `pod.yaml` : if you were to change the file and run kubectl apply again, Kubernetes would intelligently update the existing Pod to match your new desired state
+- `kubectl create -f ...`: (AVOID). Imperative approach
 
-| Object     | Command                                                                         | Usage                                                         |
-| ---------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Node       | `kubectl get nodes`                                                             | get all nodes                                                 |
-|            | `kubectl run kubernetes-first-app --image=<img-name> --port=8080`               |                                                               |
-|            | `kubectl create deployment kubernetes-first-app --image=<img-name> --port=8080` |                                                               |
-| Pod        | `kubectl get pods [-l <key>=<value>] [-o wide]`                                 | get all pods. `-l`:label. `-o`:output                         |
-| Pod        | `kubectl logs <pod-name> [-n prod] [-c server] [-f] [--tail=50] [--since=1h]`   | get logs. `-n`: namespace. `-c`: container. `-f`: follow/live |
-| Pod        | `kubectl exec -it <pod-name> -- bash` ('--' not present in docker cli)          |                                                               |
-| Pod        | `kubectl delete pods <pod-name>`                                                |                                                               |
-| Label+Pod  | `kubectl label pod <pod-name> app=v1`                                           | add/apply new label                                           |
-| Deployment | `kubectl get deployments`                                                       |                                                               |
-| Scale      | `kubectl scale deployment/kubernetes-first-app --replicas=4`                    |                                                               |
-| Autoscale  | `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`             |                                                               |
-| ReplicaSet | `kubectl get rs`                                                                |                                                               |
-| Service    | `kubectl expose deployment/kubernetes-first-app --type="NodePort" --port 8080`  | create service                                                |
-| Service    | `kubectl get services [-l <key>=<value>]`                                       | get all services. `-l`:label                                  |
-| Service    | `kubectl delete service [-l <key>=<value>]`                                     | delete based on label                                         |
-|            | `kubectl proxy`                                                                 |                                                               |
-|            | `kubectl get hpa`                                                               |                                                               |
-|            | `kubectl get jobs`                                                              |                                                               |
-|            | `kubectl delete job/ping`                                                       |                                                               |
-| Manifest   | `kubectl run nginx --image=nginx --dry-run=client -o yaml`                      | generate boilerplate YAML                                     |
-| Manifest   | `kubectl get deployment my-app -o yaml > deployment.yaml`                       | export YAML from a running resource                           |
-| Manifest   | `kubectl apply -f manifest.yaml [--dry-run=server]`                             | apply a manifest file. `--dry-run`: validate syntax           |
-| Misc       | `kubectl describe deployment/kubernetes-first-app`                              |                                                               |
-| Misc       | `kubectl .... --help`                                                           | get help                                                      |
+| Object     | Command                                                                       | Usage                                                                              |
+| ---------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Node       | `kubectl get nodes`                                                           | get all nodes                                                                      |
+| Pod        | `kubectl get pods [-l <key>=<value>] [--show-labels] [-o wide]`               | get all pods. `-l`:label. `-o`:output                                              |
+| Pod        | `kubectl run first-app --image=nginx --port=8080`                             | create Pod "Imperatively". Use yaml (declarative). `--port`: container expose port |
+| Pod        | `kubectl logs <pod-name> [-n prod] [-c server] [-f] [--tail=50] [--since=1h]` | get logs. `-n`: namespace. `-c`: container. `-f`: follow/live                      |
+| Pod        | `kubectl exec -it <pod-name> -- bash` ('--' not present in docker cli)        |                                                                                    |
+| Pod        | `kubectl delete pod/<pod-name>`                                               |                                                                                    |
+| Label      | `kubectl label pod <pod-name> app=v1 [--overwrite]`                           | add/apply new label. Use `--overwrite` to update existing label                    |
+| Deployment | `kubectl get deployments`                                                     |                                                                                    |
+| Deployment | `kubectl create deployment first-app --image=nginx --port=8080`               | create deployment. Use yaml (declarative). `--port`: container expose port         |
+| Scale      | `kubectl scale deployment/first-app --replicas=4`                             |                                                                                    |
+| Autoscale  | `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`           |                                                                                    |
+| ReplicaSet | `kubectl get rs`                                                              |                                                                                    |
+| Service    | `kubectl expose deployment/first-app --type="NodePort" --port 8080`           | create service                                                                     |
+| Service    | `kubectl get services [-l <key>=<value>]`                                     | get all services. `-l`:label                                                       |
+| Service    | `kubectl delete service [-l <key>=<value>]`                                   | delete based on label                                                              |
+|            | `kubectl proxy`                                                               |                                                                                    |
+|            | `kubectl get hpa`                                                             |                                                                                    |
+| Job        | `kubectl get jobs`                                                            |                                                                                    |
+| Job        | `kubectl delete job/ping`                                                     |                                                                                    |
+| Manifest   | `kubectl run nginx --image=nginx --dry-run=client -o yaml > pod.yaml`         | generate boilerplate YAML                                                          |
+| Manifest   | `kubectl get deployment my-app -o yaml > deployment.yaml`                     | export YAML from a running resource                                                |
+| Manifest   | `kubectl apply -f manifest.yaml [--dry-run=server]`                           | apply a manifest file. `--dry-run`: validate syntax                                |
+| Misc       | `kubectl describe deployment/first-app`                                       | get detailed information                                                           |
+| Misc       | `kubectl .... --help`                                                         | get help                                                                           |
 
 ## TODO
 
