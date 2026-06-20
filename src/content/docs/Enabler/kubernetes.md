@@ -38,6 +38,7 @@ title: Kubernetes
 
 ## Node
 
+- Node is a single machine, either a physical server or a virtual machine, that runs the necessary components to execute and manage containerized applications
 - Can have multiple master nodes. But at a given time, only one is active and others as used as backup (if the active master node goes down)
 - Relationship: 1 active master node and multiple worker nodes
 - Master Node **automatically** handles scheduling the Pods across the Nodes in the cluster
@@ -55,6 +56,7 @@ title: Kubernetes
   2. Kube Proxy: It manages network rules for **all pods across all nodes**. It ensures that requests reach the right Pod and distributes load across multiple Pods.
      - kube-proxy reads cluster-wide network information (every pod IP across all nodes) to build its local routing tables
      - Unlike kube-proxy, kubelet only looks inward, managing the lifecycle of containers running locally on its own hardware
+     - It is the process responsible for forwarding the request from Kubernetes Services to the right pods
   3. Container Runtime (like Docker): Its the software that actually runs your containers. It pulls images and run them
 - Why kube-proxy on worker node and not on master node:
   - Network traffic interception must happen exactly where the application workloads are running
@@ -96,7 +98,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: web-server-pod
-  namespace: production
+  namespace: production # specifying namespace where we want to create pod
   labels:
     app: frontend
     environment: production
@@ -107,6 +109,18 @@ spec:
       ports:
         - containerPort: 80
 ```
+
+## Namespace & Context
+
+- Namespaces act as virtual clusters, enabling logical isolation and resource management for different teams or projects
+- Context is basically cluster
+- Install Tools - `kubectx` and `kubens`:
+  - `kubectx` is a tool to switch between contexts (clusters)
+    - `kubectx`: list down all cluster (active cluster is marked in different color)
+    - `kubectx minikube`: Switch to another cluster
+  - `kubens` is a tool to switch between Kubernetes namespaces
+    - `kubens`: list down all namespace (active namespace is marked in different color)
+    - `kubens my-ns`: Switch to another namespace. This means that by default if we do not specify the namespace the components will be created in `my-ns`
 
 ## Service
 
@@ -164,6 +178,10 @@ spec:
 - Its an artifact/object that can drive the cluster back to **desired state** via the creation of new Pods to keep your application running
 - Desired State: You need to specify how many containers you want of each kind, at all times - like 4 database containers or 3 services
 - ReplicaSet name format: `[DEPLOYMENT-NAME]-[RANDOM-STRING]`
+- Use Deployment. Avoid ReplicaSet:
+  - Deployment is a higher-level abstraction that manages application rollouts and rollbacks
+  - Whereas a ReplicaSet is a lower-level mechanism strictly responsible for ensuring a specified number of identical pod replicas are running at any given time
+  - Deployment does not manage Pods directly. Instead, it manages ReplicaSets, and ReplicaSets manage Pods
 
 ## Deployment
 
@@ -237,7 +255,10 @@ spec:
 ## CLI
 
 - Image Naming Format: `[<registry>/][<project>/]<image>[:<tag>|@<digest>]` e.g. gcr.io/google-samples/kubernetes-bootcamp:v1
-- K8s Specific Object Command: `kubectl <cmd> <object-type>/<object-name> ...`
+- K8s Specific Object Command - 3 different variant of same command:
+  - `kubectl <cmd> <object-type>/<object-name> ...`. "/" delimiter
+  - `kubectl <cmd> <object-type> <object-name> ...`. space delimiter
+  - `kubectl <cmd> <object-type>(s) <object-name> ...`. plural object type
 - `kubectl apply -f ...`:
   - **Declarative approach**, meaning it tells Kubernetes to make the cluster's live state match the state defined in the file
   - For `pod.yaml` : if you were to change the file and run kubectl apply again, Kubernetes would intelligently update the existing Pod to match your new desired state
@@ -246,17 +267,18 @@ spec:
 | Object     | Command                                                                       | Usage                                                                              |
 | ---------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | Node       | `kubectl get nodes`                                                           | get all nodes                                                                      |
+| Namespace  | `kubectl get namespaces`                                                      | get all namespaces                                                                 |
+| Namespace  | `kubectl create namespace my-ns`                                              | create a new Namespace                                                             |
 | Pod        | `kubectl get pods [-l <key>=<value>] [--show-labels] [-o wide]`               | get all pods. `-l`:label. `-o`:output                                              |
-| Pod        | `kubectl run first-app --image=nginx --port=8080`                             | create Pod "Imperatively". Use yaml (declarative). `--port`: container expose port |
+| Pod        | `kubectl run <pod-name> --image=nginx --port=8080`                            | create Pod "Imperatively". Use yaml (declarative). `--port`: container expose port |
 | Pod        | `kubectl logs <pod-name> [-n prod] [-c server] [-f] [--tail=50] [--since=1h]` | get logs. `-n`: namespace. `-c`: container. `-f`: follow/live                      |
-| Pod        | `kubectl exec -it <pod-name> -- bash` ('--' not present in docker cli)        |                                                                                    |
+| Pod        | `kubectl exec -it [-c server] <pod-name> -- bash` ('--' absent in docker cli) | execute shell command in container                                                 |
 | Pod        | `kubectl delete pod/<pod-name>`                                               |                                                                                    |
 | Label      | `kubectl label pod <pod-name> app=v1 [--overwrite]`                           | add/apply new label. Use `--overwrite` to update existing label                    |
 | Deployment | `kubectl get deployments`                                                     |                                                                                    |
 | Deployment | `kubectl create deployment first-app --image=nginx --port=8080`               | create deployment. Use yaml (declarative). `--port`: container expose port         |
 | Scale      | `kubectl scale deployment/first-app --replicas=4`                             |                                                                                    |
 | Autoscale  | `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`           |                                                                                    |
-| ReplicaSet | `kubectl get rs`                                                              |                                                                                    |
 | Service    | `kubectl expose deployment/first-app --type="NodePort" --port 8080`           | create service                                                                     |
 | Service    | `kubectl get services [-l <key>=<value>]`                                     | get all services. `-l`:label                                                       |
 | Service    | `kubectl delete service [-l <key>=<value>]`                                   | delete based on label                                                              |
@@ -273,7 +295,7 @@ spec:
 ## TODO
 
 - To wait for a container to finish or become ready before starting another one in Kubernetes, you should use Init Containers ======ELABORATE=========
-- Scheduled workload
+- Deployment - rollout, rollback
 - StatefulSet k8s object
 - DaemonSets k8s object
 
