@@ -36,6 +36,7 @@ title: Kubernetes
   2. kind: The type of object you want to spin up (e.g., Pod, Deployment, Service)
   3. metadata: Data that uniquely identifies the object, such as its name, namespace, and labels
   4. spec: The technical specification describing your desired end-state for the object
+  5. `---` is used to have multiple config in a single file
 
 ## Node
 
@@ -92,7 +93,9 @@ title: Kubernetes
 - Communication between Pods:
   - Intra-Pod (Same Pod): Containers within same Pod share a single IP address. They communicate with each other via `localhost` using different port numbers
   - Service-Level Discovery: Pod IPs are temporary. So a Pod talk to the Service, which then load-balances the traffic to the correct Pods
-  - External Access: To reach Pods from outside cluster, use Ingress (app layer, more control) or LoadBalancer (network layer) Service, which maps external traffic to internal cluster
+  - External Access: To reach Pods from outside cluster, use Ingress or LoadBalancer Service, which maps external traffic to internal cluster
+    - Ingress: operates at app layer; more control. It is able to make decisions based on the actual content of each message
+    - LoadBalancer: operates at transport layer (tcp/udp). It uses a simple algorithm such as a round-robin across the selected paths
 
 ```yaml title="Web Server Pod"
 apiVersion: v1
@@ -141,8 +144,9 @@ spec:
 - Services will monitor continuously the running Pods using **endpoints**, to ensure the traffic is sent only to available Pods
 - Services can be exposed in different ways by specifying a `type` in `ServiceSpec` (service specification):
   1. `ClusterIP` (Default / Internal Only): This type gives your Service a **permanent IP** address that is only valid inside the cluster
+     - It has an internal load-balancer mechanism which distributes load among pod replicas
      - Base use case: Databases, cache layers, or backend microservices that should never be exposed to the public internet
-  2. `NodePort` (External Gateway): This type opens a specific, identical **port** on every single server node in your cluster
+  2. `NodePort` (External Gateway): This type opens a specific, identical **port** (within the range of 30,000-32,767) on every single server node in your cluster
      - Kubernetes forward any traffic hitting `<Any-Node-IP>:<NodePort>` straight to your underlying Pods
      - Superset of ClusterIP: Kubernetes automatically creates a ClusterIP behind the scenes
      - Best use case: Good for testing, development, or environments where you do not have a cloud provider to automatically give you a load balancer
@@ -162,6 +166,46 @@ spec:
   - On running `kubectl get services/kubernetes-first-app`, I got port as `8080:31468/TCP`: (opposite to Docker port mapping)
     - 31468: NodePort (External Entry Point). To access from outside, use `curl http://<YOUR-NODE-IP>:31468`
     - 8080: Cluster Port (Internal Entry Point). To access from within th cluster, use `curl <SERVICE-CLUSTER-IP>:8080`
+
+```yaml title='clusterIP.yaml'
+# 'spec' has 3 fields - type, selector, & port list
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-cluster-ip # Other pods in the cluster can access it using this exact name as a domain (e.g., http://my-app-cluster-ip)
+spec:
+  type: ClusterIP
+  selector: # Routing target. It tells the service to look for any Pods in the cluster running the label "app: my-app" and send traffic to them
+    app: my-app
+  ports:
+    - name: tcp # optional. It only make sense when we have multiple ports
+      protocol: TCP
+      port: 80 # Service port. Other pods will target this port (e.g., http://my-app-clusterip:80)
+      targetPort: 80 # container port. Port number that the underlying container is listening on inside the Pod
+```
+
+```yaml title='nodePort.yaml'
+# same as clusterIP. Only difference is spec.type and additional field in spec.ports.nodePort
+...
+spec:
+  ...
+  ports:
+    - protocol: TCP
+      port: 80         # Service port
+      targetPort: 80   # container port
+      nodePort: 30080  # Port on nodes (30000-32767)
+```
+
+```yaml title='externalName.yaml'
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: prod
+spec:
+  type: ExternalName
+  externalName: my.database.example.com
+```
 
 ## Label & Selector
 
@@ -299,6 +343,19 @@ spec:
       restartPolicy: Never # Required for Jobs. Alternatives: 'OnFailure'
 ```
 
+## Persistent Storage
+
+- Kubernetes Volumes provide a persistent storage abstraction that decouples data from the individual container's lifecycle:
+  - Persistence: Volumes prevent data loss by ensuring files remain intact even if a container crashes or is restarted by the kubelet
+  - Container Sharing: They act as a shared directory accessible by all containers within a single Pod, enabling efficient intra-Pod file exchange
+  - Lifecycle Coupling: Volume is typically deleted if the Pod is destroyed
+  - Abstraction Layer: They provide an interface for containers to access diverse storage backends - like local disk, cloud-based block (or file or object) storage
+- **Container Storage Interface (CSI)** is a K8s Storage Plugin layer. A plugin layer is the interface that connects the external storage systems with Kubernetes
+- Some of storage-related API objects:
+  - PersistentVolumes (PV)
+  - PersistentVolumeClaims (PVC)
+  - StorageClasses (SC)
+
 ## CLI
 
 - Image Naming Format: `[<registry>/][<project>/]<image>[:<tag>|@<digest>]` e.g. gcr.io/google-samples/kubernetes-bootcamp:v1
@@ -310,6 +367,12 @@ spec:
   - **Declarative approach**, meaning it tells Kubernetes to make the cluster's live state match the state defined in the file
   - For `pod.yaml` : if you were to change the file and run kubectl apply again, Kubernetes would intelligently update the existing Pod to match your new desired state
 - `kubectl create -f ...`: (AVOID). Imperative approach
+- Some alias:
+  - `po` = pods
+  - `deploy` = deployment
+  - `service` = svc
+  - `cm` = configmaps
+  - `ns` = namespace
 
 | Object     | Command                                                                       | Usage                                                                              |
 | ---------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -346,6 +409,175 @@ spec:
 
 - To wait for a container to finish or become ready before starting another one in Kubernetes, you should use Init Containers ======ELABORATE=========
 - StatefulSet k8s object
+- Persistent storage: Container Sharing: They act as a shared directory accessible by all containers within a single Pod, enabling efficient intra-Pod file exchange
+
+## Example - 3-tier application (Frontend, Backend, and Database)
+
+1. Database Tier (MongoDB): We use a standard MongoDB image and expose it via a ClusterIP service so only the backend can access it
+2. Backend Tier (Node.js API): Backend connects to the database using the internal Kubernetes DNS name `mongodb://db-service:27017`
+3. Frontend Tier (Node.js / Web Server): It connects backend `http://backend-service`
+
+```txt title="flow"
+[ Browser ] ──(External IP:80)──> [ Frontend Service ]
+                                           │
+                                    [ Frontend Pod ]
+                                           │
+                              (Internal DNS: http://backend-service)
+                                           │
+                                           ▼
+                                    [ Backend Service ]
+                                           │
+                                    [ Backend Pod ]
+                                           │
+                              (Internal DNS: mongodb://db-service:27017)
+                                           │
+                                           ▼
+                                      [ DB Service ]
+                                           │
+                                      [ DB Pod ]
+```
+
+```yaml title='db.yaml'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7.0
+          ports:
+            - containerPort: 27017
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service
+spec:
+  type: ClusterIP
+  selector:
+    app: db
+  ports:
+    - port: 27017
+      targetPort: 27017
+```
+
+```js title='server.js'
+const express = require("express");
+const { MongoClient } = require("mongodb");
+const app = express();
+
+// 'db-service' matches the K8s database Service name exactly
+const url = "mongodb://db-service:27017";
+const client = new MongoClient(url);
+
+app.get("/api/data", async (req, res) => {
+  await client.connect();
+  res.json({
+    message: "Hello from the Node.js backend!",
+    status: "Connected to DB",
+  });
+});
+
+app.listen(3000, () => console.log("Backend running on port 3000"));
+```
+
+```yaml title='backend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: node-backend
+          image: your-dockerhub-username/node-backend:latest # Replace with your built image
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+    - port: 80
+      targetPort: 3000
+```
+
+```js title='frontend-index.js'
+const express = require("express");
+const axios = require("axios");
+const app = express();
+
+app.get("/", async (req, res) => {
+  try {
+    // Fetches data internally via K8s Service DNS routing
+    const response = await axios.get("http://backend-service/api/data");
+    res.send(
+      `<h1>Frontend Page</h1><p>Backend says: ${response.data.message}</p>`,
+    );
+  } catch (error) {
+    res.status(500).send("Cannot reach backend.");
+  }
+});
+
+app.listen(8080, () => console.log("Frontend running on port 8080"));
+```
+
+```yaml title='frontend.yaml'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: node-frontend
+          image: your-dockerhub-username/node-frontend:latest # Replace with your built image
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 8080
+```
 
 ## Core Concepts
 
