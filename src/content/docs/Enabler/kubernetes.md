@@ -11,7 +11,10 @@ title: Kubernetes
   - In Minikube's single-node setup, that one single machine acts simultaneously as the master node (control plane) and the worker node
   - While it defaults to a single node, you can force Minikube to spin up distinct worker nodes if you want to test how your apps behave across multiple machines
   - `minikube start --nodes 3`: it creates one master/worker node, and two dedicated worker-only nodes on your computer
-- kubectl: a command-line tool used to control and communicate with a Kubernetes cluster
+- kubectl: (often pronounced cube-control or cube-c-t-l) a command-line tool used to control and communicate with a Kubernetes cluster
+- Alternatives to Kubectl: While `kubectl` is the gold standard, other tools offer different workflows:
+  - Helm: an open-source package manager for Kubernetes. Think of it as the equivalent of `Homebrew` for macOS, but specifically built for Kubernetes clusters
+  - Lens: a popular desktop IDE for Kubernetes that provides real-time cluster insights, and log streaming
 - k8s objects:
   1. Cluster: A set of machines (nodes) managed together as a unit. Consists of master (control plane) nodes (plural; others act as backup) and worker nodes
   2. Node: A physical or virtual machine that is part of the cluster. Types: Master Node (control plane) & Worker Node
@@ -33,6 +36,9 @@ title: Kubernetes
   3. StatefulSets → For stateful and persistent applications, like databases
 - Manifest/Declarative/Spec YAML file: must contain four required root-level fields to describe the desired state of a cluster resource:
   1. apiVersion: API version (v1, apps/v1, etc.)
+     - `v1` is the core API group that includes resources like Pods, Services, PersistentVolumes, and ConfigMaps
+     - `apps/v1` include resources such as Deployments, StatefulSets and DaemonSets looking on high-level application management
+     - `batch/v1`: contains the resources like Jobs and CronJobs specifically designed for batch programming
   2. kind: The type of object you want to spin up (e.g., Pod, Deployment, Service)
   3. metadata: Data that uniquely identifies the object, such as its name, namespace, and labels
   4. spec: The technical specification describing your desired end-state for the object
@@ -118,7 +124,7 @@ spec:
 
 - Namespaces act as virtual clusters, enabling logical isolation and resource management for different teams or projects
 - Context is basically cluster
-- Install Tools - `kubectx` and `kubens`:
+- Install Plugins/Tools - `kubectx` and `kubens`:
   - `kubectx` is a tool to switch between contexts (clusters)
     - `kubectx`: list down all cluster (active cluster is marked in different color)
     - `kubectx minikube`: Switch to another cluster
@@ -350,11 +356,129 @@ spec:
   - Container Sharing: They act as a shared directory accessible by all containers within a single Pod, enabling efficient intra-Pod file exchange
   - Lifecycle Coupling: Volume is typically deleted if the Pod is destroyed
   - Abstraction Layer: They provide an interface for containers to access diverse storage backends - like local disk, cloud-based block (or file or object) storage
-- **Container Storage Interface (CSI)** is a K8s Storage Plugin layer. A plugin layer is the interface that connects the external storage systems with Kubernetes
+- **Container Storage Interface (CSI)** is a K8s Storage Plugin layer - a interface that connects the external storage systems with Kubernetes
 - Some of storage-related API objects:
-  - PersistentVolumes (PV)
-  - PersistentVolumeClaims (PVC)
-  - StorageClasses (SC)
+  - PersistentVolume (PV): treated as a cluster resource, similar to nodes. They represent variety of storage backends such as NFS, or cloud storage
+  - PersistentVolumeClaim (PVC):
+    - It is a request made by a user or application to access persistent storage in a Kubernetes cluster
+    - Since Pods cannot directly manage or provision storage, PVCs act as a bridge between Pods and PersistentVolumes (PVs)
+    - PVC specifies:
+      1. Storage size: such as 5Gi or 10Gi
+      2. Access modes:
+         - ReadWriteOnce (RWO) – mounted as read-write by a single node
+         - ReadOnlyMany (ROX) – mounted as read-only by multiple nodes
+         - ReadWriteMany (RWX) – mounted as read-write by multiple nodes
+  - StorageClass (SC): allow to provision storage **dynamically**
+- Workflow:
+  1. The cluster administrator defines PersistentVolumes (PVs) or configures StorageClasses to enable dynamic provisioning
+  2. Developers or applications create PersistentVolumeClaims (PVCs) by requesting storage with requirements such as size, access mode, and optionally a StorageClass
+  3. The Kubernetes control plane matches each PVC with a suitable PV that meets the requirements and binds them together
+  4. If dynamic provisioning is enabled, a new PV is created automatically
+  5. Once bound, the Pod mounts the PVC and uses it like any other volume
+  6. The application running inside the Pod has persistent storage even if the Pod restarts
+
+```yaml title='Manual Storage'
+# we are going manual way instead of pre-created storage classes for better understanding of workflow
+# Step 1: Create a PV ( Persistent Volume )
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mypv
+spec:
+  capacity:
+    storage: 2Gi # 2Gi means 2 Gibibytes (approximately 2.15 GB (gigabytes))
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain # This makes the data permanent even after the deletion of the pod application. Default: `Delete`
+  hostPath:
+    path: "/mnt/data"
+---
+# Step 2: Create a PVC (Persistent Volume Claim)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mypvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+# Step 3: Create Pod Yaml File with PV and PVC
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+spec:
+  containers:
+    - name: my-container
+      image: nginx:latest
+      volumeMounts: # Tells Kubernetes to mount a storage volume inside the container
+        - name: my-persistent-storage # Refers to a volume defined later in the volumes section
+          mountPath: "/usr/share/nginx/html" # Specifies where the storage appears inside the container. NGINX serves web pages from this directory by default
+  volumes: # Defines the storage volumes available to this Pod
+    - name: my-persistent-storage
+      persistentVolumeClaim:
+        claimName: my-pvc # Kubernetes automatically connects the Pod to the PersistentVolume that is bound to my-pvc
+```
+
+## ConfigMap
+
+- Stores non-sensitive configuration data as key-value pairs
+- Decouples configuration from application code
+- Can be consumed by Pods as environment variables or mounted volumes
+
+```yaml title="ConfigMap example"
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  DATABASE_URL: "postgres://db:5432"
+  LOG_LEVEL: "info"
+```
+
+## Secret
+
+- Similar to ConfigMap but stores sensitive data
+- Data is base64 encoded (not encrypted by default)
+- Similar to ConfigMap, can be consumed by Pods as environment variables or mounted volumes
+
+```yaml title="Secret example"
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+type: Opaque # what kind of secret this is. `Opaque` means Generic key-value secrets. Other kind: `kubernetes.io/basic-auth`, `kubernetes.io/ssh-auth`
+data:
+  password: cGFzc3dvcmQxMjM= # base64 encoded
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api-keys-pod
+spec:
+  volumes:
+    - name: secret-volume
+      secret:
+        secretName: api-keys-secret
+  containers:
+    - name: api-keys-container
+      image: registry.k8s.io/busybox
+      command: ["ls", "-la", "/etc/secret-volume"]
+      volumeMounts:
+        - name: secret-volume
+          readOnly: true
+          mountPath: "/etc/secret-volume"
+```
+
+## Liveness and Readiness Probes
+
+- Probe means investigation
+- Liveness and Readiness probes are usually used for monitoring the health of the pods and are quite similar in nature as well
+  - Liveness probes will determine if a pod is running, restarting (according to the restart policy) it if necessary
+  - Readiness probes will check if a pod is ready to serve the traffic
 
 ## CLI
 
@@ -365,8 +489,15 @@ spec:
   - `kubectl <cmd> <object-type>(s) <object-name> ...`. plural object type
 - `kubectl apply -f ...`:
   - **Declarative approach**, meaning it tells Kubernetes to make the cluster's live state match the state defined in the file
+  - `Declarative` tells k8s what to do instead of how to do it
   - For `pod.yaml` : if you were to change the file and run kubectl apply again, Kubernetes would intelligently update the existing Pod to match your new desired state
 - `kubectl create -f ...`: (AVOID). Imperative approach
+  - | Feature                      | `kubectl create -f` | `kubectl apply -f`               |
+    | ---------------------------- | ------------------- | -------------------------------- |
+    | Creates a new resource       | ✅ Yes              | ✅ Yes                           |
+    | Updates an existing resource | ❌ No               | ✅ Yes                           |
+    | Safe to run multiple times   | ❌ No               | ✅ Yes                           |
+    | Common use                   | Initial creation    | Ongoing configuration management |
 - Some alias:
   - `po` = pods
   - `deploy` = deployment
@@ -385,15 +516,17 @@ spec:
 | Pod        | `kubectl exec -it [-c server] <pod-name> -- bash` ('--' absent in docker cli) | execute shell command in container                                                 |
 | Pod        | `kubectl delete pod/<pod-name>`                                               |                                                                                    |
 | Label      | `kubectl label pod <pod-name> app=v1 [--overwrite]`                           | add/apply new label. Use `--overwrite` to update existing label                    |
+| Storage    | `kubectl get pv`                                                              | get all pv (persistent volume)                                                     |
+| Storage    | `kubectl get pvc`                                                             | get all pvc (persistent volume claim)                                              |
+| Secret     | `kubectl get secrets`                                                         | get all secrets                                                                    |
 | Deployment | `kubectl get deployments`                                                     |                                                                                    |
 | Deployment | `kubectl create deployment first-app --image=nginx --port=8080`               | create deployment. Use yaml (declarative). `--port`: container expose port         |
 | Scale      | `kubectl scale deployment/first-app --replicas=4`                             |                                                                                    |
 | Autoscale  | `kubectl autoscale deployment/php-apache --cpu=50 --min=1 --max=10`           |                                                                                    |
+| Autoscale  | `kubectl get hpa`                                                             |                                                                                    |
 | Service    | `kubectl expose deployment/first-app --type="NodePort" --port 8080`           | create service                                                                     |
 | Service    | `kubectl get services [-l <key>=<value>]`                                     | get all services. `-l`:label                                                       |
 | Service    | `kubectl delete service [-l <key>=<value>]`                                   | delete based on label                                                              |
-|            | `kubectl proxy`                                                               |                                                                                    |
-|            | `kubectl get hpa`                                                             |                                                                                    |
 | Job        | `kubectl get jobs`                                                            |                                                                                    |
 | Job        | `kubectl delete job/ping`                                                     |                                                                                    |
 | Rollout    | `kubectl rollout history deployment/nginx`                                    | get previous rollout revisions. Pass `--revision=3` to view detailed history       |
@@ -403,13 +536,19 @@ spec:
 | Manifest   | `kubectl get deployment my-app -o yaml > deployment.yaml`                     | export YAML from a running resource                                                |
 | Manifest   | `kubectl apply -f manifest.yaml [--dry-run=server]`                           | apply a manifest file. `--dry-run`: validate syntax                                |
 | Misc       | `kubectl describe deployment/first-app`                                       | get detailed information                                                           |
+| Misc       | `kubectl top pod --all-namespaces`                                            | displays real-time CPU and memory utilization for pods across entire cluster       |
 | Misc       | `kubectl .... --help`                                                         | get help                                                                           |
 
 ## TODO
 
 - To wait for a container to finish or become ready before starting another one in Kubernetes, you should use Init Containers ======ELABORATE=========
 - StatefulSet k8s object
-- Persistent storage: Container Sharing: They act as a shared directory accessible by all containers within a single Pod, enabling efficient intra-Pod file exchange
+  - Manages stateful applications (databases, caches)
+  - Provides:
+    - Stable network identity (persistent DNS names)
+    - Ordered, graceful pod termination and launch
+    - Persistent storage per pod
+  - Example: Running a MySQL database cluster
 
 ## Example - 3-tier application (Frontend, Backend, and Database)
 
@@ -578,122 +717,6 @@ spec:
     - port: 80
       targetPort: 8080
 ```
-
-## Core Concepts
-
-## Kubernetes Objects
-
-### Service
-
-```yaml title="Service example"
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx-service
-spec:
-  selector:
-    app: nginx # Selects pods with this label
-  type: LoadBalancer
-  ports:
-    - protocol: TCP
-      port: 80 # External port
-      targetPort: 80 # Pod's container port
-```
-
-### ConfigMap
-
-- Stores non-sensitive configuration data as key-value pairs
-- Decouples configuration from application code
-- Can be mounted as files or environment variables
-
-```yaml title="ConfigMap example"
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: app-config
-data:
-  DATABASE_URL: "postgres://db:5432"
-  LOG_LEVEL: "info"
-```
-
-### Secret
-
-- Similar to ConfigMap but stores sensitive data
-- Data is base64 encoded (not encrypted by default)
-- Can be mounted as files or environment variables
-
-```yaml title="Secret example"
-apiVersion: v1
-kind: Secret
-metadata:
-  name: app-secret
-type: Opaque
-data:
-  password: cGFzc3dvcmQxMjM= # base64 encoded
-```
-
-### PersistentVolume (PV)
-
-- **Cluster-wide storage resource** (similar to Docker volumes but at cluster level)
-- Decoupled from pods - persists data beyond pod lifecycle
-- Provisioned by administrators
-- Not namespaced - available across the entire cluster
-
-### PersistentVolumeClaim (PVC)
-
-- Request for storage by a pod
-- User's request for storage (PV is the actual storage)
-- Acts as a claim that binds to an available PV
-- Namespaced - within a specific namespace
-
-```yaml title="PVC and Pod example"
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: my-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: pod-with-pvc
-spec:
-  containers:
-    - name: app
-      image: app:latest
-      volumeMounts:
-        - name: storage
-          mountPath: /data
-  volumes:
-    - name: storage
-      persistentVolumeClaim:
-        claimName: my-pvc
-```
-
-### StatefulSet
-
-- Manages stateful applications (databases, caches)
-- Provides:
-  - Stable network identity (persistent DNS names)
-  - Ordered, graceful pod termination and launch
-  - Persistent storage per pod
-- Example: Running a MySQL database cluster
-
-## Storage
-
-- **Storage Classes**: Define types of storage (SSD, HDD, network storage)
-- **PersistentVolume (PV)**: Cluster-level storage resource
-- **PersistentVolumeClaim (PVC)**: Pod's request for storage
-- **AccessModes**:
-  - `ReadWriteOnce (RWO)`: Volume can be mounted by a single node in read-write mode
-  - `ReadOnlyMany (ROX)`: Volume can be mounted by multiple nodes in read-only mode
-  - `ReadWriteMany (RWX)`: Volume can be mounted by multiple nodes in read-write mode
-  - `ReadWriteOncePod`: Volume can be mounted by a single pod
 
 ## Best Practices
 
