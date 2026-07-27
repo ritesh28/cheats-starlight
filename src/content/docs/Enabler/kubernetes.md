@@ -6,6 +6,9 @@ title: Kubernetes
 
 - Kubernetes (K8s) is a **container orchestration platform** that automates deployment, scaling, distributing loads and management of containerized applications
 - When using k8s, do not use Docker Volume, Docker Network or docker-compose.yaml
+- Deployment Workflow:
+  1. The first is containerization, where the application and its dependencies are packaged into a lightweight, standalone, executable unit known as a container image
+  2. The second stage is orchestration, where these containers are deployed, monitored, and managed at scale
 - Kubernetes add-ons are plug-ins that enhance the cluster's functionality
 - Minikube: a tool that lets you run/create a **single-node k8s cluster** locally on your own computer. Basic commands: `minikube start|status|dashboard|stop`
   - In Minikube's single-node setup, that one single machine acts simultaneously as the master node (control plane) and the worker node
@@ -113,6 +116,17 @@ metadata:
     app: frontend
     environment: production
 spec:
+  # 1. Init Containers run first and sequentially
+  initContainers:
+    - name: wait-for-db
+      image: busybox:1.36
+      command:
+        [
+          "sh",
+          "-c",
+          "until nslookup db-service.default.svc.cluster.local; do echo waiting for database; sleep 2; done",
+        ]
+  # 2. Main Application Containers only start after initContainers exit with code 0
   containers:
     - name: nginx-container
       image: nginx:1.25
@@ -473,12 +487,85 @@ spec:
           mountPath: "/etc/secret-volume"
 ```
 
-## Liveness and Readiness Probes
+## Liveness and Readiness and Startup Probes
 
-- Probe means investigation
-- Liveness and Readiness probes are usually used for monitoring the health of the pods and are quite similar in nature as well
-  - Liveness probes will determine if a pod is running, restarting (according to the restart policy) it if necessary
-  - Readiness probes will check if a pod is ready to serve the traffic
+- Kubernetes lets you define probes to continuously monitor the health of containers in a Pod
+- A probe (investigation) is a diagnostic performed periodically by the kubelet on a container
+- To perform a diagnostic, the kubelet either executes code within the container or makes a network request
+- Startup probe:
+  - It verify whether the application within a container is started - allowing the application time to finish its initialization
+  - If a startup probe is configured, k8s does not execute liveness or readiness probes until the startup probe succeeds
+  - This probe is only executed at startup, unlike liveness and readiness probes, which are run periodically
+  - If the startup probe fails, the kubelet kills the container, and the container is subjected to its restart policy
+  - Usage: useful for Pods that have containers that take a long time to come into service
+    - Rather than set a long liveness interval, you can configure a separate configuration for probing the container as it starts up
+- Liveness probe:
+  - Tell us if the pod is alive or not
+  - Usage: Use it to catch a deadlock, where an application is running, but unable to make progress
+  - If a container fails its liveness probe more times than the configured tolerance, the kubelet restarts that container as per its restart policy
+- Readiness probe:
+  - It determine when a container is ready to accept traffic
+  - Usage:
+    - Its useful when waiting for an application to perform time-consuming initial tasks, such as establishing network connections, or loading files
+    - Can also be useful later in the container’s lifecycle, for example, when recovering from temporary faults or overloads
+  - If the readiness probe returns a failed state, the EndpointSlice controller removes the Pod's IP address from all Services that match the Pod
+
+```yaml title='probes'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: application-health-demo
+spec:
+  containers:
+    - name: web-app
+      image: nginx:latest
+      ports:
+        - containerPort: 8080
+
+      # 1. STARTUP PROBE: Protects slow booting apps
+      startupProbe:
+        httpGet:
+          path: /healthz/startup
+          port: 8080
+        periodSeconds: 10 # Check every 10 seconds
+        failureThreshold: 30 # App has up to 5 minutes (30 * 10s) to boot up
+
+      # 2. LIVENESS PROBE: Detects deadlocks and internal freezes
+      livenessProbe:
+        httpGet:
+          path: /healthz/live
+          port: 8080
+        periodSeconds: 15
+        timeoutSeconds: 2 # Fail if the app doesn't answer within 2 seconds
+        failureThreshold: 3 # After a probe fails 'failureThreshold' times in a row, k8s considers that the overall check has failed. Restart pod after 3 consecutive failures
+
+      # 3. READINESS PROBE: Manages service routing availability
+      readinessProbe:
+        httpGet:
+          path: /healthz/ready
+          port: 8080
+        periodSeconds: 5 # Check frequently to route traffic accurately
+        successThreshold: 1 # Minimum consecutive successes for the probe to be considered successful (to be re-added to load balancer) after having failed
+        failureThreshold: 2 # Pull from service pool after 2 consecutive failures
+```
+
+## Stateful Set
+
+- `Deployment`: for stateless applications; `StatefulSet`: for stateful applications
+- A stateful application is an application that maintains data or state across sessions and requests. E.g. Database or message queues
+- If such an application crashes or restarts, it must be able to recover its state to continue functioning correctly
+- In Kubernetes, stateful applications are deployed using StatefulSets because:
+  - Each Pod needs a stable, unique identity (name, network ID, and hostname)
+  - Persistent storage must be attached to Pods so data survives restarts
+  - Scaling requires careful handling to ensure data consistency and ordering
+- To create a StatefulSet, you need a Service (to provide stable network identities) and the StatefulSet itself (to manage pod creation and unique persistent storage)
+- | Deployment                                               | StatefulSets                                 |
+  | -------------------------------------------------------- | -------------------------------------------- |
+  | Used to deploy stateless applications                    | Used to deploy stateful applications         |
+  | All pods are created in parallel                         | The pods are created one by one              |
+  | When scaling down, a random pod is picked up and deleted | When scaling down, the last pod gets deleted |
+  | A random name is assigned to the pods                    | A sticky and predictable name is assigned    |
+  | All the pods use the same persistent volume              | Each pod uses its own persistent volume      |
 
 ## CLI
 
@@ -539,16 +626,48 @@ spec:
 | Misc       | `kubectl top pod --all-namespaces`                                            | displays real-time CPU and memory utilization for pods across entire cluster       |
 | Misc       | `kubectl .... --help`                                                         | get help                                                                           |
 
-## TODO
+## RBAC
 
-- To wait for a container to finish or become ready before starting another one in Kubernetes, you should use Init Containers ======ELABORATE=========
-- StatefulSet k8s object
-  - Manages stateful applications (databases, caches)
-  - Provides:
-    - Stable network identity (persistent DNS names)
-    - Ordered, graceful pod termination and launch
-    - Persistent storage per pod
-  - Example: Running a MySQL database cluster
+- It is a built-in authorization mechanism that regulates who can perform specific actions on cluster resources
+- It follows **additive** (allow-only) model. All actions are blocked by default, and you must explicitly write rules to grant access. There are no "deny" rules
+- Contains:
+  1. Subjects: They are the **identities** requesting access to the cluster. Can be `User` or `Group` (preferred for scalability reason and simple access management)
+     - Kubernetes delegates user **authentication** to an external mechanism (like certificates, OIDC, or cloud providers) rather than an internal user database
+       - Successful authentication assigns a **Username, UID, and Groups** to the request
+  2. Roles: Collection of permissions
+     - `Role`: Confined to a single, specific namespace
+     - `ClusterRole`: Scoped across entire cluster. Used for non-namespaced resources (like `Nodes` or `PersistentVolumes`) or to grant permissions across all namespaces simultaneously
+  3. Link: A role contains permissions, but it does nothing until it is attached to a subject via a binding
+     - `RoleBinding`: Attaches a `Role` or `ClusterRole` to a subject within a specific namespace
+     - `ClusterRoleBinding`: Attaches a `ClusterRole` to a subject globally across the entire cluster
+- Check permissions: `kubectl auth can-i create deployments --as=john --namespace=prod`
+
+```yaml title='rbac example'
+# Step 1: Define the Permission (Role)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: prod
+  name: pod-reader
+rules:
+  - apiGroups: [""] # The core API group ("" means core)
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"] # Read-only access
+---
+# Step 2: Link the Group to the Permission (RoleBinding)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-pods-binding
+  namespace: prod
+subjects:
+  - kind: Group
+    name: developers
+roleRef:
+  kind: Role
+  name: pod-reader # Must match the exact name of the Role above
+  apiGroup: rbac.authorization.k8s.io
+```
 
 ## Example - 3-tier application (Frontend, Backend, and Database)
 
