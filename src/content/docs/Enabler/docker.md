@@ -20,12 +20,16 @@ title: Docker
 ## Image & Container
 
 - Image name format: `[<registry>/][<project>/]<image>[:<tag>|@<digest>]`. e.g. docker.io/my-proj/redis:5@sha256:0ed5d5928
-- Each container gets its own CPU, memory and network resources and does not depend on a specific operating system or kernel.
-
-| Aspect     | Images                            | Containers                         |
-| ---------- | --------------------------------- | ---------------------------------- |
-| Definition | Blueprint for creating containers | Running instance of a Docker image |
-| State      | Static (read-only)                | Dynamic (read-write)               |
+- Each container gets its own CPU, memory and network resources and does not depend on a specific operating system or kernel
+- | Aspect     | Images                            | Containers                         |
+  | ---------- | --------------------------------- | ---------------------------------- |
+  | Definition | Blueprint for creating containers | Running instance of a Docker image |
+  | State      | Static (read-only)                | Dynamic (read-write)               |
+- Docker Layer Caching:
+  - It allow docker to reuse previously built image layers to drastically speed up container build times
+  - Each line or instruction in a Dockerfile (such as RUN, COPY, or ADD) creates a unique, read-only file system layer
+  - Any single layer modification invalidates its cache. All subsequent downstream layers must be completely rebuilt
+  - Always have the instructions which lead to no source code files change at the top
 
 ## Volume
 
