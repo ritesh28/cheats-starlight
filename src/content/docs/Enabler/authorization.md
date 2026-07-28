@@ -7,7 +7,7 @@ title: Authorization Framework
 - Authorization decides whether an authenticated user or application is allowed to perform an action on a resource
 - It answers the question: “What can this **identity** do?”
 
-### ACL (Access Control List)
+## ACL (Access Control List)
 
 - Every resource maintains a list of entries, where each entry specifies:
   - Who (a user or group)
@@ -29,7 +29,7 @@ flowchart LR
     A[Resource] --> B[User and its Permission]
 ```
 
-### RBAC (Role-Based Access Control)
+## RBAC (Role-Based Access Control)
 
 - Permissions are grouped into roles, and users are assigned to those roles
 - Example: `editor` role has permissions `["read:articles", "create:articles", "update:articles"]`
@@ -51,7 +51,7 @@ flowchart LR
     P --> O[Resource]
 ```
 
-### ABAC (Attribute-Based Access Control)
+## ABAC (Attribute-Based Access Control)
 
 - Instead of assigning static roles, access decisions are based on attributes — properties of the user, the resource, the action, and the environment:
   1. Subject attributes: Properties of the user (department, clearance level, job title, location)
