@@ -567,6 +567,19 @@ spec:
   | A random name is assigned to the pods                    | A sticky and predictable name is assigned    |
   | All the pods use the same persistent volume              | Each pod uses its own persistent volume      |
 
+## Database Replicas
+
+- (Recommended) Use a Database Operator:
+  - Database operators extend the Kubernetes API using Custom Resource Definitions (CRDs)
+  - They handle complex tasks like determining which pod is the writer (Primary), synchronizing read replicas (Secondaries), managing fail-overs
+- The Manual Method: StatefulSets & Headless Services:
+  - You must manually orchestrate replication using a StatefulSet, a Headless Service, and a ConfigMap
+  - StatefulSet: Unlike Deployments, it assigns unique, persistent network IDs (e.g., mysql-0) and links each pod to its own dedicated Persistent Volume Claim (PVC)
+  - Headless Service: Created by setting `clusterIP: None`. It gives each pod a predictable DNS record (e.g., mysql-0.mysql), allowing replicas to find the primary database
+  - ConfigMap: Holds the database configuration file, identifying mysql-0 as the writer (master)
+  - Init Containers: Used within StatefulSet to evaluate the pod index name:
+    - If the pod is mysql-0, it initializes as primary. If it is mysql-1 or higher, it triggers a data clone from the primary before starting up
+
 ## CLI
 
 - Image Naming Format: `[<registry>/][<project>/]<image>[:<tag>|@<digest>]` e.g. gcr.io/google-samples/kubernetes-bootcamp:v1
