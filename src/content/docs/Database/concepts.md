@@ -12,7 +12,7 @@ title: Concepts
   - Example: Bank account has a constraint that the balance cannot drop below $0 and a user can withdraw more than the available balance
 - Isolation (Independent Execution): It ensures that concurrently running transactions do not interfere with each other
   - DB uses concurrency control techniques, such as locks or timestamps, to make transactions behave as if they were running sequentially
-  - Example: 2 people withdraw \\$50 at the exact same second from an account containing \\$60 - one succeed and the other fails
+  - Example: 2 people withdraw \$40 at the exact same second from an account containing \$50 - one succeed and the other fails
 - Durability (Permanent Changes): It guarantees that once a transaction commits, its changes survive permanently in non-volatile memory
   - Committed data will never be lost, even in the event of a total system crash or power failure immediately after
   - DB immediately writes transaction logs to a permanent storage drive (HDD/SSD) before confirming success to the user
