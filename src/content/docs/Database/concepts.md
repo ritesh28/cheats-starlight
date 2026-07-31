@@ -12,7 +12,7 @@ title: Concepts
   - Example: Bank account has a constraint that the balance cannot drop below $0 and a user can withdraw more than the available balance
 - Isolation (Independent Execution): It ensures that concurrently running transactions do not interfere with each other
   - DB uses concurrency control techniques, such as locks or timestamps, to make transactions behave as if they were running sequentially
-  - Example: 2 people withdraw $50 at the exact same second from an account containing $60 - one succeed and the other fails
+  - Example: 2 people withdraw \\$50 at the exact same second from an account containing \\$60 - one succeed and the other fails
 - Durability (Permanent Changes): It guarantees that once a transaction commits, its changes survive permanently in non-volatile memory
   - Committed data will never be lost, even in the event of a total system crash or power failure immediately after
   - DB immediately writes transaction logs to a permanent storage drive (HDD/SSD) before confirming success to the user
@@ -32,7 +32,7 @@ title: Concepts
 
 - A table is in 1NF if each column contains atomic values and there are no repeating groups or arrays
 
-```text
+```txt title='example'
 #### Problem:
 order_id | customer_name | products
 1        | Alice         | Laptop, Mouse
@@ -47,7 +47,7 @@ order_id | customer_name | products
 
 - A table is in 2NF if it is already in 1NF and all non-key attributes depend on the entire primary key, not just part of it
 
-```text
+```txt title='example'
 #### Problem:
 Primary key: combination of `StoreID` & `ProductID`
 `StoreLocation` column only depends on `StoreID` (part of the key), creating a partial dependency
@@ -65,7 +65,7 @@ Table B (Stores): StoreID, StoreLocation
 - A table is in 3NF if it is in 2NF and no non-key column depends on another non-key column
 - Every value must depend on "the key, the whole key, and nothing but the key."
 
-```text
+```txt title='example'
 #### Problem: `ZipCode` determines `City` i.e `City` depends on `ZipCode`
 | StudentID (Key) | StudentName | ZipCode | City          |
 | 401             | Bob         | 90210   | Beverly Hills |
@@ -80,7 +80,7 @@ Table B (Locations): ZipCode, City
 - A table is in BCNF if it is in 3NF and every determinant is a primary key
 - Determinant: If `A → B`, then A determines B; B depends on A; A is the determinant
 
-```text
+```txt title='example'
 #### Problem:
 A student takes a course from an instructor. Each instructor teaches only one subject, but multiple instructors teach the same subject
 Primary key: (`StudentID`, `Subject`)

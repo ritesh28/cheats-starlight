@@ -762,7 +762,7 @@ app.get("/api/data", async (req, res) => {
 app.listen(3000, () => console.log("Backend running on port 3000"));
 ```
 
-```yaml title='backend.yaml
+```yaml title='backend.yaml'
 apiVersion: apps/v1
 kind: Deployment
 metadata:

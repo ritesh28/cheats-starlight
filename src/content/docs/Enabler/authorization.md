@@ -12,8 +12,7 @@ title: Authorization Framework
 - Every resource maintains a list of entries, where each entry specifies:
   - Who (a user or group)
   - What they can do (read, write, execute, share, etc.)
-- Example:
-  ```txt
+- ```txt title='example'
   Document: "Q4 Financial Report.pdf"
   ACL:
     ├── alice@example.com     → [read, write, share]
@@ -34,7 +33,7 @@ flowchart LR
 - Permissions are grouped into roles, and users are assigned to those roles
 - Example: `editor` role has permissions `["read:articles", "create:articles", "update:articles"]`
 - In many RBAC implementations, roles form a hierarchy where higher roles inherit permissions from lower ones:
-  ```txt
+  ```txt title='hierarchy role'
   Super Admin
   └── Admin
         └── Manager
