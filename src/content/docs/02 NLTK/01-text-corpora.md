@@ -92,7 +92,7 @@ nltk.corpus.brown.words(fileids=["cg22"]) # ['Does', 'our', 'society', 'have', '
 
 - Token: a sequence of characters (e.g. hair, :) that we want to treat as a group. For nltk, a token is a word or a punctuation symbol
 - `len(text3)`: returns number of tokens; unlike Python which returns number of characters
-- Vocabulary of (raw) text: It means set (**no duplication**) of tokens that the raw text contains. `sorted(set(text3))`
+- Vocabulary of (raw) text: It means set (**no duplication**) of tokens that the raw text contains. Unique words. `sorted(set(text3))`
 - Lexical: It means relating to the words or vocabulary of a language, as opposed to its grammar, syntax, or structure. In simple term, it means **a word**
 - Lexical Richness/Diversity: 2 ways to look at this:
   - `len(set(text3)) / len(text3) = 0.06230`: number of distinct words is just 6% of the total number of words
@@ -102,21 +102,141 @@ nltk.corpus.brown.words(fileids=["cg22"]) # ['Does', 'our', 'society', 'have', '
 
 - Frequency Distribution: it tells us the frequency of each vocabulary item in the text
   - `FreqDist(text1)`: returns tuple (token, count)
+- Conditional Frequency Distribution: its a collection of frequency distributions, each one for a different "condition"/category
+  - Input: list of tuple (condition/category, word/event)
+  - `ConditionalFreqDist()` returns `{<condition>: FreqDist}`
 - Collocations & Bigrams:
-  - Collocation: Its a sequence of words/tokens that occur together unusually often. Thus 'red wine' is a collocation, whereas 'the wine' is not
+  - Collocation: its a sequence of words/tokens that occur together unusually often. Thus 'red wine' is a collocation, whereas 'the wine' is not
     - Collocations are resistant to the substitution. E.g. 'maroon wine' sounds definitely odd
     - Collocations are essentially frequent N-grams
-  - Bigram: Its a collocation (sequence of word/token) of 2 words. I.e. Bigrams are word pairs
-    - `list(bigrams(["more", "is", "said", "than"])) => [('more', 'is'), ('is', 'said'), ('said', 'than')]`
+  - Bigram: its a collocation (sequence of word/token) of 2 words. I.e. Bigrams are word pairs
+    - `list(nltk.bigrams(["more", "is", "said", "than"])) => [('more', 'is'), ('is', 'said'), ('said', 'than')]`
     - `text4.collocations(window_size=2, num=5) => United States; fellow citizens; years ago; four years; Federal Government`
 
 ```py title='freqDist'
-fdist1 = FreqDist(text1) # returns tuple of token and its count
+fdist1 = nltk.FreqDist(text1) # returns tuple of token and its count
 type(fdist1) # nltk.probability.FreqDist
 
-print(fdist1) # <FreqDist with 19317 samples and 260819 outcomes>
+print(fdist1) # <FreqDist with 19317 samples and 260819 outcomes>. Sample => total unique words; Outcome => total words
 len(text1) # 260819. Total tokens
 len(fdist1)  # 19317. Total unique words. Same as `len(set(text1))`
 fdist1.most_common(5)  # 5 most common words. [(',', 18713), ('the', 13721), ('.', 6862), ('of', 6536), ('and', 6024)]
 fdist1["and"]  # 6024. Frequency of the word 'and'
+```
+
+```py title='ConditionalFreqDist'
+from nltk.corpus import brown
+
+cfd = nltk.ConditionalFreqDist(
+    (genre, word)
+    for genre in brown.categories()
+    for word in brown.words(categories=genre)
+)
+
+cfd # <ConditionalFreqDist with 15 conditions>
+type(cfd) # nltk.probability.ConditionalFreqDist
+cfd.conditions() # ['adventure', ...'science_fiction']. Total: 15 conditions
+type(cfd["news"]) # nltk.probability.FreqDist
+cfd["news"].most_common(10) # [('the', 5580), ...('for', 943), ('The', 806)]
+```
+
+## Lexical Resource
+
+- | Feature  | Lexical                                                           | Semantic                                                                  |
+  | -------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+  | Focus    | Words, tokens, and forms                                          | Meaning, intent, and context                                              |
+  | Scope    | Surface level (isolated words)                                    | Deep level (phrases, sentences, relations)                                |
+  | Example  | text1.count("bat") counts how many times the letters B-A-T appear | Identifying if "bat" means a flying mammal or a piece of sports equipment |
+  | NLP Task | Tokenization, Lemmatisation, Stemming                             | Sentiment Analysis, Word Sense Disambiguation                             |
+- Lexicon (Lexical Resource): its a collection of words and/or phrases along with associated information such as part of speech and sense definitions
+  - Both vocabulary (`vocab = sorted(set(my_text))`) and Frequency Distribution (`word_freq = FreqDist(my_text)`) are simple lexical resources
+  - Another example: Concordance
+  - Lexicon Terminology: SEE INFOGRAPHIC
+- Lemma/Headword:
+  - The base vocabulary unit. E.g., go
+  - Word Forms / Inflections: the actual physical variations found in a text. E.g., goes, going, went, gone
+- Polysemy vs. Homonymy: these describe words that look identical but have different relationships:
+  - Homonyms: (Same Name) two distinct words having the same spelling. E.g., "Bank" -> River bank vs. Financial bank
+  - Polysemy: (Many Signs) a single word with multiple related meanings. E.g., "Good" -> "A good book" vs. "A good person"
+- Hypernyms vs. Hyponyms: these define hierarchical "is-a" relationships between words:
+  - Hypernym: The broader, umbrella term. E.g., Color, Animal
+  - Hyponym: The specific instance under that umbrella. E.g., Crimson is a hyponym of color; Whale is a hyponym of animal
+- Meronyms vs. Holonyms: these define structural "part-of" relationships
+  - Meronym: ((meros)Part Name) A part of a whole. E.g., Wheel or Engine
+  - Holonym: ((holos)Whole Name) The whole entity containing the parts. E.g., Car
+- Stopword:
+  - Its a commonly used word (such as "the", "a", "an", "in", "is") that a natural language processing pipeline is programmed to filter out and ignore before processing text
+  - These words occur with incredibly high frequency in any language, but they carry very little semantic meaning or unique information
+  - E.x., in the sentence "The flight to Sydney was delayed", removing stopwords leaves ['flight', 'Sydney', 'delayed'], which perfectly captures the core message
+  - When NOT to Remove stopwords: Machine Translation, Language Modelling / Text Generation, Sentiment Nuance: meaning changes when "not" from "I do not like this movie" is removed
+  - `from nltk.corpus import stopwords; print(stopwords.words("english"))`
+- Pronouncing Dictionary:
+  - Tuple of (word, list of syllable). E.g. `('fire', ['F', 'AY1', 'R'])`
+  - `entries = nltk.corpus.cmudict.entries(); entries[42373] # ('fire', ['F', 'AY1', 'R'])`
+
+```py title='Wordnet Corpus'
+# WordNet is a dictionary of English but with a richer structure
+from nltk.corpus import wordnet as wn
+
+# SYNONYMS & LEMMAS
+wn.synsets("motorcar")  # Returns all "synonym set". [Synset('car.n.01')]. First noun sense of car
+# 'motorcar' has just one possible meaning and it is identified as 'car.n.01', the first noun sense of 'car'
+# the entity 'car.n.01' is called a synset, or "synonym set", a collection of synonymous words (or "lemmas")
+
+wn.synset('car.n.01').lemma_names() # ['car', 'auto', 'automobile', 'machine', 'motorcar']
+# NOTE: 'synset()' is singular; while 'synsets("motorcar")' was plural
+wn.synset('car.n.01').lemmas() # [Lemma('car.n.01.car'), Lemma('car.n.01.auto'), ...Lemma('car.n.01.motorcar')]
+
+wn.synset('car.n.01').definition() # 'a motor vehicle with four wheels; usually propelled by an internal combustion engine'
+wn.synset('car.n.01').examples() # ['he needs a car to get to work']
+
+# Lemma
+wn.lemma('car.n.01.automobile') # Lemma('car.n.01.automobile')
+wn.lemma('car.n.01.automobile').synset() # Synset('car.n.01')
+wn.lemma('car.n.01.automobile').name() # 'automobile'
+wn.lemmas('car') # returns all the lemmas involving the word 'car'. [Lemma('car.n.01.car'), Lemma('car.n.02.car'), ...Lemma('cable_car.n.01.car')]
+
+# HIERARCHY
+motorcar = wn.synset('car.n.01')
+types_of_motorcar = motorcar.hyponyms() # Returns immediate child/hyponyms. [Synset('ambulance.n.01'), ...]
+motorcar.hypernyms() # Return immediate parent/hypernyms. [Synset('motor_vehicle.n.01')]
+# hypernyms path: some words have multiple paths, because they can be classified in more than one way
+# motor vehicle has a parent as 'wheeled_vehicle.n.01' which can be classified as both a vehicle and a container
+paths = motorcar.hypernym_paths() # len(paths) = 2
+[synset.name() for synset in paths[0]]
+# ['entity.n.01', ...'instrumentality.n.03', 'container.n.01', 'wheeled_vehicle.n.01', 'self-propelled_vehicle.n.01', 'motor_vehicle.n.01', 'car.n.01']
+>>> [synset.name() for synset in paths[1]]
+# ['entity.n.01', ...'instrumentality.n.03', 'conveyance.n.03', 'vehicle.n.01', 'wheeled_vehicle.n.01', 'self-propelled_vehicle.n.01', 'motor_vehicle.n.01', 'car.n.01']
+
+# MERONYMS & HOLONYMS
+wn.synset("car.n.01").part_meronyms() # [Synset('first_gear.n.01'), Synset('car_mirror.n.01'), Synset('car_door.n.01') ...]
+wn.synset("car.n.01").part_holonyms() # []
+
+# SEMANTIC SIMILARITY
+# Idea:
+# Two synsets linked to the same root may have several hypernyms in common
+# If two synsets share a very specific hypernym — one that is low down in the hypernym hierarchy — they must be closely related
+
+right = wn.synset('right_whale.n.01')
+orca = wn.synset('orca.n.01')
+minke = wn.synset('minke_whale.n.01')
+tortoise = wn.synset('tortoise.n.01')
+novel = wn.synset('novel.n.01')
+right.lowest_common_hypernyms(minke) # [Synset('baleen_whale.n.01')]
+right.lowest_common_hypernyms(orca) # [Synset('whale.n.02')]
+right.lowest_common_hypernyms(tortoise) # [Synset('vertebrate.n.01')]
+right.lowest_common_hypernyms(novel) # [Synset('entity.n.01')]
+# we know that 'whale' is very specific (and 'baleen whale' even more so), while 'vertebrate' is more general and 'entity' is completely general
+# quantify #1 by looking up the depth of each synset:
+wn.synset('baleen_whale.n.01').min_depth() # 14
+wn.synset('whale.n.02').min_depth() # 13
+wn.synset('vertebrate.n.01').min_depth() # 8
+wn.synset('entity.n.01').min_depth() # 0
+# quantify #2
+# `path_similarity` assigns a score in range 0–1 based on the shortest path that connects the concepts in the hypernym hierarchy (-1 when a path cannot be found)
+# although the numbers won't matter much, they decrease as we move away from the semantic space
+right.path_similarity(minke) # 0.25
+right.path_similarity(orca) # 0.16
+right.path_similarity(tortoise) # 0.07
+right.path_similarity(novel) # 0.04
 ```
