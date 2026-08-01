@@ -15,6 +15,62 @@ from nltk.book import * # loads text1, ...text9, sent1, ...sent9, gutenberg, ...
 type(text1) # nltk.text.Text
 ```
 
+- NLP: Natural Language Processing
+- NLTK: Natural Language ToolKit
+- NLP faces following challenges:
+  - Word sense disambiguation:
+    - We want to work out which sense of a word was intended in a given context
+    - E.g: ambiguous word 'serve': help with food or drink; hold an office; put ball into play
+    - We automatically disambiguate words using context, exploiting the simple fact that nearby words have **closely related meanings**
+  - Pronoun Resolution:
+    - To work out "who did what to whom" — i.e., to detect the subjects and objects of verbs
+    - E.g. "The thieves stole the paintings. They were subsequently caught."
+  - Generating Language Output: Such as question answering and machine translation (e.g. English -> French)
+
+## Accessing Text Corpora
+
+- Gutenberg Corpus: contains books
+- Nps Chat: contains instant messaging chats
+- Brown Corpus: contains text from 500 sources, and the sources have been categorized by genre, such as news, editorial, and so on
+- Reuters Corpus: contains news documents. The documents have been classified into 90 topics, and grouped into two sets, called "training" and "test"
+
+```py title='Gutenberg Corpus'
+nltk.corpus.gutenberg.fileids() # returns list of file identifiers (file names) for texts in Gutenberg corpus. ['austen-emma.txt',...'whitman-leaves.txt']
+
+emma = nltk.corpus.gutenberg.words("austen-emma.txt")
+print(type(emma)) # nltk.corpus.reader.util.StreamBackedCorpusView
+print(len(emma)) # 192427. Total words
+print(emma[:10]) # ['[', 'Emma', 'by', 'Jane', 'Austen', '1816', ']', 'VOLUME', 'I', 'CHAPTER']
+
+emma_text = nltk.Text(emma)
+type(emma_text) # nltk.text.Text
+emma.concordance("surprise")
+
+len(nltk.corpus.gutenberg.raw(fileid)) # Total characters. raw() format: <string>. '[Emma by Jane Austen...'
+len(nltk.corpus.gutenberg.words(fileid)) # Total words
+len(nltk.corpus.gutenberg.sents(fileid)) # Total sentences. sents() format: list of list of words. [['[', 'The',...'1603', ']'], ['Actus', 'Primus', '.'], ...]
+len(set(w.lower() for w in nltk.corpus.gutenberg.words(fileid))) # Total Vocabulary (unique words)
+```
+
+```py title='NPS Chats'
+nltk.corpus.nps_chat.fileids() # returns list of file identifiers. ['10-19-20s_706posts.xml', ...'11-09-teens_706posts.xml']
+
+p = nltk.corpus.nps_chat.posts("10-19-20s_706posts.xml")
+type(p) # nltk.corpus.reader.xmldocs.XMLCorpusView
+p[0] # 'p' is list of chats (list of words).  ['now', 'im', 'left', 'with', 'this', 'gay', 'name']
+
+w = nltk.corpus.nps_chat.words("10-19-20s_706posts.xml")
+type(w) # nltk.collections.LazyConcatenation
+w[:10] # ['now', 'im', 'left', 'with', 'this', 'gay', 'name', ':P', 'PART', 'hey']
+```
+
+```py title='Brown Corpus'
+nltk.corpus.brown.categories() # ['adventure', ...'science_fiction']
+nltk.corpus.brown.words(categories="news") # ['The', 'Fulton', 'County', 'Grand', 'Jury', 'said', ...]
+nltk.corpus.brown.sents(categories=["news", "editorial", "reviews"]) # [['The', 'Fulton', 'County'...], ['The', 'jury', 'further'...], ...]
+nltk.corpus.brown.words(fileids=["cg22"]) # ['Does', 'our', 'society', 'have', 'a', 'runaway', ',', ...]
+```
+
 ## Searching Text using Context
 
 - Concordance:
@@ -42,4 +98,25 @@ type(text1) # nltk.text.Text
   - `len(set(text3)) / len(text3) = 0.06230`: number of distinct words is just 6% of the total number of words
   - `len(text3) / len(set(text3)) = 16.0501`: each word is used 16 times on average
 
-## Frequency Distribution
+## Computing: Simple Statistics
+
+- Frequency Distribution: it tells us the frequency of each vocabulary item in the text
+  - `FreqDist(text1)`: returns tuple (token, count)
+- Collocations & Bigrams:
+  - Collocation: Its a sequence of words/tokens that occur together unusually often. Thus 'red wine' is a collocation, whereas 'the wine' is not
+    - Collocations are resistant to the substitution. E.g. 'maroon wine' sounds definitely odd
+    - Collocations are essentially frequent N-grams
+  - Bigram: Its a collocation (sequence of word/token) of 2 words. I.e. Bigrams are word pairs
+    - `list(bigrams(["more", "is", "said", "than"])) => [('more', 'is'), ('is', 'said'), ('said', 'than')]`
+    - `text4.collocations(window_size=2, num=5) => United States; fellow citizens; years ago; four years; Federal Government`
+
+```py title='freqDist'
+fdist1 = FreqDist(text1) # returns tuple of token and its count
+type(fdist1) # nltk.probability.FreqDist
+
+print(fdist1) # <FreqDist with 19317 samples and 260819 outcomes>
+len(text1) # 260819. Total tokens
+len(fdist1)  # 19317. Total unique words. Same as `len(set(text1))`
+fdist1.most_common(5)  # 5 most common words. [(',', 18713), ('the', 13721), ('.', 6862), ('of', 6536), ('and', 6024)]
+fdist1["and"]  # 6024. Frequency of the word 'and'
+```
