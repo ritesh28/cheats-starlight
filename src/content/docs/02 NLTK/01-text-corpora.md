@@ -79,7 +79,7 @@ nltk.corpus.brown.words(fileids=["cg22"]) # ['Does', 'our', 'society', 'have', '
   - `text1.concordance("monstrous")`
 - Similar:
   - It shows other words (with context) that appear in a similar range of contexts
-  - It takes a word `w`, finds all contexts `w1 w w2`, then finds all words `w'` that appear in the same context, i.e. `w1 w' w2`
+  - It takes a word $w$, finds all contexts $w_1 w w_2$, then finds all words $w^'$ that appear in the same context, i.e. $w_1 w^' w_2$
   - `text1.similar("monstrous")`
 - Common Context:
   - It allows us to examine just the contexts that are shared by two or more words
