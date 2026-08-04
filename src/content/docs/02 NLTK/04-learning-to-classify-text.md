@@ -111,6 +111,26 @@ document_features(movie_reviews.words("pos/cv000_29590.txt")) # {'contains(,)': 
   - Unlike N-Gram, we use previous **word**
   - SEE CODE (Context - Prev Word)
 - Sequence Classification (when samples are related):
+  - Joint classifier Model: they are used when there's a relationship/dependencies among the samples
+  - Sequence Classifier Model: They are subset of Joint classifier. The current sample is related to the previous samples.
+    - In the case of POS tagging, a variety of different **sequence classifier models** can be used to **jointly** choose POS tags for all the words in a given sentence
+  - Consecutive classification or greedy sequence classification:
+    - Type of sequence classification
+    - We find the most likely class label for the first input, then to use that answer to help find the best label for the next input, and so on
+    - Like N-Gram, we use previous **POS tag**. We use previous **word** as well
+  - Problem: we commit to every decision that we make. E.x, if we label a word as noun, but later find that it should have been verb, there's no way to go back and fix our mistake
+  - Solution #1:
+    - Use Transformational Strategy - for example Brill Tagger
+    - This is one of Joint Classifier Model
+    - Create an initial assignment of labels for the inputs, and then iteratively refine that assignment in an attempt to repair inconsistencies between related inputs
+  - Solution #2:
+    - Use **Hidden Markov Model**
+    - Assign scores to all of the possible sequences of POS tags, and to choose the sequence whose overall score is highest
+    - Like Consecutive classifiers, these models look at both the inputs and the history of predicted tags
+    - However, rather than simply finding the single best tag for a given word, they generate a probability distribution over tags
+    - These probabilities are then combined to calculate probability scores for tag sequences, and the tag sequence with the highest probability is chosen
+    - Problem: number of possible tag sequences is quite large. Given a tag set with 30 tags, there are $30^10$ ways to label a 10-word sentence
+    - Solution: Instead of look at long sequence, just look back to 2-3 words & its tags
 
 ```py title='Basic - Word level'
 from nltk.corpus import brown
@@ -147,3 +167,22 @@ def pos_features(sentence, i):
 
 pos_features(brown.sents()[0], 8) # {'suffix(1)': 'n', 'suffix(2)': 'on', 'suffix(3)': 'ion', 'prev-word': 'an'}
 ```
+
+```py title='Sequence Classification'
+# `history` - provides a list of the tags that we've predicted for the sentence so far
+def pos_features(sentence, i, history):
+    features = {
+        "suffix(1)": sentence[i][-1:],
+        "suffix(2)": sentence[i][-2:],
+        "suffix(3)": sentence[i][-3:],
+    }
+    if i == 0:
+        features["prev-word"] = "<START>"
+        features["prev-tag"] = "<START>"
+    else:
+        features["prev-word"] = sentence[i - 1]
+        features["prev-tag"] = history[i - 1]
+    return features
+```
+
+## Recognizing Textual Entailment (RTE)
