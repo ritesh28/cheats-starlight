@@ -12,6 +12,7 @@ title: Text Supervised Classification
   - During prediction:
     - The same feature extractor is used to convert unseen inputs to feature sets
     - These feature sets are then fed into the model, which generates predicted labels
+- Do not use NLTK in-build classification models (e.g. `nltk.NaiveBayesClassifier`). Use **NLTK + Scikit-learn**
 - Choosing the right features:
   - Select relevant features and decide how to encode them
   - If you provide too many features, then the algorithm will have a higher chance of relying on idiosyncrasies of your training data that don't generalize well to new examples
@@ -186,3 +187,45 @@ def pos_features(sentence, i, history):
 ```
 
 ## Recognizing Textual Entailment (RTE)
+
+- RTE involves determining the logical relationship between 2 pieces of text:
+  - Premise: **Source** of information
+  - Hypothesis: **Claim** being tested
+- In other word, it is a task of determining whether a given piece of text (premise) **entails** another text (hypothesis)
+- Entailment: Hypothesis is true based on the context of premise
+  - E.x. #1: 'She is the mother' entails 'she has at least one child'
+  - E.x. #2: 'Sky is dark and cloudy' does not entails 'it is raining'
+- We treat RTE as a classification task, in which we try to predict the True/False label for each pair
+- The degree of success (high accuracy) involve a combination of **parsing, semantics and real world knowledge**
+- Basic feature extractor:
+  - First filter out all stopwords; and secondly get all named entities (NER)
+  - features:
+    - `features['word_overlap']`: number of words overlap between premise and hypothesis
+    - `features['word_hyp_extra']`: number of words in the hypothesis but not in the text
+    - `features['ne_overlap']`: number of Named Entity overlap
+    - `features['ne_hyp_extra']`: umber of Named Entity in the hypothesis but not in the text
+
+## Evaluation Metrics
+
+- Accuracy: simplest metrics. it measures the percentage of inputs in the test set that the classifier correctly labeled
+  - E.g: a name gender classifier that predicts the correct name 60 times in a test set containing 80 names would have an accuracy of $60/80 = 75%$
+- Precision and Recall:
+  - Problem of Accuracy: This metric is misleading when we have to measure **negative labels**
+    - E.g Search task, such as information retrieval, where we are attempting to find documents that are relevant to a particular task
+    - Since number of irrelevant documents far outweighs number of relevant ones, the accuracy score for a model that labels every document as irrelevant would be close to 100%
+  - Model's result can be categorized in 4 set:
+    1. **True positives**: items that we **correctly** labelled as **relevant**
+    2. **True negatives**: items that we **correctly** labelled as **irrelevant**
+    3. **False positives (Type I errors)**: items that we **incorrectly** labelled as **relevant**
+    4. **False negatives (Type II errors)**: items that we **incorrectly** labelled as **irrelevant**
+  - Precision: Focus on the inference relevant data. Indicates how many of the items that we identified were relevant. Equation: $TP/(TP+FP)$
+  - Recall: Focus on the test relevant data. Indicates how many of the relevant items that we identified. Equation: $TP/(TP+FN)$
+  - F-Measure (F-Score): Defined to be the harmonic mean of the precision and recall. Equation: $(2 × Precision × Recall) / (Precision + Recall)$
+- Confusion Matrices:
+  - Useful when performing classification tasks with three or more labels
+  - It is a table where each cell $[i,j]$ indicates how often label $j$ was predicted when the correct label was $i$
+    - This means, the diagonal entries (e.g. `[0,0], [1,1], [2,2] ...`) indicate labels that were correctly predicted
+
+# Common Models
+
+- Decision Tree
