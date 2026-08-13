@@ -108,3 +108,9 @@ title: Resume Roadmap
 - [NLP with old version 2](folder:///Users/riteshraj/Downloads/books/todo/NLTK.pdf)
 - [NLP with new version 3](https://www.nltk.org/book/)
 - [NLP](folder:///Users/riteshraj/Downloads/books/todo/python-3-text-processing-with-nltk-3-cookbook.pdf)
+
+## TODOs
+
+- Typescript: react, nextjs, nestjs, bullmq, rabbitmq, GraphQL
+- Postgres
+- Algorithm & data-structure
