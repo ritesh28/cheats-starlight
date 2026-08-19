@@ -28,6 +28,7 @@ flag: todo
 | remove                    | `rm -r <directory>`; `-r`: recursive                                   |
 | copy                      | `cp -r <source-directory> <target-directory>`; `-r`: recursive         |
 | open in Finder            | `open <directory>`                                                     |
+| disk usage                | `du -h -d 1 <directory>`; `-h`: human-readable format; `-d`: depth     |
 
 ## Files
 
