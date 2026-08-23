@@ -156,6 +156,26 @@ model = grid.best_estimator_
   5. **Imputation of Missing Data:**
      - It is a task of replacing missing data with some appropriate fill value
      - Simple strategy: Replace missing values with mean, median, or most frequent value. This provide baseline imputation. Use `preprocessing.Imputer`
+- Paired and Derived Features:
+  - Paired feature combines two different input variables to reveal a relationship that neither can show alone
+  - Example:
+    - The Scenario: You want to predict house prices
+    - Raw Inputs: Total_Bedrooms and Total_Rooms
+    - The Problem: A house with 5 bedrooms is normal if the house has 12 total rooms. However, a house with 5 bedrooms and only 5 total rooms means there is no living room or kitchen
+    - The Paired Feature: $\text{Bedroom Ratio} = \text{Total Bedrooms} / \text{Total Rooms}$
+    - The Value: This single paired ratio instantly tells the machine learning model how cramped or spacious the floor plan is
+  - Derived feature extracts or calculates new information from a single raw input variable. It does not look at other variables
+  - Example:
+    - The Scenario: You want to predict taxi ride cancellations
+    - Raw Input: Pickup_Timestamp (e.g., 2026-08-23 17:34:12)
+    - The Problem: A raw date and time string is just a long number sequence to a machine learning model. It cannot easily see weekly or daily patterns
+    - The Derived Features: `Is_Weekend = True` (derived by checking the day of the week); `Hour_of_Day = 17` (extracted from the time)
+    - The Value: The model can now easily learn that cancellations spike during Sunday evening rush hours
+  - Why we need it:
+    - Expose hidden links: Combine separate values, like dividing weight by height squared to get BMI, showing a direct risk sign
+    - Help simple models: Give linear models a boost by turning curved or mixed patterns into clear straight-line rules
+    - Save computer power: Do math ahead of time so small models or neural networks do not waste steps figuring out basic multiplication
+    - Break down messy data: Split a single date and time stamp into separate year, month, and hour columns to find active trends
 - Feature Pipelines:
   - This allow to apply multiple vectorization at once
   - `model = make_pipeline(SimpleImputer(strategy="mean"), PolynomialFeatures(degree=2), LinearRegression())`

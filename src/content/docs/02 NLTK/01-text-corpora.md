@@ -241,3 +241,31 @@ right.path_similarity(orca) # 0.16
 right.path_similarity(tortoise) # 0.07
 right.path_similarity(novel) # 0.04
 ```
+
+## Grammar
+
+| #   | Part of Speech | What It Does                                                       | Example Words                  | Example in a Sentence                         |
+| --- | -------------- | ------------------------------------------------------------------ | ------------------------------ | --------------------------------------------- |
+| 1   | Noun           | Names a person, place, thing, or idea.                             | London, cat, teacher, love     | The teacher went to London.                   |
+| 2   | Pronoun        | Replaces a noun to avoid repetition.                               | He, she, it, they, us          | She told them that it was broken.             |
+| 3   | Verb           | Shows an action, occurrence, or state of being.                    | Run, is, became, think         | The athlete ran fast because he is fit.       |
+| 4   | Adjective      | Describes or modifies a noun or pronoun.                           | Beautiful, blue, tall, quick   | A beautiful bird sat on the tall tree.        |
+| 5   | Adverb         | Modifies a verb, adjective, or another adverb.                     | Quickly, very, yesterday, here | She walked very quickly yesterday.            |
+| 6   | Preposition    | Shows the relationship (time, place, direction) between words.     | In, on, under, through, at     | The keys are on the table in the kitchen.     |
+| 7   | Conjunction    | Connects words, phrases, or entire clauses.                        | And, but, because, although    | I wanted to go but stayed because it rained.  |
+| 8   | Interjection   | Expresses strong emotion and stands grammatically alone.           | Wow, ouch, hey, oops, hurrah   | Wow! That hurt, ouch!                         |
+| 9   | Article        | Introduces a noun and defines it as specific or general.           | A, an, the                     | The dog chased a cat up an apple tree.        |
+| 10  | Determiner     | Introduces a noun and specifies quantity, possession, or position. | This, those, my, many, some    | My friend bought those books with some money. |
+
+Sub-categories of nouns
+
+| Noun Category        | What It Does                                                  | Examples                    | Example in a Sentence                                      |
+| -------------------- | ------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------- |
+| **Proper Noun**      | Names a specific person, place, or thing.                     | Paris, Sarah, Microsoft     | **Sarah** visited **Paris** last summer.                   |
+| **Common Noun**      | Names general items, people, places, or concepts.             | city, woman, company        | The **woman** drove to the nearest **city**.               |
+| **Concrete Noun**    | Names physical objects perceived by the 5 senses.             | coffee, guitar, rain        | I listened to the **rain** while holding hot **coffee**.   |
+| **Abstract Noun**    | Names ideas, feelings, qualities, or concepts (cannot touch). | freedom, love, patience     | Her **curiosity** led to a breakthrough in science.        |
+| **Countable Noun**   | Names individual items that can be counted and made plural.   | apple/apples, book/books    | She placed three **apples** and two **books** on the desk. |
+| **Uncountable Noun** | Names substances, masses, or concepts that cannot be counted. | water, luggage, information | We need more **information** and fresh **water**.          |
+| **Collective Noun**  | Names a group or collection of people, animals, or things.    | team, herd, committee       | The **herd** of deer ran away from the **pack** of wolves. |
+| **Compound Noun**    | Combines two or more words to form a single noun.             | ice-cream, toothpaste       | I need to buy **toothpaste** before my **haircut**.        |

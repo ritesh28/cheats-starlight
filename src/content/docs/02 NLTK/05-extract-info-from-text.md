@@ -51,7 +51,13 @@ def ie_preprocess(document):
   - E.x. `[ the/DT little/JJ yellow/JJ dog/NN ] barked/VBD at/IN [ the/DT cat/NN ]`. Here `barked/VBD at/IN` is a chink
   - In grammar, chink regex is represented as `}...{`
 - Representing Chunks: Tags vs Trees:
-  - TODO
+  - Chunk structures can be represented using either tags or trees. The most widespread file representation uses `IOB` tags
+    - Each token is tagged with one of three special chunk tags, `I(inside), O(outside), or B(begin)`
+    - `B` and `I` tags are suffixed with the chunk type, e.g. `B-NP`, `I-NP`
+    - There is one token per line, each with its part-of-speech tag and chunk tag
+    - Allow us to represent more than one chunk type, so long as the chunks do not overlap
+    - NOTE: we can have nested or flat structure. Nested is NOT RECOMMENDED since we miss few tags because of complex grammar and it is hard to process
+    - SEE INFOGRAPHIC
 
 ```py title='Grammar'
 ## simple chunk grammar consisting of two rules
@@ -119,3 +125,186 @@ print(cp.parse(sentence))
 #    at/IN
 #    (NP the/DT cat/NN))
 ```
+
+```py title='Nested Structure with Cascaded Chunkers'
+# AVOID IT
+grammar = r"""
+  NP: {<DT|JJ|NN.*>+}          # Chunk sequences of DT, JJ, NN
+  PP: {<IN><NP>}               # Chunk prepositions followed by NP
+  VP: {<VB.*><NP|PP|CLAUSE>+$} # Chunk verbs and their arguments
+  CLAUSE: {<NP><VP>}           # Chunk NP, VP
+  """
+cp = nltk.RegexpParser(grammar)
+sentence = [("Mary", "NN"), ("saw", "VBD"), ("the", "DT"), ("cat", "NN"), ("sit", "VB"), ("on", "IN"), ("the", "DT"), ("mat", "NN")]
+print(cp.parse(sentence))
+# (S
+#   (NP Mary/NN)
+#   saw/VBD
+#   (CLAUSE
+#     (NP the/DT cat/NN)
+#     (VP sit/VB (PP on/IN (NP the/DT mat/NN)))))
+```
+
+## Developing and Evaluating Chunkers
+
+- `conll2000.chunked_sents('train.txt')`: returns list of sentences annotated with part-of-speech tags and chunk tags in the IOB format
+- `conll2000.chunked_sents('train.txt', chunk_types=['NP'])`: other chunk tags are hidden - only phrases are present but other tags are missing
+
+```py title='rule-based/regex approach'
+from nltk.corpus import conll2000
+
+test_sents = conll2000.chunked_sents("test.txt", chunk_types=["NP"])
+grammar = r"NP: {<[CDJNP].*>+}"
+cp = nltk.RegexpParser(grammar)
+print(cp.accuracy(test_sents))
+# ChunkParse score:
+#     IOB Accuracy:  87.7%
+#     Precision:     70.6%
+#     Recall:        67.8%
+#     F-Measure:     69.2%
+```
+
+```py title='data-driven/lookup approach'
+# We use the training corpus to find the chunk tag (I, O, or B) that is most likely for each part-of-speech tag
+# In other words, we can build a chunker using a unigram tagger
+# NOTE: Here we've built unigram chunker. We can update it to build a BigramChunker by using a BigramTagger rather than a UnigramTagger
+class UnigramChunker(nltk.ChunkParserI):
+    # Most of code is simply used to convert between tree and tag format
+    def __init__(self, train_sents):
+        train_data = [
+            [(t, c) for w, t, c in nltk.chunk.tree2conlltags(sent)]
+            for sent in train_sents
+        ]  # w:word, t:part-of-speech(pos), c:chunk
+        self.tagger = nltk.UnigramTagger(train_data)
+
+    def parse(self, sentence):
+        # generate chunk tag and return a tree
+        pos_tags = [pos for (word, pos) in sentence]
+        tagged_pos_tags = self.tagger.tag(pos_tags)
+        chunktags = [chunktag for (pos, chunktag) in tagged_pos_tags]
+        conlltags = [
+            (word, pos, chunktag)
+            for ((word, pos), chunktag) in zip(sentence, chunktags)
+        ]
+        return nltk.chunk.conlltags2tree(conlltags)
+
+
+test_sents = nltk.corpus.conll2000.chunked_sents("test.txt", chunk_types=["NP"])
+train_sents = nltk.corpus.conll2000.chunked_sents("train.txt", chunk_types=["NP"])
+unigram_chunker = UnigramChunker(train_sents)
+print(unigram_chunker.accuracy(test_sents))
+# ChunkParse score:
+#     IOB Accuracy:  92.9%
+#     Precision:     79.9%
+#     Recall:        86.8%
+#     F-Measure:     83.2%
+```
+
+```py title='classifier-based approach'
+def tags_since_dt(sentence, i):
+    # creates a string describing the set of all part-of-speech tags that have been encountered since the most recent determiner,
+    # or since the beginning of the sentence if there is no determiner before index i
+    tags = set()
+    for word, pos in sentence[:i]:
+        if pos == "DT":
+            tags = set()
+        else:
+            tags.add(pos)
+    return "+".join(sorted(tags))
+
+
+def npchunk_features(sentence, i, history):
+    word, pos = sentence[i]
+    if i == 0:
+        prevword, prevpos = "<START>", "<START>"
+    else:
+        prevword, prevpos = sentence[i - 1]
+    if i == len(sentence) - 1:
+        nextword, nextpos = "<END>", "<END>"
+    else:
+        nextword, nextpos = sentence[i + 1]
+    return {
+        "pos": pos,
+        "word": word,
+        "prevpos": prevpos,
+        "nextpos": nextpos, # lookahead features
+        "prevpos+pos": "%s+%s" % (prevpos, pos), # paired features
+        "pos+nextpos": "%s+%s" % (pos, nextpos),
+        "tags-since-dt": tags_since_dt(sentence, i), # complex contextual features
+    }
+
+
+class ConsecutiveNPChunkTagger(nltk.TaggerI):
+    # A custom tagger that uses a maximum entropy classifier to tag words in a sentence with their corresponding chunk tags (B-NP, I-NP, O)
+    def __init__(self, train_sents):
+        train_set = []
+        for tagged_sent in train_sents:
+            untagged_sent = nltk.tag.untag(tagged_sent)
+            history = []
+            for i, (word, tag) in enumerate(tagged_sent):
+                featureset = npchunk_features(untagged_sent, i, history)
+                train_set.append((featureset, tag))
+                history.append(tag)
+        self.classifier = nltk.NaiveBayesClassifier.train(train_set)
+
+    def tag(self, sentence):
+        history = []
+        for i, word in enumerate(sentence):
+            featureset = npchunk_features(sentence, i, history)
+            tag = self.classifier.classify(featureset)
+            history.append(tag)
+        return zip(sentence, history)
+
+
+class ConsecutiveNPChunker(nltk.ChunkParserI):
+    # A wrapper class for the ConsecutiveNPChunkTagger that provides a parse method to chunk sentences
+    def __init__(self, train_sents):
+        tagged_sents = [
+            [((w, t), c) for (w, t, c) in nltk.chunk.tree2conlltags(sent)]
+            for sent in train_sents
+        ]
+        self.tagger = ConsecutiveNPChunkTagger(tagged_sents)
+
+    def parse(self, sentence):
+        tagged_sents = self.tagger.tag(sentence)
+        conlltags = [(w, t, c) for ((w, t), c) in tagged_sents]
+        return nltk.chunk.conlltags2tree(conlltags)
+
+chunker = ConsecutiveNPChunker(train_sents)
+print(chunker.accuracy(test_sents))
+# ChunkParse score:
+#     IOB Accuracy:  95.0%
+#     Precision:     85.9%
+#     Recall:        90.0%
+#     F-Measure:     87.9%
+```
+
+## Named Entity Recognition (NER)
+
+- Named entities (NEs) are definite noun phrases that refer to specific types of individuals, such as organizations, persons, dates, and so on
+- Entity recognition is often performed using chunkers, which segment multi-token sequences, and label them with the appropriate entity type
+- Sub-task of NER:
+  1. Identifying the boundaries of the NE, and
+  2. Identifying its type
+- Usage:
+  - Identifying relations in Information Extraction
+  - In question answering (QA)
+- Approach to build NER: we can build a tagger that labels each word in a sentence using IOB format, where chunks are labeled by their appropriate type (same as noun phrase chunker)
+
+```py title='Example Data'
+# IOB format: 'PER': person; 'ORG': organization
+Eddy N B-PER
+Bonte N I-PER
+is V O
+woordvoerder N O
+van Prep O
+diezelfde Pron O
+Hogeschool N B-ORG
+. Punc O
+```
+
+## Relation Extraction
+
+- Once named entities have been identified in a text, we then want to extract the relations that exist between them
+- Approach: look for all triples of the form `(X, α, Y)`, where `X` & `Y` are named entities of the required types, and `α` is the string of words that intervenes between `X` & `Y`
+- E.g. `([ORG: 'Georgia-Pacific'], 'in', [LOC: 'Atlanta'])`
