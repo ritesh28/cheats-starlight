@@ -34,7 +34,7 @@ title: Analyzing Sentence Structure
 - A constituent is a group of words that functions as a single unit
 - Substitution tests: if a sequence can be replaced by a single word (e.g., a pronoun) while preserving grammar rules, it is likely a constituent
 - Instead of viewing a sentence as `The | boy | saw | the | dog`, we group words into meaningful phrases:
-  ```
+  ```txt title='Example'
   Sentence
    ├── NP
    │     The boy
@@ -54,7 +54,7 @@ title: Analyzing Sentence Structure
 
 - A CFG defines production rules
 - The grammar can generate infinitely many valid sentences using a finite set of rules
-- `grammar = nltk.CFG.fromstring(...)`
+- `grammar = nltk.CFG.fromstring(...); rd_parser = nltk.RecursiveDescentParser(grammar)`
 - It is Context-Free because it does not depend on the previous/next sentences. E.g. "He won the game" - who is "he"
 - Recursive Grammar:
   - A grammar is recursive if rules can refer back to themselves, directly or indirectly
@@ -83,7 +83,7 @@ The boy saw the dog.
 
 - A parse tree visually represents sentence structure
 - A parser converts `Mary saw Bob` into a tree:
-  ```
+  ```txt title='Example'
   S
   ├── NP
   │     Mary
@@ -97,7 +97,7 @@ The boy saw the dog.
   - E.x. `I saw a man with a telescope.` has 2 interpretation: `I used a telescope.` & `The man had a telescope.`
   - This is called **PP (prepositional phrase) attachment ambiguity**
 
-## Parsing Algorithms - Recursive Descent Parser
+## Parsing Algo: Recursive Descent Parser
 
 - Top-down
 - Starts from `S` and expands rules until matching the sentence
@@ -106,7 +106,7 @@ The boy saw the dog.
   - Very inefficient: Repeatedly explores impossible branches
   - Fails with left-recursive rules (e.g., `NP → NP PP`) because it can recurse forever
 
-```text title='example'
+```text title='Example'
 S
 ↓
 NP VP
@@ -118,7 +118,7 @@ John V NP
 John saw Mary
 ```
 
-## Parsing Algorithms - Shift-Reduce Parser
+## Parsing Algo: Shift-Reduce Parser
 
 - Bottom-up
 - Operations:
@@ -126,7 +126,7 @@ John saw Mary
   - Reduce stack into larger constituents. E.g. `John -> NP -> NP VP -> S`
 - Faster but may fail even when a valid parse exists (because of greedy choices and no back track)
 
-## Parsing Algorithms - Chart Parsing
+## Parsing Algo: Chart Parsing
 
 - Uses dynamic programming
 - Stores partial results (in a chart) instead of recomputing them
@@ -137,7 +137,7 @@ John saw Mary
 
 - Instead of phrase trees (constituency grammar), we find relationships between words
 - Verb becomes the head. E.x.:
-  ```
+  ```txt title='Example'
   eat (head)
   ├── John (subject dependent)
   └── apple (object dependent)
@@ -147,7 +147,7 @@ John saw Mary
   - semantic analysis
   - question answering
 
-```text title='Constituency vs Dependency'
+```txt title='Constituency vs Dependency'
 # TEXT: "The smart student solved the problem."
 # Constituency
 S
