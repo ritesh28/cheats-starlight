@@ -114,3 +114,16 @@ title: Resume Roadmap
 - Typescript: react, nextjs, nestjs, bullmq, rabbitmq, GraphQL
 - Postgres
 - Algorithm & data-structure
+
+## ChatGPT
+
+```txt title='Prompt'
+Explain langchain (latest version) (python language) using official documentation: https://docs.langchain.com/oss/python/langchain/overview. Cover followings:
+1. Core components
+2. Middleware
+3. Advanced usage
+4. Test (Agent Development)
+
+Explain each terminology, concept, architecture - Give analogy, mental model and examples.
+Use mermaid for visualisation.
+```
