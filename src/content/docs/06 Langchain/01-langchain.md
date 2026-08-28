@@ -205,6 +205,16 @@ agent.invoke(
   8. PII protection
      - Personally Identifiable Information protection
      - Refers to the practices, security strategies, and technical systems used to safeguard any data that could be exploited to uniquely identify, contact, or locate a specific individual
+- Dynamic Model Selection:
+  - Sometimes you don't need the same model for every request. For e.x:
+    - Simple question → cheap/fast model
+    - Complex reasoning → expensive model
+    - Sensitive task → specialized model
+  - Middleware can classify complexity and dynamically select appropriate models for the agent
+- Dynamic tool selection:
+  - Imagine you have 500 tools. Giving all 500 to the model creates a massive tool-selection problem
+  - Approach: `User request -> Middleware[Tool selector] -> Relevant tools only -> Main model`
+  - This is an example of context engineering
 - Hooks:
   1. Node-style hooks: These run at particular points:
      - before_agent
@@ -247,3 +257,60 @@ agent = create_agent(
 ```
 
 ## Runtime
+
+- Mental model: Runtime = dependency injection container for an agent execution
+- Runtime can provide following data into tools and middleware:
+  1. context
+  2. store
+  3. stream writer
+  4. execution information
+  5. server information
+
+```py title='Context'
+#  Application
+#     │ context
+#     ▼
+#  Agent Runtime
+#     ├── Tool A
+#     ├── Tool B
+#     └── Middleware
+from dataclasses import dataclass
+
+@dataclass
+class UserContext:
+    user_id: str
+
+agent = create_agent(
+    model=model,
+    tools=[...],
+    context_schema=UserContext, # schema
+)
+agent.invoke(
+    {"messages": [...]},
+    context=UserContext(user_id="user-123"), # pass value
+)
+```
+
+## State vs Context vs Store Vs Checkpointer
+
+| Concept      | Lifetime                 | Mental Model | Example                |
+| ------------ | ------------------------ | ------------ | ---------------------- |
+| State        | Current thread/execution | Current Chat | messages, counters     |
+| Context      | Current invocation       | This Request | user ID, DB connection |
+| Store        | Across conversations     | Long-term    | user preferences       |
+| Checkpointer | Persists thread state    |              | conversation history   |
+
+## Context engineering
+
+- Incorrect Question: "How smart is my model?"
+- Correct Question: "Did I give the model the right information, tools and instructions at the right time?"
+- E.x.: Imagine a developer asks: "Fix this production bug."
+  - ❌ everything (entire database, all source code, all Slack history, all documentation, all tools)
+  - ✅ relevant repository, relevant logs, relevant documentation, relevant tools, specific task
+- Good Agent: `Task -> Context selection -> Relevant information -> Relevant tools -> Model`
+
+## Multi-agent patterns
+
+TODO: https://docs.langchain.com/oss/python/langchain/multi-agent#subagents-2
+
+## MCP — Model Context Protocol
