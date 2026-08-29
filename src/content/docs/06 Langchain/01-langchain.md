@@ -1,9 +1,8 @@
 ---
 title: LangChain
-link: https://chatgpt.com/s/t_6a8eff64b7408191bfae0aded2041a05
 ---
 
-- LangChain is an agent framework built around `create_agent`, where an agent = model + harness
+- LangChain is an agent **framework** built around `create_agent`, where an agent = model + harness
 - Harness: It is prompt + tools + middleware surrounding the model loop
 - LangSmith is used for tracing, debugging, and evaluation (closed-source proprietary software)
 - Old Vs Modern:
@@ -24,6 +23,106 @@ link: https://chatgpt.com/s/t_6a8eff64b7408191bfae0aded2041a05
     - supervision → human-in-the-loop
     - monitoring → LangSmith
     - testing → unit tests, integration tests, evals
+
+## CheatSheet
+
+| Term              | Mental model                       | What it does                             |
+| ----------------- | ---------------------------------- | ---------------------------------------- |
+| Model             | Brain                              | Generates/reasons                        |
+| Message           | Conversation event                 | Carries interaction context              |
+| Tool              | Hand/API                           | Performs an external action              |
+| Agent             | Employee                           | Model + execution harness                |
+| Harness           | Operating procedure                | Prompt + tools + middleware              |
+| Agent loop        | Think → act → observe              | Repeated model/tool execution            |
+| State             | Desk                               | Current conversation/execution data      |
+| Checkpointer      | Save game                          | Persists thread state                    |
+| Context           | Environment variables/dependencies | Invocation-specific information          |
+| Runtime           | Dependency injection container     | Gives tools/middleware execution context |
+| Store             | Filing cabinet                     | Long-term memory                         |
+| Structured output | Typed API response                 | Predictable application data             |
+| Middleware        | Security/checkpoint layer          | Controls execution                       |
+| Guardrail         | Policy                             | Prevents bad behavior                    |
+| HITL              | Human supervisor                   | Human approval/intervention              |
+| Streaming         | Live typing                        | Incremental output                       |
+| MCP               | Standard connector                 | Standardized external capabilities       |
+| LangGraph         | Workflow engine                    | Low-level orchestration                  |
+| Deep Agents       | Full employee toolkit              | Batteries-included agent                 |
+| LangSmith         | Flight recorder                    | Trace/debug/Observability                |
+| Unit test         | Component test                     | Deterministic isolated testing           |
+| Integration test  | System test                        | Real APIs/services                       |
+| Eval              | Quality assessment                 | Measures agent behavior                  |
+
+```mermaid
+flowchart TB
+
+    User --> Agent
+
+    subgraph Agent["LangChain Agent"]
+        direction TB
+
+        Harness["Agent Harness"]
+
+        Prompt["System Prompt"]
+        Model["Model\nLLM is the decision-making component inside an execution system"]
+        Tools["Tools"]
+        Middleware["Middleware"]
+        State["State"]
+        Runtime["Runtime"]
+        Structured["Structured Output"]
+
+        Harness --> Prompt
+        Harness --> Model
+        Harness --> Tools
+        Harness --> Middleware
+        Harness --> State
+        Harness --> Runtime
+        Harness --> Structured
+
+        Model <--> Tools
+        Model <--> State
+        Middleware --> Model
+        Middleware --> Tools
+    end
+
+    Tools --> APIs["APIs / DB / Search / Code"]
+    State <--> Checkpoint[(Checkpointer)]
+    Runtime --> Context["Context / Dependencies"]
+    Runtime --> Store[(Long-term Store)]
+
+    Agent --> LangSmith["LangSmith"]
+```
+
+## LangChain vs LangGraph vs Deep Agents
+
+- LangChain:
+  - Use when you want: "A customizable agent harness"
+  - `create_agent(...)`
+  - Complexity: customizable agent
+- LangGraph:
+  - Use when you need: "Low-level orchestration and explicit workflow topology"
+  - Complexity: explicit workflow
+- Deep Agents:
+  - Use when you want: "A batteries-included agent"
+  - It adds capabilities such as planning, filesystem access, subagents and memory on top of the LangChain/LangGraph architecture
+  - Complexity: batteries included
+
+```txt title='Decision tree'
+Simple LLM call?
+    ↓
+Model
+
+Need tools + agent loop?
+    ↓
+LangChain create_agent
+
+Need custom deterministic + agentic workflow?
+    ↓
+LangGraph
+
+Need planning/filesystem/subagents?
+    ↓
+Deep Agents
+```
 
 ## Models
 
@@ -311,6 +410,228 @@ agent.invoke(
 
 ## Multi-agent patterns
 
-TODO: https://docs.langchain.com/oss/python/langchain/multi-agent#subagents-2
+- Multi-agent systems coordinate specialized components to tackle complex workflows, especially when a single agent has too many tools and makes poor decisions
+- 5 primary patterns:
+  1. Subagents:
+     - How it works:
+       - A central main agent coordinates specialized subagents as if they were standard tools
+       - All routing passes strictly back and forth through the main agent
+     - Best for:
+       - Distributed development and heavy parallelization
+       - Because subagents work in isolation, they provide excellent context isolation (less tokens)
+     - Tradeoff:
+       - It is stateless by design
+       - If a user repeats a request, the entire routing flow must happen again
+  2. Handoffs:
+     - How it works:
+       - Agents transfer control to each other dynamically via tool calls
+       - Calling a tool updates a state variable, which shifts the active agent, prompt, or toolset
+     - Best for:
+       - Direct user interaction and repeat requests
+       - Because state persists, specialized agent can be called directly — saving routing overhead
+     - Tradeoff:
+       - It must execute sequentially
+       - It cannot research or execute tasks across multiple domains concurrently
+  3. Skills:
+     - How it works:
+       - A single agent stays in full control of the entire conversation
+       - It loads specialized prompts and knowledge datasets on-demand as needed
+     - Best for: Minimizing total LLM model calls across repetitive user requests
+     - Tradeoff:
+       - It suffers from context accumulation
+       - Once a skill is loaded into the conversation history, it stays there till the final answer is reached
+  4. Router:
+     - How it works:
+       - A dedicated, initial routing step uses LLM to classify the user's input and immediately directs it to one or more specialized agents
+       - A final step synthesizes the results into a combined response
+     - Best for: Multi-domain tasks that require parallel execution without needing a complex, central orchestrator agent
+  5. Custom Workflow:
+     - A bespoke execution flow built manually using `LangGraph`
+     - This allows to mix deterministic python logic (like if/else statements or loops) directly with agentic behaviors, embedding any of the other four patterns as specific nodes in the graph
 
 ## MCP — Model Context Protocol
+
+- MCP standardizes how models/agents interact with external tools and resources
+- LangChain supports MCP tools inside `create_agent` through MCP interceptors
+
+## Testing
+
+- Testing agents is fundamentally different since an LLM is nondeterministic
+- `❌ assert agent("Explain Python") == "exact string"`
+- Testing is divided into 3 categories:
+  1. Unit tests:
+     - It answer: "Does my agent logic work?"
+     - Test **deterministic pieces** of your agent without calling a real LLM
+     - `GenericFakeChatModel`: for unit test
+     - Agent Flow: `Model -> call weather() -> Model -> Answer`
+     - Test Flow: `Fake Model -> predictable tool call -> weather() -> Fake model -> predictable answer`
+     - Testing memory: use `InMemorySaver` as a checkpointer
+       - This allows you to test stateful behavior without setting up a production database
+  2. Integration tests:
+     - It answer: "Does the whole thing actually work with real services?"
+     - It make actual network calls to verify that components work together, credentials and schemas are correct, and latency is acceptable
+     - These tests are: slower, more expensive, less deterministic. But much closer to production reality
+  3. Evals (Evaluators):
+     - This is where AI testing becomes fundamentally different
+     - An eval evaluates agent behavior like:
+       - Was the answer correct?
+       - Was the trajectory reasonable?
+       - Did it follow policy?
+     - It assess **execution trajectories** either through deterministic matching or an LLM judge
+     - Why trajectory important:
+       - Agent testing should sometimes evaluate the path, not just the destination
+       - Trajectory: `User -> Model -> Tool A ->  Model -> Tool B -> Model -> Final answer`
+       - Testing only "final answer" can miss serious problems
+       - For e.x.:
+         - Final answer: "Your payment was successful." (it looks fine)
+         - But the actual trajectory could be: `Model -> called wrong customer API -> modified wrong account -> final answer`
+
+```mermaid
+flowchart TB
+    E["Evals / production quality\n(Quality-oriented, often dataset/trajectory based)"]
+    I["Integration tests\n(Slower, real APIs, fewer)"]
+    U["Unit tests\n(Fast, deterministic, many)"]
+
+    U --> I
+    I --> E
+```
+
+```py title='Unit Test'
+from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
+
+model = GenericFakeChatModel(
+    messages=iter([
+        AIMessage(
+            content="",
+            tool_calls=[
+                {
+                    "name": "get_weather",
+                    "args": {"city": "Sydney"},
+                    "id": "call_1",
+                }
+            ],
+        ),
+        "It's sunny in Sydney.", # test controls exactly what the model says
+    ])
+)
+```
+
+```py title='Unit Testing Memory'
+agent = create_agent(model=model, tools=[], checkpointer=InMemorySaver())
+
+# Turn 1
+# "I live in Sydney"
+#       ↓
+# checkpoint
+
+
+# Turn 2
+# "What timezone am I in?"
+#       ↓
+# agent reads checkpoint
+```
+
+## Example
+
+- Imagine we are building a customer-support agent. Requirements:
+  - answer customer questions
+  - search documentation
+  - inspect orders
+  - issue refunds
+  - remember conversation
+  - require human approval for refunds
+  - return structured ticket information
+  - log everything
+  - test without spending API money
+
+```mermaid
+flowchart TB
+
+    User[Customer]
+
+    subgraph Agent["LangChain create_agent"]
+        Middleware["Middleware"]
+        Model["LLM"]
+        Tools["Tools"]
+        State["Short-term State"]
+        Runtime["Runtime Context"]
+    end
+
+    Docs[Documentation Search]
+    Orders[Order Database]
+    Refund[Refund API]
+    Human[Human Approval]
+    Checkpoint[(Checkpointer)]
+    Store[(Long-term Store)]
+    Smith[LangSmith]
+
+    User --> Middleware
+    Middleware --> Model
+
+    Model --> Tools
+
+    Tools --> Docs
+    Tools --> Orders
+    Tools --> Refund
+
+    Refund --> Human
+    Human --> Refund
+
+    State <--> Checkpoint
+    Runtime --> Tools
+    Store <--> Tools
+
+    Agent -. traces .-> Smith
+```
+
+```py title='Implement skeleton'
+# Includes: Tools, Context, Agent Loop
+# Missing: Middleware, Checkpointer, Long-term store, Structured output, Streaming, Human approval, Multi-agent, Observability, Evaluations
+from dataclasses import dataclass
+
+from langchain.agents import create_agent
+from langchain.tools import tool
+
+@dataclass
+class UserContext:
+    user_id: str
+
+@tool
+def search_docs(query: str) -> str:
+    """Search the product documentation."""
+    ...
+
+@tool
+def get_order(order_id: str) -> str:
+    """Retrieve an order by ID."""
+    ...
+
+@tool
+def issue_refund(order_id: str, amount: float) -> str:
+    """Issue a refund for an order."""
+    ...
+
+agent = create_agent(
+    model="openai:gpt-5.5",
+    tools=[search_docs, get_order, issue_refund],
+    system_prompt="""
+    You are a customer support agent.
+
+    Search documentation when appropriate.
+    Verify orders before issuing refunds.
+    Never invent order information.
+    """,
+    context_schema=UserContext,
+)
+result = agent.invoke(
+    {
+        "messages": [
+            {
+                "role": "user",
+                "content": "Where is my order?"
+            }
+        ]
+    },
+    context=UserContext(user_id="customer-123"),
+)
+```
