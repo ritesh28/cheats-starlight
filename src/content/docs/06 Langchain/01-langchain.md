@@ -94,14 +94,14 @@ flowchart TB
 
 ## LangChain vs LangGraph vs Deep Agents
 
-- LangChain:
+- LangChain (Agent framework):
   - Use when you want: "A customizable agent harness"
   - `create_agent(...)`
   - Complexity: customizable agent
-- LangGraph:
+- LangGraph (Orchestration runtime):
   - Use when you need: "Low-level orchestration and explicit workflow topology"
   - Complexity: explicit workflow
-- Deep Agents:
+- Deep Agents (High-level agent harness):
   - Use when you want: "A batteries-included agent"
   - It adds capabilities such as planning, filesystem access, subagents and memory on top of the LangChain/LangGraph architecture
   - Complexity: batteries included
