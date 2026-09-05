@@ -1,15 +1,15 @@
 ---
 title: LangGraph
-link: https://chatgpt.com/s/t_6a8f02711c608191a01eb1ec47375683
 ---
 
 - LangGraph is a low-level orchestration runtime for building long-running, stateful workflows and agents
 - Its not an LLM framework. It doesn't decide your prompts, agent architecture, or business logic for you
 - It gives you primitives for controlling execution, state, persistence, branching, looping, streaming, interruption, recovery, and composition
 - LangGraph separates "what work should happen" from "how execution survives reality."
+- LangGraph is a durable state machine whose nodes happen to be very good places to call LLMs
 - LangGraph itself does not require LangChain, although LangChain components are commonly used for models and tools
 
-# Mental model
+## Mental model
 
 - 4 fundamental concepts: State, Nodes, Edges & Runtime/Execution
 - Graph describes control flow, while state carries information through that flow
@@ -107,6 +107,77 @@ flowchart TD
     Human --> Draft
     Draft --> Send
     Send --> End
+```
+
+## Complete Architecture
+
+```mermaid
+flowchart TB
+
+    User["User / Application"]
+
+    subgraph Runtime["LangGraph Runtime"]
+        Executor["Graph Executor"]
+
+        subgraph Graph["Graph"]
+            State["State"]
+            Nodes["Nodes"]
+            Edges["Edges"]
+            Subgraphs["Subgraphs"]
+        end
+
+        Executor --> Graph
+    end
+
+    User --> Runtime
+
+    subgraph AI["AI / External World"]
+        LLM["LLMs"]
+        Tools["Tools"]
+        APIs["External APIs"]
+        Human["Human"]
+    end
+
+    Nodes --> LLM
+    Nodes --> Tools
+    Nodes --> APIs
+    Nodes --> Human
+
+    subgraph Persistence["Persistence"]
+        CP[("Checkpointer<br/>Thread state")]
+        Store[("Store<br/>Long-term memory")]
+    end
+
+    Executor --> CP
+    Executor --> Store
+
+    subgraph Reliability["Reliability"]
+        Retry["Retries"]
+        Timeout["Timeouts"]
+        Durable["Durable execution"]
+    end
+
+    Executor --> Retry
+    Executor --> Timeout
+    Executor --> Durable
+
+    subgraph UX["Runtime interfaces"]
+        Streaming["Streaming"]
+        Interrupts["Interrupts"]
+        TimeTravel["Time travel"]
+    end
+
+    Executor --> Streaming
+    Executor --> Interrupts
+    Executor --> TimeTravel
+
+    subgraph Ops["Operations"]
+        LangSmith["LangSmith"]
+        Tests["pytest / evaluations"]
+    end
+
+    Runtime --> LangSmith
+    Runtime --> Tests
 ```
 
 ## State
@@ -525,3 +596,137 @@ flowchart TB
 ```
 
 ## Event streaming
+
+- Streaming Vs Event streaming:
+  - Streaming = lower-level graph execution events
+  - Event streaming = normalized, typed layers over those events. E.x:
+    - stream.messages
+    - stream.subgraph
+    - stream.interrupts
+    - stream.values (state of graph)
+- Mental Model: Imagine a security camera system
+  - Streaming: raw camera footage
+  - Event Streaming: person detected, door opened, vehicle detected
+
+## Time travel
+
+- It is actually a natural consequence of checkpointing
+- If you have: `Checkpoint 1...Checkpoint 4`, you can replay from checkpoint 2
+- LangGraph describe 2 main operations:
+  1. Replay: "Go back and run forward again"
+  2. Fork: "Go back and create a new branch"
+- This is similar to: Git branches for agent execution
+- Useful for:
+  - `Checkpoint before LLM went bad -> modify state -> run again`
+  - debugging
+  - evaluating alternate prompts
+
+## Subgraphs
+
+- Subgraph is: A LangGraph graph embedded inside another LangGraph graph
+- This allow a large agent systems to become composable instead of turning into one enormous graph
+- Subgraph persistence modes:
+- | Mode                         | `checkpointer=` | Meaning                                  |
+  | ---------------------------- | --------------- | ---------------------------------------- |
+  | Per-invocation (Recommended) | `None`          | Fresh state for each invocation/subGraph |
+  | Per-thread                   | `True`          | State persists across calls              |
+  | Stateless                    | `False`         | No checkpointing                         |
+
+```mermaid
+flowchart TD
+    Main["Main Graph"]
+
+    Main --> Research["Research Subgraph"]
+    Main --> Coding["Coding Subgraph"]
+    Main --> Review["Review Subgraph"]
+
+    Research --> R1["Search"]
+    Research --> R2["Analyze"]
+    Research --> R3["Summarize"]
+
+    Coding --> C1["Plan"]
+    Coding --> C2["Implement"]
+    Coding --> C3["Test"]
+```
+
+## Production architecture
+
+- `langgraph.json`:
+  - It is the deployment manifest for your LangGraph application
+  - E.x: `{"dependencies": ["."], "graphs": { "agent": "./my_agent/agent.py:graph" }, "env": ".env"}`
+- Persistence:
+  - Local: `InMemorySaver()` is useful for development/testing
+  - Production: Use PostgreSQL-based stores/checkpointers
+- `langgraph dev` is lightweight, doesn't require Docker, supports hot reload, and is designed for rapid development
+- `langgraph up` is a more production-like environment involving Docker, PostgreSQL and Redis
+
+```txt title='project structure'
+my-app/
+│
+├── my_agent/
+│   ├── __init__.py
+│   ├── agent.py
+│   │
+│   └── utils/
+│       ├── __init__.py
+│       ├── state.py
+│       ├── nodes.py
+│       └── tools.py
+│
+├── tests/c
+│   ├── test_graph.py
+│   └── test_nodes.py
+│
+├── langgraph.json
+├── pyproject.toml
+└── .env
+```
+
+## Testing
+
+- Should test both ordinary Python logic and graph behavior
+- Types:
+  1. Unit Test: Test Node with mock API calls. Fast. Deterministic
+  2. Graph Test: Topology. State
+  3. Integration Test: Real APIs
+  4. Eval(LLM Evaluation): Quality
+- Partial execution testing:
+  - LangGraph's persistence mechanisms can be used to create a state at a particular point
+  - This can be used to test a partial execution path
+  - Use `update_state`, a thread, and interruption boundaries for this
+  - Mental Model: Instead of replaying an entire movie, start the test at the scene you care about
+
+```py title='Example'
+# Use pytest
+def test_basic_agent_execution():
+    checkpointer = MemorySaver()
+    graph = create_graph()
+    compiled = graph.compile(checkpointer=checkpointer)
+    result = compiled.invoke(
+        {"my_key": "initial_value"},
+        config={"configurable": {"thread_id": "1"}}
+    )
+    assert result["my_key"] == "hello from node2"
+
+# Unit test: Node
+# We can test Node without running the entire agent
+# compiled graph also exposes individual nodes through 'graph.nodes'
+result = compiled_graph.nodes["node1"].invoke({"my_key": "initial_value"})
+```
+
+## Observability
+
+- LangGraph itself handles orchestration, while LangSmith provides tracing/observability/evaluation
+- `LangGraph -> Execution trace -> LangSmith/LangFuse -> Developer`
+
+```txt title='What we want to see'
+Run
+ ├── node: classify
+ │    └── LLM call
+ ├── node: search
+ │    └── API call
+ ├── node: draft
+ │    └── LLM call
+ ├── interrupt
+ └── resume
+```
