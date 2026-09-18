@@ -30,7 +30,6 @@ tmux ls
 | `tmux a -t [name]`            | Attach to a specific named session                                                                |
 | `tmux kill-session -t [name]` | Permanently close a specific session                                                              |
 | `exit` (inside tmux session)  | Kills current pane. If single pane, kills current window. If single window, kills current session |
-| `Ctrl+b + ?`                  | View a list of all keybindings (press `q` to exit)                                                |
 
 ## Prefix + Session Layer
 
@@ -64,6 +63,8 @@ tmux ls
 
 ## Prefix + Misc
 
-| `Ctrl+b` + cmd | usage                                                                         |
-| -------------- | ----------------------------------------------------------------------------- |
-| `[`            | Copy Mode - allow scrolling & selecting text. Press `q` to exit the copy mode |
+| `Ctrl+b` + cmd | usage                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| `[`            | Copy Mode - allow scrolling & selecting text. Press `q` to exit the copy mode            |
+| `?`            | View a list of all keybindings (press `q` to exit)                                       |
+| `:`            | Open command prompt at bottom of screen (`list-commands` to list all available commands) |

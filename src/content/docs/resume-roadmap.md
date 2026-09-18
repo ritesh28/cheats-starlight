@@ -127,3 +127,8 @@ Explain langchain (latest version) (python language) using official documentatio
 Explain each terminology, concept, architecture - Give analogy, mental model and examples.
 Use mermaid for visualisation.
 ```
+
+## PROMPTS FOR CODING
+
+- Ask questions if something unclear/missing. Do not assume/invent
+- ...some implementation plan... What all decisions I need to take coding wise?
