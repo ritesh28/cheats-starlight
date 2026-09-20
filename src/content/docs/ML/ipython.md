@@ -2,12 +2,18 @@
 title: IPython
 ---
 
-![ipython Image](./01-ipython.drawio.svg)
-
-- `pip install jupyterlab`:
-  - JupyterLab is the user interface (the IDE)
-  - Provides a workspace to write, view, and organize notebooks, files, and terminals
-  - Language-agnostic (supports Python, R, Julia, etc.)
+- IPython (Interactive Python): cmd shell for interactive computing in Python. Type `ipython` in terminal
+- Anaconda: Similar to `pip` and `pipenv` i.e. package and environment management. It provides packages for data science via 'conda' cli
+- Notebook: Its a file that contains both computer code (e.x. python) and rich text elements (markdown)
+  - Jupyter/IPython notebook: Its a server-client application running notebook documents on browser or VsCode. File extension: '.ipynb'
+  - Notebook kernel: Server for .ipynb notebook (`pip install ipykernel`). Kernels for other languages exists
+- Magic commands: Add-on commands on top of python syntax. Come in 2 flavors:
+  - Line magic: prefix by single '%'
+  - Cell magic (multi-line): prefix by double '%%'
+- Shell commands: Prefix with '!'. E.x. `!pwd`
+  - Shell-like magic command: E.x. '%cat', '%cp', '%ls', '%mkdir', etc.
+  - NOTE: '!cd..' does nothing because shell commands are executed in a temporary sub-shell. To make it work use '%cd' magic command
+- `pip install jupyterlab`: JupyterLab is a interface like IDE, providing a workspace to write, view, and organize notebooks, files, and terminals
 - `pip install ipykernel`: ipykernel is the engine that runs Python code within JupyterLab interface
 
 ## Jupiter in VS Code - No pyproject.toml or uv.lock
