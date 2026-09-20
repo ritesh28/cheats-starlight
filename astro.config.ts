@@ -14,6 +14,7 @@ export default defineConfig({
     mermaid(), // Must come BEFORE starlight
     starlight({
       title: "Cheats",
+      routeMiddleware: "./src/route-middleware.ts",
       logo: {
         src: "./src/assets/logo_blue_small.png",
       },
