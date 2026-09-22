@@ -41,6 +41,48 @@ title: Pandas
     - '0' in `labels[0]` represents California; '0' in `labels[1]` represents 2000
   - Thumb Rule for Slicing: Index needs to be **sorted** or else many of the MultiIndex slicing operations will fail
   - Partial Indexing/slicing: It allows indexing/slicing just one of the levels in the index. The result is same object, with the lower-level indices maintained
+- Merge (Join DB):
+  - Similar to Database join
+  - NOTE: merge in general discards the index, except in the special case of merges by index
+  - By default, Concatenation is row-wise; Merge is column-wise
+  - 3 categories:
+    1. one-to-one: key column do not contain duplicate entries. Very similar to column concatenation
+    2. many-to-one: one of the two key columns contains duplicate entries. Resulting DataFrame will preserve those duplicate entries as appropriate
+    3. many-to-many: Both key columns contains duplicate entries. Similar to DB CROSS JOIN
+- Grouping:
+  - `df.groupby('key')` returns `DataFrameGroupBy`. Mental Model: `<key-value>: dataFrame`
+  - `df.groupby('key')['col-name']` returns `SeriesGroupBy`. Mental Model: `<key-value>: series`
+  - GroupBy object Does **NO actual computation** until aggregation is applied
+  - It supports iteration (`filter()`, `transform()`, `apply()`). Use `for key_name, group_df in df.groupby('key'):` last option
+  - Dispatch methods:
+    - Any method not explicitly implemented by the GroupBy object will be passed through and called on each individual group (df or series objects)
+    - E.g. `df.groupby(key)[col-name].describe()`
+- Pivot Table:
+  - Mental Model: multidimensional version of GroupBy aggregation
+  - Both are same:
+    - `titanic.groupby(["sex", "class"])["survived"].aggregate("mean").unstack()`
+    - `titanic.pivot_table("survived", index="sex", columns="class")`
+- Vectorized String Operations: Deals with handling and manipulating string data
+  - These methods skips missing values. It just perform operation on the string value
+  - `series.str.*` ('str' attribute) under which all string methods are present
+- Time Series:
+  - Sequence of data points in chronological order, where the index is a time-aware index, typically a `DatetimeIndex`
+  - It is build on Python native `datetime` package & Numpy's `numpy.datetime64` & `numpy.timedelta64`
+  - Fundamental data structures: timestamp (represents a specific point in time), period (represents a span/interval of time) & time-delta (represents a length of time since some given time)
+  - Operation:
+    - Resampling: It is the process of resetting frequency at a higher or lower value
+    - Shifting: It is the process of moving data backward or forward in time
+    - Rolling/Windowing: Creates a moving or "rolling" window of a specified size and then performs a calculation on the data within that window
+- `eval()` & `query()`:
+  - `eval()` & `query()` allow you to directly access C-speed operations (fast) without costly allocation of intermediate arrays (less memory)
+  - They rely on `Numexpr` package
+  - `mask = (x > 0.5) & (y < 0.5)` is roughly equivalent to 3 intermediate steps `tmp1 = (x > 0.5); tmp2 = (y < 0.5); mask = tmp1 & tmp2`
+  - `eval()`: used for computation
+    - Comes in 2 flavour: `pd.eval()` & `df.eval()`
+    - Local variable can be used inside `eval()` by preceding variable name with `@`
+  - `query()`: used for filtering operation
+    - comes in 1 flavour: `df.query()`
+    - Similar to `eval()`, local variable can be used by preceding variable name with `@`
 
 ## Pandas Object - Series
 
@@ -175,23 +217,6 @@ title: Pandas
 
 ## Grouping
 
-| Syntax                                                                  | Description                                                                                    |
-| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `df.groupby("key").sum()`                                               | Aggregation. Returns summation column-wise for each group                                      |
-| `df.groupby('key').aggregate(['min', np.median, max])`                  | Aggregation. Return multi-index column `(col-name, agg-item)` & `group-item` indices DataFrame |
-| `df.groupby("key").aggregate({"col1": "min", "col2": "max"})`           | Aggregation. Different aggregation for different column                                        |
-| `df.groupby("key").filter(lambda grp: grp["col2"].min() > 2)`           | Filter rows based on group properties. `filter(group: DataFrame) -> bool`                      |
-| `df.groupby('key').transform(lambda grp_col: grp_col - grp_col.mean())` | Transform column-wise per group                                                                |
-| `df.groupby("key").apply(lambda grp: grp["data1"] / 2)`                 | Apply any func to grouping df                                                                  |
-
-| Transform                                                                           | Apply                                                                              |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `transform(grp_col: Series) -> Series`                                              | `apply(grp: DataFrame) -> df or series or scalar`                                  |
-| `transform()` passes each column for each group individually as a Series            | `apply()` passes all the columns for each group as a df                            |
-| `transform()` returns a sequence (1D Series, array or list) of same length as group | `apply()` returns a scalar, or a Series or DataFrame (or numpy array or even list) |
-| `df.groupby().transform` returns same shape as the original df                      | `df.groupby().apply` returns df/ser with extra outer multi-index `key`             |
-| Good performance                                                                    | Bad Performance. Last option                                                       |
-
 | Option to specify split key                                                | Syntax                                                            |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | Any series or list with a length matching that of df                       | `df.groupby(df['key'])` or `df.groupby([0,0,0,1,0,1,1....])`      |
@@ -199,28 +224,42 @@ title: Pandas
 | Similar to mapping, pass func that will input index value and output group | `df2.groupby(str.lower)`                                          |
 | Multi-index grouping                                                       | `df2.groupby([str.lower, mapping])`                               |
 
+| Syntax                                                                  | Description                                                          |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `df.groupby("key").sum()`                                               | Aggregation. Returns summation column-wise for each group            |
+| `df.groupby('key').aggregate(['min', np.median, max])`                  | Aggregation. Return multi-index column `(col-name, agg-item)`        |
+| `df.groupby("key").aggregate({"col1": "min", "col2": "max"})`           | Aggregation. Different aggregation for different column              |
+| `df.groupby("key").filter(lambda grp: grp["col2"].min() > 2)`           | Filter based on group properties. `filter(group: DataFrame) -> bool` |
+| `df.groupby('key').transform(lambda grp_col: grp_col - grp_col.mean())` | Transform column-wise per group                                      |
+| `df.groupby("key").apply(lambda grp: grp["data1"] / 2)`                 | Apply any func to grouping df (AVOID IT)                             |
+
+| Transform                                                                | Apply                                                                  |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `transform(grp_col: Series) -> Series`                                   | `apply(grp: DataFrame) -> df or series or scalar`                      |
+| `transform()` passes each column for each group individually as a Series | `apply()` passes all the columns for each group as a df                |
+| `df.groupby().transform` returns same shape as the original df           | `df.groupby().apply` returns df/ser with extra outer multi-index `key` |
+| Good performance                                                         | Bad Performance. Last option                                           |
+
 ## Pivot Tables
 
-| Type           | Syntax                                                                                                                                      |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| basic          | `titanic.pivot_table("survived", index="sex", columns="class")`. Group by class and gender, select survival, apply a mean aggregate         |
-| multilevel     | `titanic.pivot_table('survived', ['sex', age_dis_ctg], [fare_dis_ctg, 'class'])`. Use `pd.cut` or `pd.qcut` for discrete category (dis_ctg) |
-| missing data   | `titanic.pivot_table(..., fill_value=)` or `titanic.pivot_table(..., dropna=True)`                                                          |
-| aggregate      | `titanic.pivot_table(index='sex', columns='class', aggfunc={'survived':sum, 'fare':'mean'})`. Note: No `values` value                       |
-| compute totals | `titanic.pivot_table(..., margins=True, margins_name='All')`                                                                                |
+| Type           | Syntax                                                                                                                                        |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| basic          | `titanic.pivot_table("survived", index="sex", columns="class")`. Group by class and gender, select survival, apply a mean (default) aggregate |
+| multilevel     | `titanic.pivot_table('survived', ['sex', age_dis_ctg], [fare_dis_ctg, 'class'])`. Use `pd.cut` or `pd.qcut` for discrete category (dis_ctg)   |
+| aggregate      | `titanic.pivot_table(index='sex', columns='class', aggfunc={'survived':sum, 'fare':'mean'})`                                                  |
+| compute totals | `titanic.pivot_table(..., margins=True, margins_name='All')`                                                                                  |
 
 ## Vectorized String Operations
 
-| Syntax                                                   | Usage                                                                                   |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `series.str.capitalize()`                                | Convert strings in the Series/Index to be capitalized. Returns series of strings        |
-| `series.str.startswith('T')`                             | Returns series of boolean values                                                        |
-| `series.str.split()`                                     | Returns series of array-of-string                                                       |
-| `series.str.findall(r'^[^AEIOU].*[^aeiou]$')`            | methods accepting regular expressions to examine the content of each string element     |
-| `series.str.slice(0,3)` or `series.str[0:3]`             | Slicing each string element                                                             |
-| `series.str.get(3)` or `series.str[3]`                   | Indexing each string element                                                            |
-| `series.str.split().str.get(-1)`                         | Complex Example - extract the last name of each entry                                   |
-| `series(['a\|b', np.nan, 'a\|c']).str.get_dummies('\|')` | Each string in Series is split by sep and returned as a df of dummy/indicator variables |
+| Syntax                                        | Usage                                                                               |
+| --------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `series.str.capitalize()`                     | Convert strings in the Series/Index to be capitalized. Returns series of strings    |
+| `series.str.startswith('T')`                  | Returns series of boolean values                                                    |
+| `series.str.split()`                          | Returns series of array-of-string                                                   |
+| `series.str.findall(r'^[^AEIOU].*[^aeiou]$')` | methods accepting regular expressions to examine the content of each string element |
+| `series.str.slice(0,3)` or `series.str[0:3]`  | Slicing each string element                                                         |
+| `series.str.get(3)` or `series.str[3]`        | Indexing each string element                                                        |
+| `series.str.split().str.get(-1)`              | Complex Example - extract the last name of each entry                               |
 
 ## Pandas Time Series
 
@@ -228,7 +267,7 @@ title: Pandas
 # `datetime64` dtype encodes dates as 64-bit integers
 # it imposes a trade-off between time resolution and maximum time span
 # e.g. if you want a time resolution of one nanosecond, you only have enough information to encode a range of 2^64 nanoseconds, or just under 600 years
-np.datetime64("2015-07-04") # implicitly day-based datetime. dtype: datetime64[D]
+np.datetime64("2015-07-04") # implicitly day-based (frequency) datetime. dtype: datetime64[D]
 np.datetime64("2015-07-04 12:00") # implicitly minute-based datetime. dtype: datetime64[m]
 np.datetime64("2015-07-04 12:00", "ns") # explicitly nanosecond-based datetime. dtype: datetime64[ns]
 
@@ -240,12 +279,13 @@ date = np.array(["2026-02-28"], dtype=np.datetime64) # dtype: datetime64[D]. By 
 date + np.arange(3) # array(['2026-02-28', '2026-03-01', '2026-03-02'], dtype='datetime64[D]')
 ```
 
-| time stamps                                  | time periods                              | time deltas                                               |
-| -------------------------------------------- | ----------------------------------------- | --------------------------------------------------------- |
-| represents a specific point in time          | represents a fixed interval of time       | represents a length of time                               |
-| `Timestamp` type based on `numpy.datetime64` | `Period` type based on `numpy.datetime64` | `Timedelta` type based on `numpy.timedelta64`             |
-| associated index: `DatetimeIndex`            | associated index: `PeriodIndex`           | associated index: `TimedeltaIndex`                        |
-| replacement for Python’s native `datetime`   |                                           | replacement for Python’s native `datetime.timedelta` type |
+| time stamps                                     | time periods                                   | time deltas                                      |
+| ----------------------------------------------- | ---------------------------------------------- | ------------------------------------------------ |
+| represents a specific point in time             | represents a span/interval of time             | represents a length of time                      |
+| `pd.Timestamp` type based on `numpy.datetime64` | `pd.Period` type based on `numpy.datetime64`   | `pd.Timedelta` type based on `numpy.timedelta64` |
+| associated index: `DatetimeIndex`               | associated index: `PeriodIndex`                | associated index: `TimedeltaIndex`               |
+| Usage: Precise logs, stock trade tracking       | Usage: monthly aggregations, quarterly targets | Usage: Calculating elapsed time, countdowns      |
+| Ex: "2026-09-22 14:30:00"                       | Ex: "2026-09" (the entire month of September)  | Ex: "5 days 02:00:00"                            |
 
 ```py title="DatetimeIndex"
 # Pandas time series tools really become useful is when you begin to index data by timestamps
@@ -264,35 +304,15 @@ ser_or_df['2015'] # pass a year to obtain a slice of all data from that year
 
 ```py title="interchange time series types"
 # Passing a single date to pd.to_datetime() yields a Timestamp; passing a series of dates by default yields a DatetimeIndex
-dates = pd.to_datetime(
-    [datetime(2015, 7, 3), "4th of July, 2015", "2015-Jul-6", "07-07-2015", "20150708"]
-)  # DatetimeIndex(['2015-07-03', ...], dtype='datetime64[ns]', freq=None)
+dates = pd.to_datetime([datetime(2015, 7, 3), "4th of July, 2015", "2015-Jul-6", "07-07-2015", "20150708"])  # DatetimeIndex(['2015-07-03', ...], dtype='datetime64[ns]', freq=None)
 
 # PeriodIndex
-dates.to_period("D")  # D -> day. PeriodIndex(['2015-07-03', ...], dtype='period[D]')
+per = dates.to_period("D")  # D -> day (frequency). PeriodIndex(['2015-07-03', ...], dtype='period[D]')
+per.to_timestamp(how='start') # Period to Timestamp
 
 # Time delta
 dates - dates[0]  # TimedeltaIndex(['0 days', ...], dtype='timedelta64[ns]', freq=None)
 ```
-
-| Regular Sequence - Syntax                          | Explain                                            |
-| -------------------------------------------------- | -------------------------------------------------- |
-| `pd.date_range('2015-07-03', '2015-07-10')`        | Create `DatetimeIndex` with day(D) frequency       |
-| `pd.date_range('2015-07-03', periods=8)`           | Create `DatetimeIndex` with day(D) frequency       |
-| `pd.date_range("2015-07-03", periods=8, freq="h")` | Create `DatetimeIndex` with hour(h) frequency      |
-| `pd.period_range('2015-07', periods=8, freq='M')`  | Create `PeriodIndex` with month(M) frequency       |
-| `pd.timedelta_range(0, periods=10, freq="min")`    | Create `TimedeltaIndex` with minute(min) frequency |
-
-| Frequencies - Syntax                                      | Explain                                      |
-| --------------------------------------------------------- | -------------------------------------------- |
-| `freq="YE"`                                               | year end in dec. `[YE-DEC]`                  |
-| `freq="YS"`                                               | year start in dec. `[YS-DEC]`                |
-| `freq="YS-FEB"`                                           | year start in feb. `[YS-FEB]`                |
-| `freq="QE"`                                               | quarter end in dec. `[QE-DEC]`               |
-| `freq="W"`                                                | week end in sunday. `[W-SUN]`                |
-| `freq="B"`                                                | Business day. `[B]`                          |
-| `freq="1h30min"`                                          | combined frequencies. `[90min]`              |
-| `from pandas.tseries.offsets import BDay; ...freq=BDay()` | function can be used instead of string value |
 
 ```py title='operation'
 # ===== Resampling
@@ -300,7 +320,7 @@ tseries.resample("Y").mean() # reports the average of the previous year. It is f
 tseries.asfreq("Y") # reports the value at the end of the year. It is fundamentally a data selection
 
 # ===== Shifting
-tseries.shift(1) # shifts the data forward by 1 day which means first item becomes `NaN`
+tseries.shift(1) # shifts the data forward which means first item becomes `NaN`
 
 # ===== Rolling/Windowing
 tseries.rolling(3).sum() # pandas takes the first three data points, computes sum, and assigns that value to the third data point. First 2 are `NaN`
@@ -309,12 +329,12 @@ tseries.rolling(3).sum() # pandas takes the first three data points, computes su
 
 ## High-Performance Pandas: eval() and query()
 
-| level/scope                                           | eval syntax                                           | regular syntax                                  |
-| ----------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------- |
-| top-level: obj attr & index                           | `result2 = pd.eval('df1.A + df2.T[0] + df3.iloc[1]')` | `result1 = df1['A'] + df2.T[0] + df3.iloc[1]`   |
-| df-level: column referred as variable                 | `result2 = df.eval('(A + B) / (C - 1)')`              | `result1 = (df['A'] + df['B']) / (df['C'] - 1)` |
-| df-level: assignment                                  | `df.eval('D = (A + B) / C', inplace=True)`            |                                                 |
-| df-level: local variable (NOT supported by `pd.eval`) | `df.eval('A + @var_name')`                            |                                                 |
+| level/scope                                           | eval syntax                                | regular syntax                            |
+| ----------------------------------------------------- | ------------------------------------------ | ----------------------------------------- |
+| top-level: obj attr & index                           | `result2 = pd.eval('df1.A + df2.T[0]')`    | `result1 = df1['A'] + df2.T[0]`           |
+| df-level: column referred as variable                 | `result2 = df.eval('(A + B) / C')`         | `result1 = (df['A'] + df['B']) / df['C']` |
+| df-level: assignment                                  | `df.eval('D = (A + B) / C', inplace=True)` |                                           |
+| df-level: local variable (NOT supported by `pd.eval`) | `df.eval('A + @var_name')`                 |                                           |
 
 | type                 | query syntax                                | regular syntax                              |
 | -------------------- | ------------------------------------------- | ------------------------------------------- |
