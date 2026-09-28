@@ -6,25 +6,18 @@ title: Docker
 
 - Docker helps you create a **reproducible** environment. you can run your application in **isolation** inside of that environment
 - Virtual Machine Vs Docker: REFER INFOGRAPHIC
-- To dockerize, we need to:
-  1. Define a Dockerfile: Base OS image, libraries to install, env variables , ports that need opening and lastly how to start up our service
-  2. Build an image or pull down an existing image from Docker Hub
-  3. Create and run a container
+- To dockerize - Create and run a container
 - Main Objects:
-  1. Image: Read-only templates that contain instructions (code, runtime, environment variables) needed to create a Docker container. You can think of them as the blueprint
-  2. Container: The running instance of an Image
+  1. Image: Read-only template/blueprint that contain instructions needed to create a Docker container
+  2. Container: The running instance of an Image. It is read-write
   3. Volume: The persistent storage mechanism for Docker data, ensuring data isn't lost when a container is destroyed
   4. Network
-  5. Dockerfile
+  5. Dockerfile: Base OS image, libraries to install, env variables , ports that need opening and lastly how to start up our service
 
 ## Image & Container
 
 - Image name format: `[<registry>/][<project>/]<image>[:<tag>|@<digest>]`. e.g. docker.io/my-proj/redis:5@sha256:0ed5d5928
 - Each container gets its own CPU, memory and network resources and does not depend on a specific operating system or kernel
-- | Aspect     | Images                            | Containers                         |
-  | ---------- | --------------------------------- | ---------------------------------- |
-  | Definition | Blueprint for creating containers | Running instance of a Docker image |
-  | State      | Static (read-only)                | Dynamic (read-write)               |
 - Docker Layer Caching:
   - It allow docker to reuse previously built image layers to drastically speed up container build times
   - Each line or instruction in a Dockerfile (such as RUN, COPY, or ADD) creates a unique, read-only file system layer
@@ -33,25 +26,24 @@ title: Docker
 
 ## Volume
 
-- Volumes or data volumes is a way for us to create a place in the host machine where we can write files so they are **persisted**
-- Mountpoint: location on the host machine which is **mounted** to a location in the container
+- Data Volume is a way for us to create a place in the host machine where we can write files so they are **persisted**
+- Mountpoint: location on the host machine (source) which is **mounted** to a location in the container (destination)
 - 3 primary types of mounts:
   1. Volumes (Recommended): completely managed by Docker and are isolated from the host machine's core file system. Best For: Database storage
   2. Bind Mounts: map a specific, exact file or directory from your host machine directly into the container. Best For: Local development environments
   3. tmpfs Mounts (Temporary FileSystem): stores data directly in RAM instead of writing it to hard drive. Best For: Temporary data
      - Pros: Speed (since RAM) and security (since data is wiped out once container is stopped)
      - Cons: Cannot be shared between containers
-- Docker mount is same as any OS mounting:
-  - When you **bind-mount** a filesystem onto another directory, as in `mount -o bind /source /destination` or `docker run -v /host/path:/container/path ...`:
-    - You will only see files in the destination mount that exist in the source filesystem
+- Docker Mount Behavior:
+  - When you **bind-mount** a filesystem onto another directory, it behave same as any OS mounting (`docker run -v /host/source-path:/container/destination-path ...`):
+    - Anything in `/destination` folder is bypassed/hidden. All you see in the container is what is on the host `/source` folder
     - You will not see the files contained in any child mounts unless you were to explicitly bind mount those directories as well `mount -o bind /source/sub /destination/sub`
-    - Anything in `/destination` folder is bypassed/hid. All you see in the container is what is on the host `/source` folder
   - Named Volume (`-v my_volume:/container/path`):
     - This volume reside in Docker Demon (host) Linux Virtual Machine
     - Has a built-in safety mechanic called **copy-on-first-use**
     - First-Time Mount (Volume is Empty): Docker will pre-populate the volume by copying all the pre-existing files and folders out of container's `/container/path` directory
     - Subsequent Mount (Volume has Data): Once data exists inside `my_volume`, the copying mechanic permanently shuts off - i.e. anything in `/container/path` will be bypassed
-- Use Read-Only Flag: If container only needs to read a config file from the host, append `:ro` to your mount (e.g., `-v ./config:/app/config:ro`)
+- Read-Only Flag: If container only needs to read a config file from the host, append `:ro` to your mount (e.g., `-v ./config:/app/config:ro`)
 - NOTE: If the directory path contain spaces, then wrap it in quotes. Example - `"$(PWD)":/app`
 
 ## Networking
