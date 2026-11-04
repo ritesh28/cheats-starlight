@@ -3,17 +3,20 @@ name: generate-cheat-sheet
 description: >-
   Create concise technical cheat sheets as Starlight Markdown docs (bullets,
   tables, Mermaid/ASCII diagrams, titled code). Use when the user asks to
-  create/write/update a cheat sheet, crash course, or quick reference; distill
-  notes or a shared ChatGPT/docs URL into src/content/docs.
+  create/write a new cheat sheet, crash course, or quick reference; distill
+  notes or a shared ChatGPT/docs URL into src/content/docs. For rewriting or
+  reordering an existing scattered cheat sheet, use rewrite-cheat-sheet.
 ---
 
 # Generate Cheat Sheet
 
 ## When to use
 
-- User asks for a cheat sheet, crash course, or quick reference
+- User asks for a **new** cheat sheet, crash course, or quick reference
 - User points at a target `.md` under `src/content/docs/` and a source (URL, notes, chat share)
 - User asks to expand a dense definition into subpoints with examples
+
+For **rewrite / reorder / restructure** of an existing doc, use [rewrite-cheat-sheet](../rewrite-cheat-sheet/SKILL.md).
 
 ## Workflow
 
@@ -40,18 +43,22 @@ Body order:
 1. Overview bullets (definition with bold key phrase; optional numbered subpoints + examples for dense phrases; 2–5 more bullets)
 2. `## Mental model` — primitives/analogy; comparison table if options compete; Mermaid/ASCII diagram
 3. `## Core terminology` — Term | Mental model | Example table when jargon is dense
-4. How-to sections — project tree, install, bootstrap, **pseudocode** how-tos with `text title='…'` fences (do not put "pseudocode" in the title)
+4. How-to sections — project tree, install, bootstrap, **pseudocode** how-tos (do not put "pseudocode" in the title)
 5. Verify section — copy-paste queries/CLI when a backend exists
 6. `## Production` / retain — Decision | Guidance table
 
 Fence rules (no sample blocks in this skill — apply in the cheat sheet only):
 
 - **Every fence needs a `title='...'`** (including `bash`, trees, ASCII, one-liners)
-- **Default language:** `text` with a short title — trees, ASCII, strategies, env snippets, pseudocode
+- **`text`** — trees, ASCII diagrams, strategies, env/layout snippets that are not a programming dialect
 - Mermaid: language `mermaid` (title optional only if siblings omit it; prefer a title when useful)
-- **Pseudocode (default for all logic snippets):** `text title='…'` — structured steps; keep real API names; omit imports/types/boilerplate; no full runnable apps; never put "pseudocode" in the title
+- **Pseudocode (default for all logic snippets):** keep real API names; omit imports/types/boilerplate; no full runnable apps; never put "pseudocode" in the title
+- **Fence language follows the dialect of the pseudocode**, not "always text":
+  - written in a TypeScript/JS fashion → `ts` (or `js` if clearly JS)
+  - written in a Python fashion → `py`
+  - no clear language dialect → `text`
 - Bash: `bash title='install'` / `bash title='run'` — never bare bash fences
-- Real language (`ts`/`py`/…) only when the user explicitly asks for runnable code
+- Full copy-paste runnable apps/skeletons only when the user explicitly asks
 
 ## Writing rules
 
@@ -59,7 +66,7 @@ Fence rules (no sample blocks in this skill — apply in the cheat sheet only):
 - **One job per `##` section** — one headline purpose
 - **Bold sparingly** — only the term or phrase being defined
 - **Examples under dense phrases** — when a line packs multiple verbs/concepts (e.g. "generate, collect, and export"), add numbered subpoints each with a one-line example
-- **Fences** — always set `title='...'`. Default to `text title='...'`. All logic/how-to snippets are **pseudocode** in `text` (do not label titles with "pseudocode"). Bash install/run must have titles. Skip real language skeletons unless requested
+- **Fences** — always set `title='...'`. Logic/how-tos are still **pseudocode** (short, no boilerplate); tag them `ts`/`py`/… when written in that fashion, else `text`. Bash install/run must have titles
 - **Diagrams** — Mermaid or ASCII only (no Draw.io unless the folder already uses `.drawio.svg`). ASCII trees use `text title='...'`
 - **Frontmatter** — usually just `title:`; add other Starlight fields only if siblings use them
 - **No fluff** — skip marketing, long intros, "further reading" dumps unless the user asks
@@ -69,12 +76,12 @@ Fence rules (no sample blocks in this skill — apply in the cheat sheet only):
 
 From a long crash course / chat share / article:
 
-| Keep | Drop |
-| ---- | ---- |
-| Mental model, terms, decision tables | Filler transitions, retries, UI chrome |
-| Minimal bootstrap + custom instrumentation/code | Full apps, repeated explanations |
-| Verify queries / CLI that prove it works | Generic "check the docs" without commands |
-| Trade-offs that change production behavior | Vendor hype and soft CTAs |
+| Keep                                            | Drop                                      |
+| ----------------------------------------------- | ----------------------------------------- |
+| Mental model, terms, decision tables            | Filler transitions, retries, UI chrome    |
+| Minimal bootstrap + custom instrumentation/code | Full apps, repeated explanations          |
+| Verify queries / CLI that prove it works        | Generic "check the docs" without commands |
+| Trade-offs that change production behavior      | Vendor hype and soft CTAs                 |
 
 ## Quality checklist
 
@@ -82,8 +89,8 @@ From a long crash course / chat share / article:
 - [ ] Mental model early (primitives, analogy, or signal table)
 - [ ] At least one Mermaid or ASCII diagram when the topic has flow/hierarchy
 - [ ] Terminology table if >5 jargon terms
-- [ ] Every fence has a `title='...'` (bash included); trees/ASCII/pseudocode use `text title='...'`
-- [ ] How-to logic is pseudocode by default (not full ts/py unless asked)
+- [ ] Every fence has a `title='...'` (bash included); trees/ASCII use `text title='...'`
+- [ ] How-to logic is pseudocode by default; fence tag matches dialect (`ts`/`py`/… or `text`)
 - [ ] Matches tone/structure of sibling docs in the same folder
 - [ ] No verbatim dump of the source URL/chat
 

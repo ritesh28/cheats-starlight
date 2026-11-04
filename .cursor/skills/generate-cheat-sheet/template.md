@@ -8,16 +8,17 @@ Use this shape when creating a new doc under `src/content/docs/`:
 2. Overview bullets
 3. `## Mental model` + optional Mermaid
 4. `## Terminology` table
-5. Usage: every fence has `title='...'`. Default `text title='...'`; bash uses e.g. `bash title='install'`; logic is **pseudocode** in `text` (not full ts/py unless asked; do not put "pseudocode" in the title)
+5. Usage: every fence has `title='...'`. Trees/ASCII/strategies → `text`; bash → e.g. `bash title='install'`; logic is **pseudocode** tagged by dialect (`ts`/`py`/…); do not put "pseudocode" in the title
 6. `## Retain` decision table
 
 ## Pseudocode
 
-- Prefer structured pseudocode over runnable language for how-tos
+- Prefer structured pseudocode over full runnable apps for how-tos
 - Keep real API/symbol names where they aid recall
 - Omit imports, types, and boilerplate
 - Show control flow (try/catch/finally, if/else) clearly
-- Use real language fences only when the user asks for copy-paste code
+- **Fence language = dialect of the snippet:** TypeScript-style → `ts`; Python-style → `py`; other languages → matching tag; dialect-free → `text`
+- Full copy-paste runnable skeletons only when the user asks
 - Do not put sample pseudocode in this skill/template — write it only in the target cheat sheet
 
 ## Dense phrase → subpoints
