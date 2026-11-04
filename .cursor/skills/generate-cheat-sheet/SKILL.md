@@ -46,8 +46,33 @@ Body order:
 
 Nested example fences (write these literally in the cheat sheet):
 
-- Mermaid: language `mermaid`, e.g. `flowchart LR` with `A --> B --> C`
-- Code: language tag + `title='path/or-purpose.ts'`; minimal skeleton only
+- **Every fence needs a `title='...'`** (including `bash`, trees, ASCII, one-liners)
+- **Default language:** `text` with a short title — use for trees, ASCII diagrams, strategies, env snippets when no better language fits
+- Mermaid: language `mermaid` (title optional only if siblings omit it; prefer a title when useful)
+- Code: real language tag + `title='path/or-purpose.ts'`; minimal skeleton only
+- Bash: `bash title='install'` / `bash title='run'` — never bare ` ```bash `
+
+Examples:
+
+````markdown
+```text title='span tree'
+POST /orders
+└── Validate order
+```
+
+```text title='project layout'
+src/
+└── telemetry/
+```
+
+```bash title='install'
+npm install @microsoft/opentelemetry @opentelemetry/api
+```
+
+```bash title='run'
+node --import ./dist/telemetry/instrumentation.mjs ./dist/server.js
+```
+````
 
 ## Writing rules
 
@@ -55,8 +80,8 @@ Nested example fences (write these literally in the cheat sheet):
 - **One job per `##` section** — one headline purpose
 - **Bold sparingly** — only the term or phrase being defined
 - **Examples under dense phrases** — when a line packs multiple verbs/concepts (e.g. "generate, collect, and export"), add numbered subpoints each with a one-line example
-- **Code** — minimal skeleton; use `title='...'` on fences. Prefer TypeScript/Python matching the topic
-- **Diagrams** — Mermaid or ASCII only (no Draw.io unless the folder already uses `.drawio.svg`)
+- **Fences** — always set `title='...'`. Default to `text title='...'` when language is unclear. Bash and install/run commands must have titles too. Prefer TypeScript/Python matching the topic for real code
+- **Diagrams** — Mermaid or ASCII only (no Draw.io unless the folder already uses `.drawio.svg`). ASCII trees use `text title='...'`
 - **Frontmatter** — usually just `title:`; add other Starlight fields only if siblings use them
 - **No fluff** — skip marketing, long intros, "further reading" dumps unless the user asks
 - **Accuracy** — prefer current package/API names from the source; if unsure, note the assumption briefly in a bullet
@@ -78,7 +103,7 @@ From a long crash course / chat share / article:
 - [ ] Mental model early (primitives, analogy, or signal table)
 - [ ] At least one Mermaid or ASCII diagram when the topic has flow/hierarchy
 - [ ] Terminology table if >5 jargon terms
-- [ ] Runnable-looking code skeletons with titles
+- [ ] Every fence has a `title='...'` (bash included); trees/ASCII use `text title='...'`
 - [ ] Matches tone/structure of sibling docs in the same folder
 - [ ] No verbatim dump of the source URL/chat
 

@@ -8,7 +8,7 @@ Use this shape when creating a new doc under `src/content/docs/`:
 2. Overview bullets
 3. `## Mental model` + optional Mermaid
 4. `## Terminology` table
-5. Usage: install fence with `title='install'`, code fence with `title='minimal.ts'`
+5. Usage: every fence has `title='...'`. Default `text title='...'`; bash uses e.g. `bash title='install'`; code uses `ts title='minimal.ts'`
 6. `## Retain` decision table
 
 ## Dense phrase → subpoints
@@ -33,21 +33,35 @@ Prefer a table: Command | Purpose
 
 Prefer a table: Approach | How | Best for
 
-## Project layout
+## Project layout / ASCII
 
-Use a plain fenced tree (no language tag), e.g.:
+Default to `text` with a title:
 
-```
+````markdown
+```text title='project layout'
 src/
 ├── telemetry/
 │   └── instrumentation.ts
 └── server.ts
 ```
+````
+
+Bash also needs a title:
+
+````markdown
+```bash title='install'
+npm install example
+```
+
+```bash title='run'
+node --import ./dist/telemetry/instrumentation.mjs ./dist/server.js
+```
+````
 
 ## Diagrams
 
 - Mermaid `flowchart` for pipelines and architecture
-- ASCII tree for parent/child hierarchies (spans, layers)
+- ASCII trees/hierarchies as `text title='...'`
 - One primary diagram unless a second clarifies a different concern
 
 ## Verify / prove it works
