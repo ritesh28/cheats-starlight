@@ -40,39 +40,18 @@ Body order:
 1. Overview bullets (definition with bold key phrase; optional numbered subpoints + examples for dense phrases; 2–5 more bullets)
 2. `## Mental model` — primitives/analogy; comparison table if options compete; Mermaid/ASCII diagram
 3. `## Core terminology` — Term | Mental model | Example table when jargon is dense
-4. How-to sections — project tree, install, bootstrap, custom code with `title='...'` fences
+4. How-to sections — project tree, install, bootstrap, **pseudocode** how-tos with `text title='…'` fences (do not put "pseudocode" in the title)
 5. Verify section — copy-paste queries/CLI when a backend exists
 6. `## Production` / retain — Decision | Guidance table
 
-Nested example fences (write these literally in the cheat sheet):
+Fence rules (no sample blocks in this skill — apply in the cheat sheet only):
 
 - **Every fence needs a `title='...'`** (including `bash`, trees, ASCII, one-liners)
-- **Default language:** `text` with a short title — use for trees, ASCII diagrams, strategies, env snippets when no better language fits
+- **Default language:** `text` with a short title — trees, ASCII, strategies, env snippets, pseudocode
 - Mermaid: language `mermaid` (title optional only if siblings omit it; prefer a title when useful)
-- Code: real language tag + `title='path/or-purpose.ts'`; minimal skeleton only
-- Bash: `bash title='install'` / `bash title='run'` — never bare ` ```bash `
-
-Examples:
-
-````markdown
-```text title='span tree'
-POST /orders
-└── Validate order
-```
-
-```text title='project layout'
-src/
-└── telemetry/
-```
-
-```bash title='install'
-npm install @microsoft/opentelemetry @opentelemetry/api
-```
-
-```bash title='run'
-node --import ./dist/telemetry/instrumentation.mjs ./dist/server.js
-```
-````
+- **Pseudocode (default for all logic snippets):** `text title='…'` — structured steps; keep real API names; omit imports/types/boilerplate; no full runnable apps; never put "pseudocode" in the title
+- Bash: `bash title='install'` / `bash title='run'` — never bare bash fences
+- Real language (`ts`/`py`/…) only when the user explicitly asks for runnable code
 
 ## Writing rules
 
@@ -80,7 +59,7 @@ node --import ./dist/telemetry/instrumentation.mjs ./dist/server.js
 - **One job per `##` section** — one headline purpose
 - **Bold sparingly** — only the term or phrase being defined
 - **Examples under dense phrases** — when a line packs multiple verbs/concepts (e.g. "generate, collect, and export"), add numbered subpoints each with a one-line example
-- **Fences** — always set `title='...'`. Default to `text title='...'` when language is unclear. Bash and install/run commands must have titles too. Prefer TypeScript/Python matching the topic for real code
+- **Fences** — always set `title='...'`. Default to `text title='...'`. All logic/how-to snippets are **pseudocode** in `text` (do not label titles with "pseudocode"). Bash install/run must have titles. Skip real language skeletons unless requested
 - **Diagrams** — Mermaid or ASCII only (no Draw.io unless the folder already uses `.drawio.svg`). ASCII trees use `text title='...'`
 - **Frontmatter** — usually just `title:`; add other Starlight fields only if siblings use them
 - **No fluff** — skip marketing, long intros, "further reading" dumps unless the user asks
@@ -103,7 +82,8 @@ From a long crash course / chat share / article:
 - [ ] Mental model early (primitives, analogy, or signal table)
 - [ ] At least one Mermaid or ASCII diagram when the topic has flow/hierarchy
 - [ ] Terminology table if >5 jargon terms
-- [ ] Every fence has a `title='...'` (bash included); trees/ASCII use `text title='...'`
+- [ ] Every fence has a `title='...'` (bash included); trees/ASCII/pseudocode use `text title='...'`
+- [ ] How-to logic is pseudocode by default (not full ts/py unless asked)
 - [ ] Matches tone/structure of sibling docs in the same folder
 - [ ] No verbatim dump of the source URL/chat
 
