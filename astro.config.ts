@@ -7,7 +7,6 @@ import rehypeDocument from "rehype-document";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import { pluginAccordionCode } from "./src/plugin-accordion-code";
-import rehypeImageZoom from "./src/rehype-image-zoom";
 
 export default defineConfig({
   integrations: [
@@ -45,12 +44,11 @@ export default defineConfig({
   markdown: {
     remarkPlugins: [remarkMath],
     rehypePlugins: [
-      rehypeImageZoom,
       rehypeKatex,
       [
         rehypeDocument,
         {
-          js: ["/image-zoom.js", "/accordion.js"],
+          js: ["/accordion.js"],
         },
       ],
     ],

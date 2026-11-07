@@ -43,22 +43,6 @@
 }
 
 @layer components {
-  .zoom-overlay {
-    @apply fixed inset-0 bg-black/80 flex justify-center items-center opacity-0 pointer-events-none transition-opacity duration-300 ease-in z-50;
-  }
-  .zoom-overlay img {
-    @apply max-w-[90%] max-h-[90%] shadow;
-  }
-  .zoom-overlay.active {
-    @apply opacity-100 pointer-events-auto;
-  }
-  .zoom-overlay.active img {
-    @apply cursor-zoom-out;
-  }
-  .zoomable-img {
-    @apply cursor-zoom-in transition-transform duration-300 ease-in-out;
-  }
-
   /* accordion */
   .accordion {
     @apply p-4 text-gray-800 bg-gray-50 dark:bg-gray-800 dark:text-gray-300 cursor-pointer w-full;
