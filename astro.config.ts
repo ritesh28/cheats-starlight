@@ -48,7 +48,7 @@ export default defineConfig({
       [
         rehypeDocument,
         {
-          js: ["/accordion.js"],
+          js: ["/accordion.js", "/mermaid-viewer.js"],
         },
       ],
     ],

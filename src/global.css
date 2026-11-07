@@ -67,4 +67,71 @@
   .panel {
     @apply max-h-0 overflow-hidden transition-[max-height];
   }
+
+  /* mermaid expand viewer */
+  .mermaid-viewer {
+    @apply relative;
+  }
+
+  .mermaid-expand-btn {
+    @apply absolute top-2 right-2 z-10 inline-flex items-center justify-center
+      size-8 rounded-md border border-gray-300/80 bg-white/90 text-gray-700
+      opacity-0 shadow-sm transition-opacity
+      hover:bg-white hover:text-gray-900
+      focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2
+      dark:border-gray-600 dark:bg-gray-900/90 dark:text-gray-200
+      dark:hover:bg-gray-900 dark:hover:text-white;
+  }
+
+  .mermaid-viewer:hover .mermaid-expand-btn,
+  .mermaid-viewer:focus-within .mermaid-expand-btn {
+    @apply opacity-100;
+  }
+
+  body.mermaid-expand-open {
+    @apply overflow-hidden;
+  }
+
+  .mermaid-expand-overlay {
+    @apply fixed inset-0 z-50 flex flex-col;
+    background: var(--sl-color-bg);
+  }
+
+  .mermaid-expand-overlay[hidden] {
+    @apply hidden;
+  }
+
+  .mermaid-expand-toolbar {
+    @apply absolute top-3 right-3 z-10;
+  }
+
+  .mermaid-expand-close {
+    @apply inline-flex items-center justify-center size-9 rounded-md shadow-sm;
+    color: var(--sl-color-text);
+    background: var(--sl-color-bg-nav);
+    border: 1px solid var(--sl-color-gray-5);
+  }
+
+  .mermaid-expand-close:hover {
+    background: var(--sl-color-gray-5);
+  }
+
+  .mermaid-expand-close:focus-visible {
+    outline: 2px solid var(--sl-color-text);
+    outline-offset: 2px;
+  }
+
+  .mermaid-expand-stage {
+    @apply relative flex flex-1 items-center justify-center overflow-hidden
+      cursor-default touch-none p-6;
+  }
+
+  .mermaid-expand-stage.is-dragging {
+    @apply cursor-grabbing;
+  }
+
+  .mermaid-expand-stage > svg {
+    @apply select-none cursor-grab;
+    will-change: transform;
+  }
 }
