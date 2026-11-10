@@ -305,17 +305,52 @@ ROLLBACK;
 
 ## Concurrency patterns
 
-```sql title='atomic invariant'
-UPDATE accounts SET ...
--- check rows affected
+- Two strategies when many txns try to update the **same row** without overwriting each other
+
+| Feature     | Optimistic                           | Pessimistic                        |
+| ----------- | ------------------------------------ | ---------------------------------- |
+| Philosophy  | Conflicts rare → check at write      | Conflicts likely → lock on read    |
+| How         | App logic + version/timestamp column | Engine: `SELECT … FOR UPDATE`      |
+| Throughput  | High when contention is low          | Lower — holds locks while you work |
+| On conflict | Update matches 0 rows → retry        | Waiters block until lock frees     |
+
+### Optimistic locking
+
+- **No row lock** — multiple txns may read/modify; conflict checked only at `UPDATE`
+- Add a tracking column (`version` int or timestamp)
+
+```sql title='optimistic update (version check)'
+-- 1. Read: id=1, balance=100, version=4
+-- 2. Compute new balance in app memory
+-- 3. Write only if version still matches
+UPDATE accounts
+SET balance = 120, version = version + 1
+WHERE id = 1 AND version = 4;
+-- 1 row → success; 0 rows → someone else won → rollback / retry
 ```
 
-```sql title='row lock'
-BEGIN;
-SELECT stock FROM products WHERE id = 10 FOR UPDATE;
-UPDATE products SET stock = stock - 1 WHERE id = 10;
-COMMIT;
+```sql title='optimistic state transition'
+UPDATE orders
+SET status = 'paid'
+WHERE id = $1 AND status = 'pending'
+RETURNING *;
 ```
+
+- Best for: **low contention**; long-lived UX (edit form open for minutes — don’t hold a DB lock)
+
+### Pessimistic locking
+
+- Lock rows as soon as you read them; others cannot modify/lock until `COMMIT` / `ROLLBACK`
+
+```sql title='pessimistic row lock'
+BEGIN;
+SELECT balance FROM accounts WHERE id = 1 FOR UPDATE;
+-- other FOR UPDATE / UPDATE on id=1 waits here
+UPDATE accounts SET balance = balance + 20 WHERE id = 1;
+COMMIT;  -- lock released; waiters proceed
+```
+
+- Best for: **high contention** (flash sale); financial / critical paths where retries are costly
 
 ```sql title='queue workers'
 SELECT id FROM jobs
@@ -329,13 +364,6 @@ LIMIT 10;
 INSERT INTO users(email, name) VALUES ($1, $2)
 ON CONFLICT (email) DO UPDATE
 SET name = EXCLUDED.name;
-```
-
-```sql title='optimistic state transition'
-UPDATE orders
-SET status = 'paid'
-WHERE id = $1 AND status = 'pending'
-RETURNING *;
 ```
 
 ```ts title='advisory lock (txn-scoped)'
